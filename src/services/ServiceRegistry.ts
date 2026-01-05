@@ -1,0 +1,173 @@
+import { DataService, dataService } from './DataService';
+import { TaskAnalyticsService, taskAnalyticsService } from './TaskAnalyticsService';
+import { ValidationService, validationService } from './ValidationService';
+import notificationService from './NotificationService';
+import logger from '../utils/logger';
+
+/**
+ * Service Registry
+ * 
+ * Centralized registry for all application services. Provides
+ * dependency injection capabilities and service lifecycle management.
+ */
+export class ServiceRegistry {
+  private static instance: ServiceRegistry;
+  private services: Map<string, any> = new Map();
+
+  private constructor() {
+    this.registerDefaultServices();
+  }
+
+  static getInstance(): ServiceRegistry {
+    if (!ServiceRegistry.instance) {
+      ServiceRegistry.instance = new ServiceRegistry();
+    }
+    return ServiceRegistry.instance;
+  }
+
+  /**
+   * Register default services
+   */
+  private registerDefaultServices(): void {
+    try {
+      logger.debug('SERVICE', 'Registering default services');
+      
+      this.register('data', dataService);
+      this.register('analytics', taskAnalyticsService);
+      this.register('validation', validationService);
+      this.register('notification', notificationService);
+      
+      logger.info('SERVICE', 'Default services registered successfully', {
+        servicesCount: this.services.size
+      });
+    } catch (error) {
+      logger.error('SERVICE', 'Failed to register default services', { error });
+      throw error;
+    }
+  }
+
+  /**
+   * Register a service with the registry
+   */
+  register<T>(name: string, service: T): void {
+    try {
+      if (this.services.has(name)) {
+        logger.warn('SERVICE', 'Overriding existing service', { serviceName: name });
+      }
+      
+      this.services.set(name, service);
+      logger.debug('SERVICE', 'Service registered', { serviceName: name });
+    } catch (error) {
+      logger.error('SERVICE', 'Failed to register service', { error, serviceName: name });
+      throw error;
+    }
+  }
+
+  /**
+   * Get a service from the registry
+   */
+  get<T>(name: string): T {
+    const service = this.services.get(name) as T;
+    
+    if (!service) {
+      const error = new Error(`Service '${name}' not found in registry`);
+      logger.error('SERVICE', 'Service not found', { serviceName: name });
+      throw error;
+    }
+    
+    return service;
+  }
+
+  /**
+   * Check if a service is registered
+   */
+  has(name: string): boolean {
+    return this.services.has(name);
+  }
+
+  /**
+   * Unregister a service
+   */
+  unregister(name: string): boolean {
+    const existed = this.services.delete(name);
+    if (existed) {
+      logger.debug('SERVICE', 'Service unregistered', { serviceName: name });
+    }
+    return existed;
+  }
+
+  /**
+   * Get all registered service names
+   */
+  getRegisteredServices(): string[] {
+    return Array.from(this.services.keys());
+  }
+
+  /**
+   * Clear all services (useful for testing)
+   */
+  clear(): void {
+    logger.debug('SERVICE', 'Clearing all services');
+    this.services.clear();
+  }
+
+  /**
+   * Get service health status
+   */
+  getHealthStatus(): ServiceHealthStatus {
+    const registeredServices = this.getRegisteredServices();
+    const healthStatus: ServiceHealthStatus = {
+      isHealthy: true,
+      services: {},
+      timestamp: new Date().toISOString(),
+    };
+
+    for (const serviceName of registeredServices) {
+      try {
+        const service = this.get(serviceName);
+        
+        // Basic health check - service exists and is defined
+        healthStatus.services[serviceName] = {
+          status: 'healthy',
+          lastChecked: new Date().toISOString(),
+        };
+      } catch (error) {
+        healthStatus.isHealthy = false;
+        healthStatus.services[serviceName] = {
+          status: 'unhealthy',
+          lastChecked: new Date().toISOString(),
+          error: error instanceof Error ? error.message : 'Unknown error',
+        };
+      }
+    }
+
+    logger.debug('SERVICE', 'Health check completed', { 
+      isHealthy: healthStatus.isHealthy,
+      servicesCount: registeredServices.length 
+    });
+
+    return healthStatus;
+  }
+}
+
+// Type definitions
+export interface ServiceHealthStatus {
+  isHealthy: boolean;
+  services: Record<string, {
+    status: 'healthy' | 'unhealthy';
+    lastChecked: string;
+    error?: string;
+  }>;
+  timestamp: string;
+}
+
+// Convenience exports
+export const serviceRegistry = ServiceRegistry.getInstance();
+
+// Service getters for easy access
+export const getDataService = (): DataService => serviceRegistry.get<DataService>('data');
+export const getAnalyticsService = (): TaskAnalyticsService => serviceRegistry.get<TaskAnalyticsService>('analytics');
+export const getValidationService = (): ValidationService => serviceRegistry.get<ValidationService>('validation');
+export const getNotificationService = () => serviceRegistry.get('notification');
+
+export default ServiceRegistry;
