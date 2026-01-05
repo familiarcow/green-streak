@@ -1,6 +1,11 @@
-# Green Streak - GitHub-style Habit Tracker
+# 🌱 Green Streak
 
-A privacy-first mobile habit tracker with beautiful contribution graph visualization, inspired by GitHub's commit calendar.
+A beautiful React Native habit tracker with GitHub-style contribution calendar and intelligent progress tracking.
+
+![TypeScript](https://img.shields.io/badge/typescript-%23007ACC.svg?style=for-the-badge&logo=typescript&logoColor=white)
+![React Native](https://img.shields.io/badge/react_native-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB)
+![Expo](https://img.shields.io/badge/expo-1C1E24?style=for-the-badge&logo=expo&logoColor=#D04A37)
+![SQLite](https://img.shields.io/badge/sqlite-%2307405e.svg?style=for-the-badge&logo=sqlite&logoColor=white)
 
 ## ✨ Features
 
@@ -107,15 +112,22 @@ src/
 - [ ] TypeScript compilation fixes (expo-sqlite API updates)
 - [ ] Basic working app demo
 
+### 🔄 Latest Updates
+
+- [x] **Enhanced Calendar**: New LiveCalendar with multiple time periods (Live, 2M, 4M, 6M, 1Y, All)
+- [x] **Smooth Animations**: Golden highlight sliding selector with spring animations
+- [x] **Architecture Refactor**: Repository pattern, service layer, and custom hooks
+- [x] **Quick Add Fix**: Works for any selected date, not just today
+- [x] **Git Integration**: Repository initialized and ready for GitHub
+
 ### 📋 Upcoming Features
 
-- [ ] Task management screens (create, edit, archive)
-- [ ] Daily logging interface with quick ticker
-- [ ] Individual task analytics and history
-- [ ] Push notification system
-- [ ] Smooth animations throughout
-- [ ] Onboarding flow
-- [ ] Manual data export functionality
+- [ ] 📅 **Date Selector**: Tap Today component to pick arbitrary dates
+- [ ] 🗂️ **Habit Reordering**: Drag and drop to customize habit order  
+- [ ] ⚙️ **Enhanced Settings**: Calendar color themes and customization
+- [ ] 🔥 **Streak Tracking**: Current/longest streaks with weekend skip option
+- [ ] 📊 **Advanced Analytics**: Detailed habit insights and trends
+- [ ] 🌐 **GitHub Integration**: Feature flags and issue tracking
 
 ## 🧪 Testing
 
