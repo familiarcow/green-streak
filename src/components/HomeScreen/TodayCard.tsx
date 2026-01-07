@@ -175,7 +175,7 @@ export const TodayCard: React.FC<TodayCardProps> = React.memo(({
             accessibilityRole="button"
             accessibilityLabel={isToday ? "View detailed log for today" : "Edit this day"}
           >
-            <Icon name="settings" size={16} color={colors.text.secondary} />
+            <Icon name="edit" size={16} color={colors.text.secondary} />
           </TouchableOpacity>
           
           <View style={styles.totalBadge}>
