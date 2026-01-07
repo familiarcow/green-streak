@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Modal, Pressable, Animated } from 'react-native';
 import { ContributionGraph } from '../components/ContributionGraph';
-import { AnimatedModal } from '../components/AnimatedModal';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { ScreenErrorBoundary } from '../components/ScreenErrorBoundary';
 import { Icon } from '../components/common/Icon';
@@ -32,6 +31,8 @@ export const HomeScreen: React.FC = () => {
   // Animation refs for custom modal animations
   const dailyLogBackgroundOpacity = useRef(new Animated.Value(0)).current;
   const dailyLogSlideAnim = useRef(new Animated.Value(0)).current;
+  const settingsBackgroundOpacity = useRef(new Animated.Value(0)).current;
+  const settingsSlideAnim = useRef(new Animated.Value(0)).current;
   
   // Component-specific state
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -140,6 +141,45 @@ export const HomeScreen: React.FC = () => {
     });
   }, [openDailyLog, dailyLogBackgroundOpacity, dailyLogSlideAnim]);
 
+  const handleSettingsPress = useCallback(() => {
+    openSettings();
+    // Start background fade in immediately
+    Animated.timing(settingsBackgroundOpacity, {
+      toValue: 1,
+      duration: 200,
+      useNativeDriver: true,
+    }).start(() => {
+      // Then slide up the content
+      Animated.timing(settingsSlideAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    });
+  }, [openSettings, settingsBackgroundOpacity, settingsSlideAnim]);
+
+  const handleSettingsClose = async () => {
+    // Animate slide down first
+    Animated.timing(settingsSlideAnim, {
+      toValue: 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start(() => {
+      // Then fade out background
+      Animated.timing(settingsBackgroundOpacity, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }).start(() => {
+        closeSettings();
+        
+        // Reset animation values for next time
+        settingsBackgroundOpacity.setValue(0);
+        settingsSlideAnim.setValue(0);
+      });
+    });
+  };
+
   const handleTaskPress = useCallback((task: Task) => {
     logger.debug('UI', 'Task pressed for editing', { taskId: task.id, taskName: task.name });
     openEditTask(task);
@@ -182,7 +222,7 @@ export const HomeScreen: React.FC = () => {
             </View>
             <TouchableOpacity 
               style={styles.settingsButton}
-              onPress={openSettings}
+              onPress={handleSettingsPress}
               accessible={true}
               accessibilityRole="button"
               accessibilityLabel="Settings"
@@ -362,46 +402,122 @@ export const HomeScreen: React.FC = () => {
       )}
 
       {showSettings && (
-        <AnimatedModal
+        <Modal
+          transparent
           visible={showSettings}
-          onClose={closeSettings}
-          animationType="slide"
+          animationType="none"
+          statusBarTranslucent
         >
-          <ScreenErrorBoundary 
-            screenName="Settings"
-            onClose={closeSettings}
-            onRetry={() => {
-              closeSettings();
-              setTimeout(() => openSettings(), 100);
+          <Animated.View 
+            style={{
+              flex: 1,
+              backgroundColor: 'rgba(0,0,0,0.6)',
+              justifyContent: 'flex-end',
+              opacity: settingsBackgroundOpacity,
             }}
           >
-            <SettingsScreen
-              onClose={closeSettings}
+            <Pressable 
+              style={{ flex: 1 }}
+              onPress={handleSettingsClose}
             />
-          </ScreenErrorBoundary>
-        </AnimatedModal>
+            
+            <Animated.View 
+              style={{
+                backgroundColor: colors.background,
+                borderTopLeftRadius: 20,
+                borderTopRightRadius: 20,
+                height: '85%',
+                transform: [{
+                  translateY: settingsSlideAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [400, 0], // Slide up from 400px below
+                  }),
+                }],
+              }}
+            >
+                <View style={{
+                  width: 40,
+                  height: 4,
+                  backgroundColor: colors.border,
+                  borderRadius: 2,
+                  alignSelf: 'center',
+                  marginTop: 8,
+                  marginBottom: 4
+                }} />
+                
+                <ScreenErrorBoundary 
+                  screenName="Settings"
+                  onClose={handleSettingsClose}
+                  onRetry={() => {
+                    // Reset the modal by closing and reopening
+                    handleSettingsClose();
+                    setTimeout(() => handleSettingsPress(), 100);
+                  }}
+                >
+                  <SettingsScreen
+                    onClose={handleSettingsClose}
+                  />
+                </ScreenErrorBoundary>
+            </Animated.View>
+          </Animated.View>
+        </Modal>
       )}
 
       {showTaskAnalytics && selectedTask && (
-        <AnimatedModal
+        <Modal
+          transparent
           visible={showTaskAnalytics}
-          onClose={handleTaskAnalyticsClose}
           animationType="slide"
+          statusBarTranslucent
         >
-          <ScreenErrorBoundary 
-            screenName="Task Analytics"
-            onClose={handleTaskAnalyticsClose}
-            onRetry={() => {
-              handleTaskAnalyticsClose();
-              setTimeout(() => openTaskAnalytics(), 100);
-            }}
-          >
-            <TaskAnalyticsScreen
-              task={selectedTask}
-              onClose={handleTaskAnalyticsClose}
+          <View style={{ flex: 1 }}>
+            <Pressable 
+              style={{
+                flex: 1,
+                backgroundColor: 'rgba(0,0,0,0.6)',
+                justifyContent: 'flex-end'
+              }}
+              onPress={handleTaskAnalyticsClose}
             />
-          </ScreenErrorBoundary>
-        </AnimatedModal>
+            
+            <View 
+              style={{
+                position: 'absolute',
+                bottom: 0,
+                left: 0,
+                right: 0,
+                backgroundColor: colors.background,
+                borderTopLeftRadius: 20,
+                borderTopRightRadius: 20,
+                maxHeight: '90%',
+              }}
+            >
+                <View style={{
+                  width: 40,
+                  height: 4,
+                  backgroundColor: colors.border,
+                  borderRadius: 2,
+                  alignSelf: 'center',
+                  marginTop: 8,
+                  marginBottom: 4
+                }} />
+                
+                <ScreenErrorBoundary 
+                  screenName="Task Analytics"
+                  onClose={handleTaskAnalyticsClose}
+                  onRetry={() => {
+                    handleTaskAnalyticsClose();
+                    setTimeout(() => openTaskAnalytics(), 100);
+                  }}
+                >
+                  <TaskAnalyticsScreen
+                    task={selectedTask}
+                    onClose={handleTaskAnalyticsClose}
+                  />
+                </ScreenErrorBoundary>
+            </View>
+          </View>
+        </Modal>
       )}
     </SafeAreaView>
     </ErrorBoundary>
