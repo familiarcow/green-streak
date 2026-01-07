@@ -1,7 +1,7 @@
 # Development Setup Guide
 
 *Created: January 3, 2026*  
-*Last Modified: January 3, 2026*
+*Last Modified: January 5, 2026*
 
 ## Table of Contents
 
@@ -10,9 +10,11 @@
 3. [Development Environment](#development-environment)
 4. [Development Tools](#development-tools)
 5. [Code Organization](#code-organization)
-6. [Development Workflow](#development-workflow)
-7. [Debugging](#debugging)
-8. [Best Practices](#best-practices)
+6. [Adding New Features](#adding-new-features)
+7. [Development Workflow](#development-workflow)
+8. [Debugging](#debugging)
+9. [Best Practices](#best-practices)
+10. [Common Development Patterns](#common-development-patterns)
 
 ## Prerequisites
 
@@ -275,12 +277,29 @@ green-streak/
 ├── src/
 │   ├── components/          # Reusable UI components
 │   │   ├── ContributionGraph/   # Main visualization
-│   │   ├── TaskCard/           # Task-specific components
+│   │   │   ├── LiveCalendar.tsx    # Enhanced calendar with views
+│   │   │   ├── TimePeriodSelector.tsx # Animated selector
+│   │   │   └── MonthMarker.tsx     # Month overlays
+│   │   ├── HomeScreen/         # Home screen components
+│   │   │   ├── TodayCard.tsx       # Date nav & quick add
+│   │   │   └── TasksSection.tsx    # Task list
 │   │   └── common/             # Shared primitives
 │   ├── screens/             # Full-screen components
+│   ├── hooks/               # Custom React hooks
+│   │   ├── useTaskActions.ts       # Task operations
+│   │   ├── useModalState.ts        # Modal management
+│   │   └── useDateNavigation.ts    # Date handling
+│   ├── services/            # Business logic layer
+│   │   ├── DataService.ts          # Data operations
+│   │   ├── ValidationService.ts    # Validation rules
+│   │   └── ServiceRegistry.ts      # DI container
 │   ├── store/               # Zustand state management
 │   ├── database/            # SQLite and repositories
-│   ├── utils/               # Helper functions and utilities
+│   │   └── repositories/
+│   │       ├── interfaces/         # Repository interfaces
+│   │       ├── mocks/              # Mock implementations
+│   │       └── RepositoryFactory.ts # DI factory
+│   ├── utils/               # Helper functions
 │   ├── theme/               # Design system
 │   └── types/               # TypeScript definitions
 ├── tests/                   # Test files and utilities
@@ -312,6 +331,241 @@ import logger from '../utils/logger';
 
 // 3. Types (if not inline)
 import { Task, ContributionData } from '../types';
+```
+
+## Adding New Features
+
+### Following Established Patterns
+
+When adding new features, follow the layered architecture:
+
+### 1. Adding a New Repository
+
+```typescript
+// 1. Define the interface
+// src/database/repositories/interfaces/IAnalyticsRepository.ts
+export interface IAnalyticsRepository {
+  getTaskAnalytics(taskId: string, period: string): Promise<Analytics>;
+  getOverallStats(): Promise<OverallStats>;
+}
+
+// 2. Implement the repository
+// src/database/repositories/AnalyticsRepository.ts
+import { IAnalyticsRepository } from './interfaces';
+import { getDatabase } from '../';
+
+export class AnalyticsRepository implements IAnalyticsRepository {
+  async getTaskAnalytics(taskId: string, period: string) {
+    const db = getDatabase();
+    // Implementation
+  }
+}
+
+// 3. Add to RepositoryFactory
+// src/database/repositories/RepositoryFactory.ts
+private _analyticsRepository: IAnalyticsRepository;
+
+public getAnalyticsRepository(): IAnalyticsRepository {
+  return this._analyticsRepository;
+}
+
+// 4. Create mock for testing
+// src/database/repositories/mocks/MockAnalyticsRepository.ts
+export class MockAnalyticsRepository implements IAnalyticsRepository {
+  // Mock implementation
+}
+```
+
+### 2. Adding a New Service
+
+```typescript
+// src/services/AnalyticsService.ts
+import { repositoryFactory } from '../database/repositories/RepositoryFactory';
+import logger from '../utils/logger';
+
+export class AnalyticsService {
+  private analyticsRepo = repositoryFactory.getAnalyticsRepository();
+  
+  async calculateStreakStats(taskId: string) {
+    try {
+      logger.debug('SERVICE', 'Calculating streak stats', { taskId });
+      // Business logic here
+      const data = await this.analyticsRepo.getTaskAnalytics(taskId, '30d');
+      // Process and return
+      return processedData;
+    } catch (error) {
+      logger.error('SERVICE', 'Failed to calculate streak', { error });
+      throw error;
+    }
+  }
+}
+
+// Add to service registry
+export const analyticsService = new AnalyticsService();
+```
+
+### 3. Adding a New Custom Hook
+
+```typescript
+// src/hooks/useAnalytics.ts
+import { useCallback, useState, useEffect } from 'react';
+import { getAnalyticsService } from '../services';
+import logger from '../utils/logger';
+
+export const useAnalytics = (taskId: string) => {
+  const [analytics, setAnalytics] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  
+  const loadAnalytics = useCallback(async () => {
+    try {
+      setLoading(true);
+      const service = getAnalyticsService();
+      const data = await service.calculateStreakStats(taskId);
+      setAnalytics(data);
+    } catch (err) {
+      logger.error('UI', 'Failed to load analytics', { error: err });
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [taskId]);
+  
+  useEffect(() => {
+    loadAnalytics();
+  }, [loadAnalytics]);
+  
+  return { analytics, loading, error, refresh: loadAnalytics };
+};
+```
+
+### 4. Adding a New Component
+
+```typescript
+// src/components/Analytics/StreakChart.tsx
+import React from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+import Animated, { FadeIn } from 'react-native-reanimated';
+import { useAnalytics } from '../../hooks/useAnalytics';
+import { colors, spacing } from '../../theme';
+
+interface StreakChartProps {
+  taskId: string;
+  onClose: () => void;
+}
+
+export const StreakChart: React.FC<StreakChartProps> = ({ taskId }) => {
+  const { analytics, loading, error } = useAnalytics(taskId);
+  
+  if (loading) return <LoadingState />;
+  if (error) return <ErrorState error={error} />;
+  
+  return (
+    <Animated.View 
+      entering={FadeIn}
+      style={styles.container}
+    >
+      {/* Chart implementation */}
+    </Animated.View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    padding: spacing[4],
+    backgroundColor: colors.surface,
+  },
+});
+```
+
+### 5. Adding Store State
+
+```typescript
+// src/store/analyticsStore.ts
+import { create } from 'zustand';
+import { getAnalyticsService } from '../services';
+import logger from '../utils/logger';
+
+interface AnalyticsState {
+  // State
+  streakData: Map<string, StreakData>;
+  loading: boolean;
+  
+  // Actions
+  loadStreakData: (taskId: string) => Promise<void>;
+  clearCache: () => void;
+}
+
+export const useAnalyticsStore = create<AnalyticsState>((set, get) => ({
+  streakData: new Map(),
+  loading: false,
+  
+  loadStreakData: async (taskId: string) => {
+    try {
+      set({ loading: true });
+      const service = getAnalyticsService();
+      const data = await service.calculateStreakStats(taskId);
+      
+      const currentData = get().streakData;
+      currentData.set(taskId, data);
+      
+      set({ streakData: new Map(currentData), loading: false });
+      logger.info('STATE', 'Streak data loaded', { taskId });
+    } catch (error) {
+      logger.error('STATE', 'Failed to load streak data', { error });
+      set({ loading: false });
+      throw error;
+    }
+  },
+  
+  clearCache: () => {
+    set({ streakData: new Map() });
+    logger.debug('STATE', 'Analytics cache cleared');
+  },
+}));
+```
+
+### Component Creation Guidelines
+
+1. **Props Interface First**: Define clear prop types
+2. **Error Boundaries**: Wrap complex components
+3. **Accessibility**: Include proper labels and roles
+4. **Animation**: Use React Native Reanimated for smooth animations
+5. **Styling**: Use theme constants for consistency
+
+### State Management Patterns
+
+1. **Store for Shared State**: Use Zustand stores for data shared across components
+2. **Hooks for Logic**: Encapsulate complex logic in custom hooks
+3. **Local State for UI**: Use useState for component-specific UI state
+4. **Services for Business Logic**: Keep business rules in service layer
+
+### Error Handling Patterns
+
+```typescript
+// At component level
+try {
+  await someOperation();
+} catch (error) {
+  // User-friendly feedback
+  showToast('Operation failed. Please try again.');
+  // Log for debugging
+  logger.error('UI', 'Operation failed', { error });
+}
+
+// At service level
+try {
+  // Validate first
+  if (!isValid(data)) {
+    throw new ValidationError('Invalid data', ['field1', 'field2']);
+  }
+  // Perform operation
+  return await repository.create(data);
+} catch (error) {
+  logger.error('SERVICE', 'Operation failed', { error, data });
+  // Re-throw with context
+  throw new ServiceError('Failed to create resource', error);
+}
 ```
 
 ## Development Workflow
@@ -443,6 +697,8 @@ npm run dev -- --reset --verbose --tasks 3 --days 7
 2. **Functional Components**: Use function components with hooks
 3. **Custom Hooks**: Extract complex logic into reusable hooks
 4. **Error Boundaries**: Handle errors gracefully in UI components
+5. **Interface-Based Design**: Define interfaces for all public contracts
+6. **Repository Pattern**: All data access through repository interfaces
 
 ### Component Development
 
@@ -493,6 +749,150 @@ npm run dev -- --reset --verbose --tasks 3 --days 7
 3. **Lazy Loading**: Load components and data as needed
 4. **Memory Management**: Proper cleanup of subscriptions and timers
 
+## Common Development Patterns
+
+### Repository Pattern Implementation
+
+```typescript
+// Define interface
+interface IRepository<T> {
+  getAll(): Promise<T[]>;
+  getById(id: string): Promise<T | null>;
+  create(data: Omit<T, 'id'>): Promise<T>;
+  update(id: string, data: Partial<T>): Promise<T>;
+  delete(id: string): Promise<void>;
+}
+
+// Implement repository
+class ConcreteRepository implements IRepository<Entity> {
+  // Implementation
+}
+
+// Use through factory
+const repo = repositoryFactory.getRepository();
+```
+
+### Service Layer Pattern
+
+```typescript
+// Service orchestrates multiple repositories
+class BusinessService {
+  private repo1 = repositoryFactory.getRepo1();
+  private repo2 = repositoryFactory.getRepo2();
+  
+  async complexOperation(params: Params): Promise<Result> {
+    // Validate
+    const validation = this.validate(params);
+    if (!validation.isValid) throw new ValidationError(validation.errors);
+    
+    // Orchestrate
+    const data1 = await this.repo1.getData();
+    const data2 = await this.repo2.getData();
+    
+    // Business logic
+    const result = this.processBusinessRules(data1, data2);
+    
+    // Return processed result
+    return result;
+  }
+}
+```
+
+### Hook Composition Pattern
+
+```typescript
+// Compose multiple hooks for complex features
+const useFeature = () => {
+  const { data, loading } = useDataHook();
+  const { modal, open, close } = useModalHook();
+  const { validate, errors } = useValidationHook();
+  
+  const handleAction = useCallback(async () => {
+    if (!validate(data)) return;
+    // Perform action
+    close();
+  }, [data, validate, close]);
+  
+  return {
+    data,
+    loading,
+    modal,
+    errors,
+    handleAction,
+    openModal: open,
+  };
+};
+```
+
+### Animation Pattern with Reanimated
+
+```typescript
+// Consistent animation patterns
+const useSlideAnimation = (isVisible: boolean) => {
+  const translateX = useSharedValue(isVisible ? 0 : 100);
+  
+  useEffect(() => {
+    translateX.value = withSpring(isVisible ? 0 : 100, {
+      damping: 15,
+      stiffness: 200,
+    });
+  }, [isVisible]);
+  
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: translateX.value }],
+  }));
+  
+  return animatedStyle;
+};
+```
+
+### Date Handling Pattern
+
+```typescript
+// Always work with standardized date formats
+const handleDateOperation = (date?: string) => {
+  // Default to today if not provided
+  const targetDate = date || getTodayString();
+  
+  // Validate date format
+  if (!isValidDateString(targetDate)) {
+    throw new Error('Invalid date format. Expected YYYY-MM-DD');
+  }
+  
+  // Perform operation
+  return processDate(targetDate);
+};
+```
+
+### Testing Pattern
+
+```typescript
+// Test with dependency injection
+describe('Feature', () => {
+  let mockRepo: MockRepository;
+  
+  beforeEach(() => {
+    mockRepo = new MockRepository();
+    repositoryFactory.setRepository(mockRepo);
+  });
+  
+  afterEach(() => {
+    repositoryFactory.resetToDefaults();
+  });
+  
+  it('should perform operation', async () => {
+    // Arrange
+    mockRepo.setData(testData);
+    
+    // Act
+    const result = await service.operation();
+    
+    // Assert
+    expect(result).toEqual(expectedResult);
+  });
+});
+```
+
 ---
 
-This development guide provides everything needed to set up, develop, and maintain the Green Streak application. Follow these guidelines to ensure consistent code quality and development experience across all contributors.
+This development guide provides everything needed to set up, develop, and maintain the Green Streak application. Follow the established architectural patterns (repository pattern, service layer, custom hooks) to ensure consistent code quality and maintainability. The layered architecture enables easy testing, clear separation of concerns, and scalable feature development.

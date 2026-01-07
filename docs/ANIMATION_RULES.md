@@ -1,6 +1,9 @@
 # Animation Rules
 
-This document defines the standard animation patterns and timing for consistent user experience throughout the Green Streak application.
+*Created: January 3, 2026*  
+*Last Modified: January 5, 2026*
+
+This document defines the standard animation patterns and timing for consistent user experience throughout the Green Streak application, now using React Native Reanimated 2 for enhanced performance.
 
 ## Modal Animations
 
@@ -189,9 +192,192 @@ opacity: contentAnim
 2. Verify native driver usage
 3. Test with React Native performance profiler
 
+## React Native Reanimated 2 Patterns
+
+### Golden Highlight Slider (TimePeriodSelector)
+
+The time period selector uses a sliding golden highlight with spring physics:
+
+```typescript
+import {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
+
+const highlightPosition = useSharedValue(0);
+const highlightWidth = useSharedValue(0);
+
+// Spring configuration
+const springConfig = {
+  damping: 15,
+  stiffness: 200,
+};
+
+// Animate position and width
+useEffect(() => {
+  highlightPosition.value = withSpring(layout.x, springConfig);
+  highlightWidth.value = withSpring(layout.width, springConfig);
+}, [selected]);
+
+// Animated style
+const highlightStyle = useAnimatedStyle(() => ({
+  transform: [{ translateX: highlightPosition.value }],
+  width: highlightWidth.value,
+}));
+```
+
+### Staggered Entry Animations (LiveCalendar)
+
+Calendar days fade in with cascading delays for visual appeal:
+
+```typescript
+import { FadeIn, FadeInDown } from 'react-native-reanimated';
+
+// Week rows with staggered entry
+<Animated.View
+  entering={FadeInDown.delay(weekIndex * 50).springify()}
+  style={styles.weekRow}
+>
+  {weekData.map((day, dayIndex) => {
+    const animationDelay = weekIndex * 50 + dayIndex * 10;
+    return (
+      <Animated.View
+        key={day.date}
+        entering={FadeIn.delay(animationDelay).springify()}
+      >
+        {/* Day content */}
+      </Animated.View>
+    );
+  })}
+</Animated.View>
+```
+
+### View Transitions
+
+Smooth transitions between calendar view types:
+
+```typescript
+const fadeInValue = useSharedValue(0);
+
+useEffect(() => {
+  // Reset and animate
+  fadeInValue.value = 0;
+  fadeInValue.value = withDelay(100, withSpring(1, {
+    damping: 15,
+    stiffness: 200,
+  }));
+}, [viewType]);
+
+const animatedContainerStyle = useAnimatedStyle(() => ({
+  opacity: fadeInValue.value,
+}));
+```
+
+## Animation Guidelines
+
+### Performance Best Practices
+
+1. **UI Thread Animations**: Use Reanimated 2 for animations that run on the UI thread
+2. **Shared Values**: Use `useSharedValue` for values that drive animations
+3. **Worklets**: Keep animation logic in worklets for performance
+4. **Spring Physics**: Prefer spring animations over timing for natural movement
+
+### Accessibility
+
+```typescript
+import { useReducedMotion } from 'react-native-reanimated';
+
+const reducedMotion = useReducedMotion();
+
+// Disable or simplify animations when reduced motion is enabled
+const animatedStyle = useAnimatedStyle(() => {
+  if (reducedMotion) {
+    return { opacity: visible ? 1 : 0 }; // Simple fade
+  }
+  // Complex animation for normal motion
+  return {
+    opacity: fadeValue.value,
+    transform: [{ scale: scaleValue.value }],
+  };
+});
+```
+
+## Standard Spring Configurations
+
+### Quick Response (UI Feedback)
+```typescript
+const quickSpring = {
+  damping: 20,
+  stiffness: 300,
+};
+```
+
+### Smooth Transition (Content Changes)
+```typescript
+const smoothSpring = {
+  damping: 15,
+  stiffness: 200,
+};
+```
+
+### Gentle Animation (Large Elements)
+```typescript
+const gentleSpring = {
+  damping: 18,
+  stiffness: 100,
+};
+```
+
+## Component-Specific Animations
+
+### LiveCalendar
+- **Entry**: Staggered FadeIn with 50ms/week, 10ms/day delays
+- **View Change**: Fade transition with 100ms delay
+- **Today Highlight**: Golden border with shadow glow
+
+### TimePeriodSelector
+- **Highlight Movement**: Spring animation (damping: 15, stiffness: 200)
+- **Width Adjustment**: Dynamic spring to match button width
+- **Color**: Golden (#FFD700) with shadow
+
+### TodayCard
+- **Date Navigation**: Instant updates (no animation for clarity)
+- **Quick Add**: Scale feedback on press
+- **Task Count Updates**: Fade transition
+
+### AnimatedButton
+- **Press**: Scale to 0.95 with quick spring
+- **Release**: Return to 1.0 scale
+- **Disabled**: Reduced opacity (0.5)
+
+## Testing Animations
+
+### Development Tools
+
+1. **React Native Debugger**: Monitor performance
+2. **Flipper**: Analyze frame rates
+3. **Chrome DevTools**: Profile JavaScript thread
+
+### Performance Metrics
+
+- **Target FPS**: 60fps for all animations
+- **Frame Drop Threshold**: < 5% dropped frames
+- **UI Thread Usage**: Keep animations on UI thread
+
+### Testing Checklist
+
+- [ ] Animations run at 60fps
+- [ ] No janky transitions
+- [ ] Reduced motion respected
+- [ ] Touch feedback immediate
+- [ ] Memory usage stable
+- [ ] Works on low-end devices
+
 ## Future Considerations
 
-- Consider adding easing curves (e.g., `Easing.bezier`)
 - Implement gesture-based dismissal animations
-- Add accessibility considerations for reduced motion
+- Add micro-interactions for task completion
 - Consider haptic feedback integration
+- Explore Lottie for complex celebration animations
+- Add particle effects for achievements
