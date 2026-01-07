@@ -1,49 +1,328 @@
 # Architecture Documentation
 
 *Created: January 3, 2026*  
-*Last Modified: January 3, 2026*
+*Last Modified: January 5, 2026*
 
 ## Table of Contents
 
 1. [System Architecture Overview](#system-architecture-overview)
-2. [Component Architecture](#component-architecture)
-3. [Data Flow](#data-flow)
-4. [Database Design](#database-design)
-5. [State Management](#state-management)
-6. [Design System](#design-system)
-7. [Development Infrastructure](#development-infrastructure)
-8. [Performance Considerations](#performance-considerations)
+2. [Layered Architecture](#layered-architecture)
+3. [Repository Pattern](#repository-pattern)
+4. [Service Layer](#service-layer)
+5. [Custom Hooks Architecture](#custom-hooks-architecture)
+6. [Component Architecture](#component-architecture)
+7. [Data Flow](#data-flow)
+8. [Database Design](#database-design)
+9. [State Management](#state-management)
+10. [Design System](#design-system)
+11. [Animation System](#animation-system)
+12. [Development Infrastructure](#development-infrastructure)
+13. [Performance Considerations](#performance-considerations)
+14. [Error Handling Architecture](#error-handling-architecture)
 
 ## System Architecture Overview
 
 Green Streak follows a layered architecture pattern designed for maintainability, testability, and scalability within a React Native environment.
 
 ```
-┌─────────────────────────────────────┐
-│             Presentation            │
-│     (Screens & Components)          │
-├─────────────────────────────────────┤
-│          State Management           │
-│        (Zustand Stores)             │
-├─────────────────────────────────────┤
-│           Business Logic            │
-│         (Repositories)              │
-├─────────────────────────────────────┤
-│            Data Layer               │
-│         (SQLite Database)           │
-├─────────────────────────────────────┤
-│             Utilities               │
-│   (Logging, DateHelpers, DevSeed)   │
-└─────────────────────────────────────┘
+┌─────────────────────────────────────────────────────┐
+│                 UI Layer                            │
+│         (Screens & Components)                      │
+├─────────────────────────────────────────────────────┤
+│              Custom Hooks Layer                     │
+│   (useTaskActions, useModalState, etc.)            │
+├─────────────────────────────────────────────────────┤
+│              State Management                       │
+│           (Zustand Stores)                         │
+├─────────────────────────────────────────────────────┤
+│              Service Layer                         │
+│    (DataService, ValidationService, etc.)          │
+├─────────────────────────────────────────────────────┤
+│            Repository Layer                        │
+│      (Interfaces & Implementations)                │
+├─────────────────────────────────────────────────────┤
+│             Database Layer                         │
+│         (SQLite with Expo SQLite)                  │
+├─────────────────────────────────────────────────────┤
+│         Cross-Cutting Concerns                     │
+│   (Logging, Error Boundaries, Utils)               │
+└─────────────────────────────────────────────────────┘
 ```
 
 ### Architecture Principles
 
 1. **Separation of Concerns**: Clear boundaries between presentation, business logic, and data
 2. **Single Responsibility**: Each module has one clearly defined purpose
-3. **Dependency Injection**: Repositories and utilities are injected rather than directly instantiated
-4. **Type Safety**: TypeScript throughout with strict mode enabled
-5. **Testability**: Architecture supports unit, integration, and UI testing
+3. **Dependency Injection**: Factory pattern for repository injection enabling easy testing and mocking
+4. **Interface-Based Design**: Repository pattern with interfaces for loose coupling
+5. **Type Safety**: TypeScript throughout with strict mode enabled
+6. **Testability**: Architecture supports unit, integration, and UI testing
+7. **Error Resilience**: Multiple layers of error boundaries and graceful degradation
+8. **Performance First**: Optimistic updates, caching strategies, and efficient re-renders
+
+## Layered Architecture
+
+### Overview
+
+Green Streak implements a robust layered architecture that enforces clean separation of concerns and promotes maintainability, testability, and scalability.
+
+### Layer Responsibilities
+
+#### 1. UI Layer
+- **Location**: `/src/screens/`, `/src/components/`
+- **Responsibilities**:
+  - Render visual components
+  - Handle user interactions
+  - Delegate business logic to hooks
+  - Display data from stores
+  - Manage local UI state only
+
+#### 2. Custom Hooks Layer
+- **Location**: `/src/hooks/`
+- **Responsibilities**:
+  - Encapsulate reusable UI logic
+  - Coordinate between UI and services
+  - Manage complex state interactions
+  - Provide clean APIs to components
+  - Handle side effects
+
+#### 3. State Management Layer
+- **Location**: `/src/store/`
+- **Responsibilities**:
+  - Centralized application state
+  - State synchronization across components
+  - Caching strategies
+  - Optimistic updates
+  - State persistence coordination
+
+#### 4. Service Layer
+- **Location**: `/src/services/`
+- **Responsibilities**:
+  - Business logic implementation
+  - Data validation
+  - Complex calculations (streaks, analytics)
+  - Orchestration of multiple repositories
+  - Error handling and recovery
+
+#### 5. Repository Layer
+- **Location**: `/src/database/repositories/`
+- **Responsibilities**:
+  - Data access abstraction
+  - CRUD operations
+  - Query optimization
+  - Database transaction management
+  - Data transformation
+
+#### 6. Database Layer
+- **Location**: `/src/database/`
+- **Responsibilities**:
+  - Schema definition
+  - Migration management
+  - Direct database operations
+  - Connection pooling
+  - Query execution
+
+### Data Flow Example
+
+```typescript
+// 1. User clicks "Quick Add" in UI
+<TouchableOpacity onPress={() => handleQuickAdd(task.id)}>
+
+// 2. Custom Hook handles the action
+const { handleQuickAdd } = useTaskActions();
+
+// 3. Hook uses Service Layer
+const dataService = getDataService();
+await dataService.logTaskCompletion(taskId, date, count);
+
+// 4. Service validates and uses Repository
+const validation = validationService.validateTaskLog(data);
+await this.logRepository.createOrUpdate(taskId, date, count);
+
+// 5. Repository executes database operation
+const result = await db.runAsync(
+  'INSERT OR REPLACE INTO logs...', 
+  [taskId, date, count]
+);
+
+// 6. Store updates and notifies UI
+set({ contributionData: updatedData });
+```
+
+## Repository Pattern
+
+### Overview
+
+The repository pattern provides an abstraction layer between the business logic and data access logic, enabling:
+- Easy testing with mock implementations
+- Database technology independence
+- Centralized query logic
+- Consistent data access patterns
+
+### Interface Design
+
+```typescript
+// Interface definition
+export interface ITaskRepository {
+  getAll(): Promise<Task[]>;
+  getById(id: string): Promise<Task | null>;
+  create(data: Omit<Task, 'id' | 'createdAt'>): Promise<Task>;
+  update(id: string, data: Partial<Task>): Promise<Task>;
+  archive(id: string): Promise<void>;
+  delete(id: string): Promise<void>;
+}
+
+// Concrete implementation
+export class TaskRepository implements ITaskRepository {
+  async getAll(): Promise<Task[]> {
+    // SQLite implementation
+  }
+}
+
+// Mock for testing
+export class MockTaskRepository implements ITaskRepository {
+  private tasks: Task[] = [];
+  
+  async getAll(): Promise<Task[]> {
+    return [...this.tasks];
+  }
+}
+```
+
+### Repository Factory Pattern
+
+```typescript
+export class RepositoryFactory {
+  private static _instance: RepositoryFactory;
+  
+  public static getInstance(): RepositoryFactory {
+    if (!RepositoryFactory._instance) {
+      RepositoryFactory._instance = new RepositoryFactory();
+    }
+    return RepositoryFactory._instance;
+  }
+  
+  public getTaskRepository(): ITaskRepository {
+    return this._taskRepository;
+  }
+  
+  // For testing - inject mocks
+  public setTaskRepository(repo: ITaskRepository): void {
+    this._taskRepository = repo;
+  }
+}
+```
+
+### Benefits
+
+1. **Testability**: Easily swap implementations for testing
+2. **Flexibility**: Change database without affecting business logic
+3. **Consistency**: Standardized data access patterns
+4. **Maintainability**: Centralized query logic
+5. **Type Safety**: Interfaces ensure contract compliance
+
+## Service Layer
+
+### Overview
+
+The service layer encapsulates business logic and orchestrates operations across multiple repositories.
+
+### Key Services
+
+#### DataService
+- **Purpose**: High-level data operations
+- **Location**: `/src/services/DataService.ts`
+- **Key Methods**:
+  - `getTasksWithRecentActivity()`: Combines task and log data
+  - `calculateCurrentStreak()`: Complex streak calculations
+  - `logTaskCompletion()`: Validates and logs completions
+
+#### ValidationService
+- **Purpose**: Business rule validation
+- **Location**: `/src/services/ValidationService.ts`
+- **Key Methods**:
+  - `validateTask()`: Task creation/update validation
+  - `validateTaskLog()`: Log entry validation
+  - `validateDateRange()`: Date range validation
+
+#### ServiceRegistry
+- **Purpose**: Service dependency injection
+- **Location**: `/src/services/ServiceRegistry.ts`
+- **Pattern**: Singleton with lazy initialization
+
+### Service Layer Benefits
+
+1. **Business Logic Centralization**: All business rules in one layer
+2. **Repository Coordination**: Orchestrate multiple data sources
+3. **Validation**: Consistent validation across the app
+4. **Error Handling**: Centralized error recovery
+5. **Performance**: Caching and optimization strategies
+
+## Custom Hooks Architecture
+
+### Overview
+
+Custom hooks provide reusable logic that bridges the gap between UI components and the service/state layers.
+
+### Core Hooks
+
+#### useTaskActions
+- **Purpose**: Task-related operations
+- **Key Functions**:
+  - `handleQuickAdd(taskId, date?)`: Add completion with date support
+  - `handleQuickRemove(taskId, date?)`: Remove completion
+  - `refreshAllData()`: Refresh tasks and contributions
+
+#### useModalState
+- **Purpose**: Modal state management
+- **Key Functions**:
+  - `openAddTask()`, `closeAddTask()`
+  - `openEditTask(task)`, `closeAllModals()`
+  - Centralized modal state
+
+#### useDateNavigation
+- **Purpose**: Date selection and navigation
+- **Key Functions**:
+  - `handleDateChange(date)`: Update selected date
+  - `navigateDate(direction)`: Navigate prev/next
+  - `navigateToToday()`: Return to current date
+
+#### useContributionData
+- **Purpose**: Contribution graph data management
+- **Key Functions**:
+  - Data loading and caching
+  - Date range management
+  - Performance optimizations
+
+### Hook Design Patterns
+
+```typescript
+// Encapsulate complex logic
+export const useTaskActions = (): UseTaskActionsReturn => {
+  const { loadTasks } = useTasksStore();
+  const { logTaskCompletion } = useLogsStore();
+  
+  const handleQuickAdd = useCallback(async (taskId: string, date?: string) => {
+    const targetDate = date || getTodayString();
+    
+    // Use service layer
+    const dataService = getDataService();
+    const currentLog = await dataService.getLogForTaskAndDate(taskId, targetDate);
+    
+    // Validate
+    const validationService = getValidationService();
+    const validation = validationService.validateTaskLog({...});
+    
+    // Execute
+    await logTaskCompletion(taskId, targetDate, newCount);
+    
+    // Refresh with expanded date range
+    await loadContributionData(true, targetDate);
+  }, [logTaskCompletion, loadContributionData]);
+  
+  return { handleQuickAdd, ... };
+};
+```
 
 ## Component Architecture
 
@@ -332,6 +611,54 @@ export const spacing = {
 };
 ```
 
+## Animation System
+
+### Overview
+
+Green Streak uses React Native Reanimated 2 for performant, native-driven animations that run on the UI thread.
+
+### Key Animation Components
+
+#### TimePeriodSelector
+- **Golden Highlight Slider**: Animated background that slides behind selected period
+- **Spring Animations**: Smooth transitions with customizable physics
+- **Implementation**:
+  ```typescript
+  const highlightStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: highlightPosition.value }],
+    width: highlightWidth.value,
+  }));
+  
+  // Spring configuration
+  withSpring(layout.x, {
+    damping: 15,
+    stiffness: 200,
+  });
+  ```
+
+#### LiveCalendar
+- **Staggered Entry Animations**: Days fade in with cascading delays
+- **View Transitions**: Smooth transitions between time periods
+- **Implementation**:
+  ```typescript
+  entering={FadeInDown.delay(weekIndex * 50).springify()}
+  ```
+
+### Animation Patterns
+
+1. **Shared Values**: Use `useSharedValue` for values that drive animations
+2. **Animated Styles**: Use `useAnimatedStyle` for dynamic style updates
+3. **Spring Physics**: Consistent spring configuration across the app
+4. **Performance**: Animations run on UI thread, not blocking JS thread
+
+### Animation Guidelines
+
+1. **Duration**: Keep animations under 300ms for responsive feel
+2. **Easing**: Use spring animations for natural movement
+3. **Staggering**: Use delays for complex multi-element animations
+4. **Feedback**: Provide immediate visual feedback for user actions
+5. **Accessibility**: Respect reduced motion preferences
+
 ## Development Infrastructure
 
 ### Logging System
@@ -422,6 +749,105 @@ Jest-based testing with TypeScript support:
 3. **Dependency Analysis**: Monitor third-party package impact
 4. **Asset Optimization**: Compress images and minimize assets
 
+## Error Handling Architecture
+
+### Overview
+
+Multi-layered error handling ensures application resilience and user experience continuity.
+
+### Error Boundary Hierarchy
+
+```
+App
+├── AppErrorBoundary (Global)
+│   └── ScreenErrorBoundary (Per Screen)
+│       └── Component Error Boundaries (Feature-specific)
+```
+
+### Error Handling Layers
+
+#### 1. Component Level
+```typescript
+try {
+  await handleQuickAdd(taskId);
+} catch (error) {
+  showErrorToast('Failed to add completion');
+  logger.error('UI', 'Quick add failed', { error });
+}
+```
+
+#### 2. Hook Level
+```typescript
+const handleQuickAdd = useCallback(async (taskId: string) => {
+  try {
+    // Operation logic
+  } catch (error) {
+    logger.error('UI', 'Failed to quick add task', { error });
+    throw error; // Re-throw for UI handling
+  }
+}, []);
+```
+
+#### 3. Service Level
+```typescript
+async logTaskCompletion(taskId: string, date: string, count: number) {
+  try {
+    // Validate task exists
+    const task = await this.taskRepository.getById(taskId);
+    if (!task) {
+      throw new Error(`Task with ID ${taskId} not found`);
+    }
+    // Continue operation
+  } catch (error) {
+    logger.error('SERVICE', 'Failed to log completion', { error });
+    throw error;
+  }
+}
+```
+
+#### 4. Repository Level
+```typescript
+async create(data: TaskData): Promise<Task> {
+  try {
+    const result = await db.runAsync(...);
+    return this.mapToTask(result);
+  } catch (error) {
+    logger.error('DATA', 'Database operation failed', { error });
+    throw new DatabaseError('Failed to create task', error);
+  }
+}
+```
+
+### Error Recovery Strategies
+
+1. **Retry Logic**: Automatic retry for transient failures
+2. **Fallback Data**: Show cached data when fresh data unavailable
+3. **Graceful Degradation**: Disable features rather than crash
+4. **User Feedback**: Clear error messages and recovery actions
+5. **Error Reporting**: Centralized logging for debugging
+
+### Error Types
+
+```typescript
+class ValidationError extends Error {
+  constructor(message: string, public errors: string[]) {
+    super(message);
+  }
+}
+
+class DatabaseError extends Error {
+  constructor(message: string, public originalError: Error) {
+    super(message);
+  }
+}
+
+class NetworkError extends Error {
+  constructor(message: string, public statusCode?: number) {
+    super(message);
+  }
+}
+```
+
 ---
 
-This architecture supports a scalable, maintainable habit tracking application while providing excellent developer experience and user performance. The layered design allows for easy testing, modification, and extension as requirements evolve.
+This architecture supports a scalable, maintainable habit tracking application while providing excellent developer experience and user performance. The layered design with repository pattern, service layer, and custom hooks allows for easy testing, modification, and extension as requirements evolve. The comprehensive error handling and animation systems ensure a robust and delightful user experience.

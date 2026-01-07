@@ -1,7 +1,7 @@
 # Testing Guide
 
 *Created: January 3, 2026*  
-*Last Modified: January 3, 2026*
+*Last Modified: January 5, 2026*
 
 ## Table of Contents
 
@@ -10,10 +10,11 @@
 3. [Test Types](#test-types)
 4. [Running Tests](#running-tests)
 5. [Writing Tests](#writing-tests)
-6. [Test Data and Mocking](#test-data-and-mocking)
-7. [Coverage Requirements](#coverage-requirements)
-8. [Debugging Tests](#debugging-tests)
-9. [Continuous Integration](#continuous-integration)
+6. [Testing Architectural Patterns](#testing-architectural-patterns)
+7. [Test Data and Mocking](#test-data-and-mocking)
+8. [Coverage Requirements](#coverage-requirements)
+9. [Debugging Tests](#debugging-tests)
+10. [Continuous Integration](#continuous-integration)
 
 ## Testing Philosophy
 
@@ -399,6 +400,323 @@ describe('error scenarios', () => {
     const invalidDate = 'invalid-date';
     
     expect(() => formatDate(invalidDate)).toThrow();
+  });
+});
+```
+
+## Testing Architectural Patterns
+
+### Testing Repositories with Interfaces
+
+The repository pattern with interfaces enables easy testing through dependency injection:
+
+```typescript
+// Test with mock repository
+import { MockTaskRepository } from '../../src/database/repositories/mocks';
+import { repositoryFactory } from '../../src/database/repositories/RepositoryFactory';
+import { DataService } from '../../src/services/DataService';
+
+describe('DataService', () => {
+  let mockTaskRepo: MockTaskRepository;
+  let dataService: DataService;
+  
+  beforeEach(() => {
+    // Inject mock repository
+    mockTaskRepo = new MockTaskRepository();
+    repositoryFactory.setTaskRepository(mockTaskRepo);
+    
+    // Create service with mocked dependency
+    dataService = new DataService();
+  });
+  
+  afterEach(() => {
+    // Reset to real implementations
+    repositoryFactory.resetToDefaults();
+  });
+  
+  it('should create task with validation', async () => {
+    const taskData = {
+      name: 'Test Task',
+      color: '#22c55e',
+      isMultiCompletion: false,
+      reminderEnabled: false,
+    };
+    
+    const result = await dataService.createTask(taskData);
+    
+    expect(result.id).toBeDefined();
+    expect(mockTaskRepo.tasks).toHaveLength(1);
+  });
+});
+```
+
+### Testing Services
+
+Services contain business logic and should be tested with mocked repositories:
+
+```typescript
+// Test ValidationService
+import { ValidationService } from '../../src/services/ValidationService';
+
+describe('ValidationService', () => {
+  let validationService: ValidationService;
+  
+  beforeEach(() => {
+    validationService = new ValidationService();
+  });
+  
+  describe('validateTaskLog', () => {
+    it('should validate valid task log', () => {
+      const result = validationService.validateTaskLog({
+        taskId: 'task-123',
+        date: '2026-01-05',
+        count: 3,
+      });
+      
+      expect(result.isValid).toBe(true);
+      expect(result.errors).toHaveLength(0);
+    });
+    
+    it('should reject invalid date format', () => {
+      const result = validationService.validateTaskLog({
+        taskId: 'task-123',
+        date: '01/05/2026', // Wrong format
+        count: 3,
+      });
+      
+      expect(result.isValid).toBe(false);
+      expect(result.errors).toContain('Invalid date format');
+    });
+    
+    it('should reject negative counts', () => {
+      const result = validationService.validateTaskLog({
+        taskId: 'task-123',
+        date: '2026-01-05',
+        count: -1,
+      });
+      
+      expect(result.isValid).toBe(false);
+      expect(result.errors).toContain('Count must be non-negative');
+    });
+  });
+});
+```
+
+### Testing Custom Hooks
+
+Custom hooks require special testing utilities:
+
+```typescript
+import { renderHook, act } from '@testing-library/react-hooks';
+import { useTaskActions } from '../../src/hooks/useTaskActions';
+import { repositoryFactory } from '../../src/database/repositories/RepositoryFactory';
+import { MockTaskRepository, MockLogRepository } from '../../src/database/repositories/mocks';
+
+describe('useTaskActions', () => {
+  let mockTaskRepo: MockTaskRepository;
+  let mockLogRepo: MockLogRepository;
+  
+  beforeEach(() => {
+    mockTaskRepo = new MockTaskRepository();
+    mockLogRepo = new MockLogRepository();
+    repositoryFactory.setTaskRepository(mockTaskRepo);
+    repositoryFactory.setLogRepository(mockLogRepo);
+  });
+  
+  afterEach(() => {
+    repositoryFactory.resetToDefaults();
+  });
+  
+  it('should handle quick add with date', async () => {
+    const { result } = renderHook(() => useTaskActions());
+    
+    // Add test task
+    await mockTaskRepo.create({
+      name: 'Test Task',
+      color: '#22c55e',
+      isMultiCompletion: false,
+      reminderEnabled: false,
+    });
+    
+    // Perform quick add
+    await act(async () => {
+      await result.current.handleQuickAdd('task-1', '2026-01-05');
+    });
+    
+    // Verify log was created
+    const log = await mockLogRepo.getByTaskAndDate('task-1', '2026-01-05');
+    expect(log?.count).toBe(1);
+  });
+  
+  it('should handle quick add for today when no date provided', async () => {
+    const { result } = renderHook(() => useTaskActions());
+    
+    await act(async () => {
+      await result.current.handleQuickAdd('task-1');
+    });
+    
+    const today = new Date().toISOString().split('T')[0];
+    const log = await mockLogRepo.getByTaskAndDate('task-1', today);
+    expect(log).toBeDefined();
+  });
+});
+```
+
+### Testing Components with Animations
+
+Test components with React Native Reanimated:
+
+```typescript
+import React from 'react';
+import { render, fireEvent, waitFor } from '@testing-library/react-native';
+import { TimePeriodSelector } from '../../src/components/ContributionGraph/TimePeriodSelector';
+
+// Mock Reanimated
+jest.mock('react-native-reanimated', () => {
+  const Reanimated = require('react-native-reanimated/mock');
+  Reanimated.default.call = () => {};
+  return Reanimated;
+});
+
+describe('TimePeriodSelector', () => {
+  it('should render all time periods', () => {
+    const onSelect = jest.fn();
+    const { getByText } = render(
+      <TimePeriodSelector selected="live" onSelect={onSelect} />
+    );
+    
+    expect(getByText('Live')).toBeTruthy();
+    expect(getByText('2M')).toBeTruthy();
+    expect(getByText('4M')).toBeTruthy();
+    expect(getByText('6M')).toBeTruthy();
+    expect(getByText('1Y')).toBeTruthy();
+    expect(getByText('All')).toBeTruthy();
+  });
+  
+  it('should call onSelect when period is pressed', () => {
+    const onSelect = jest.fn();
+    const { getByText } = render(
+      <TimePeriodSelector selected="live" onSelect={onSelect} />
+    );
+    
+    fireEvent.press(getByText('2M'));
+    expect(onSelect).toHaveBeenCalledWith('2m');
+  });
+  
+  it('should highlight selected period', async () => {
+    const { getByText, rerender } = render(
+      <TimePeriodSelector selected="live" onSelect={jest.fn()} />
+    );
+    
+    // Initially Live is selected
+    const liveButton = getByText('Live');
+    expect(liveButton.parent.props.accessibilityState.selected).toBe(true);
+    
+    // Change selection
+    rerender(<TimePeriodSelector selected="2m" onSelect={jest.fn()} />);
+    
+    await waitFor(() => {
+      const twoMonthButton = getByText('2M');
+      expect(twoMonthButton.parent.props.accessibilityState.selected).toBe(true);
+    });
+  });
+});
+```
+
+### Testing Store Operations
+
+Test Zustand stores with proper isolation:
+
+```typescript
+import { act, renderHook } from '@testing-library/react-hooks';
+import { useTasksStore } from '../../src/store/tasksStore';
+import { MockTaskRepository } from '../../src/database/repositories/mocks';
+import { repositoryFactory } from '../../src/database/repositories/RepositoryFactory';
+
+describe('useTasksStore', () => {
+  let mockRepo: MockTaskRepository;
+  
+  beforeEach(() => {
+    mockRepo = new MockTaskRepository();
+    repositoryFactory.setTaskRepository(mockRepo);
+    
+    // Reset store state
+    useTasksStore.setState({ 
+      tasks: [], 
+      loading: false, 
+      error: null 
+    });
+  });
+  
+  afterEach(() => {
+    repositoryFactory.resetToDefaults();
+  });
+  
+  it('should load tasks from repository', async () => {
+    // Add test tasks to mock repository
+    await mockRepo.create({ name: 'Task 1', color: '#22c55e', isMultiCompletion: false, reminderEnabled: false });
+    await mockRepo.create({ name: 'Task 2', color: '#3b82f6', isMultiCompletion: true, reminderEnabled: false });
+    
+    const { result } = renderHook(() => useTasksStore());
+    
+    // Load tasks
+    await act(async () => {
+      await result.current.loadTasks();
+    });
+    
+    expect(result.current.tasks).toHaveLength(2);
+    expect(result.current.loading).toBe(false);
+    expect(result.current.error).toBe(null);
+  });
+  
+  it('should handle errors gracefully', async () => {
+    // Make repository throw error
+    mockRepo.getAll = jest.fn().mockRejectedValue(new Error('Database error'));
+    
+    const { result } = renderHook(() => useTasksStore());
+    
+    await act(async () => {
+      await result.current.loadTasks();
+    });
+    
+    expect(result.current.tasks).toHaveLength(0);
+    expect(result.current.loading).toBe(false);
+    expect(result.current.error).toBe('Failed to load tasks');
+  });
+});
+```
+
+### Testing Error Boundaries
+
+```typescript
+import React from 'react';
+import { render } from '@testing-library/react-native';
+import { AppErrorBoundary } from '../../src/components/AppErrorBoundary';
+
+// Component that throws error
+const ThrowError = () => {
+  throw new Error('Test error');
+};
+
+describe('AppErrorBoundary', () => {
+  it('should catch errors and display fallback', () => {
+    const { getByText } = render(
+      <AppErrorBoundary>
+        <ThrowError />
+      </AppErrorBoundary>
+    );
+    
+    expect(getByText(/Something went wrong/)).toBeTruthy();
+  });
+  
+  it('should render children when no error', () => {
+    const { getByText } = render(
+      <AppErrorBoundary>
+        <Text>Normal content</Text>
+      </AppErrorBoundary>
+    );
+    
+    expect(getByText('Normal content')).toBeTruthy();
   });
 });
 ```

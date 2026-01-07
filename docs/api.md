@@ -1,16 +1,18 @@
 # API Reference
 
 *Created: January 3, 2026*  
-*Last Modified: January 3, 2026*
+*Last Modified: January 5, 2026*
 
 ## Table of Contents
 
 1. [Components API](#components-api)
-2. [Store API](#store-api)
-3. [Repository API](#repository-api)
-4. [Utility Functions](#utility-functions)
-5. [Type Definitions](#type-definitions)
-6. [Constants and Enums](#constants-and-enums)
+2. [Custom Hooks API](#custom-hooks-api)
+3. [Service Layer API](#service-layer-api)
+4. [Store API](#store-api)
+5. [Repository API](#repository-api)
+6. [Utility Functions](#utility-functions)
+7. [Type Definitions](#type-definitions)
+8. [Constants and Enums](#constants-and-enums)
 
 ## Components API
 
@@ -93,6 +95,130 @@ interface ContributionDayProps {
 - **Accessibility**: VoiceOver support with descriptive labels
 - **Dynamic Colors**: Intensity based on completion count
 - **Selection State**: Visual indication of selected day
+
+---
+
+### LiveCalendar
+
+Enhanced calendar component with multiple time period views and responsive grid layout.
+
+**Location**: `/src/components/ContributionGraph/LiveCalendar.tsx`
+
+#### Props
+
+```typescript
+interface LiveCalendarProps {
+  data: ContributionData[];           // Array of daily contribution data
+  onDayPress: (date: string) => void; // Callback when a day is selected
+  selectedDate?: string;              // Currently selected date (YYYY-MM-DD)
+  viewType?: ViewType;                // Current view: 'live' | '2m' | '4m' | '6m' | '1y' | 'all'
+  onViewTypeChange?: (viewType: ViewType) => void; // View change callback
+}
+```
+
+#### Usage
+
+```typescript
+<LiveCalendar
+  data={contributionData}
+  onDayPress={handleDayPress}
+  selectedDate={selectedDate}
+  viewType={currentView}
+  onViewTypeChange={setCurrentView}
+/>
+```
+
+#### Features
+- **Multiple Time Periods**: Live (35 days), 2M, 4M, 6M, 1Y, All time views
+- **Responsive Grid**: Consistent box sizing across all views
+- **Month Markers**: Visual month indicators for longer time periods
+- **Golden Highlights**: Today indicator with golden border and glow
+- **Staggered Animations**: Smooth entry animations with cascading delays
+- **Complete Weeks**: Always shows complete weeks for clean layout
+
+---
+
+### TimePeriodSelector
+
+Animated period selector with sliding golden highlight.
+
+**Location**: `/src/components/ContributionGraph/TimePeriodSelector.tsx`
+
+#### Props
+
+```typescript
+interface TimePeriodSelectorProps {
+  selected: ViewType;                 // Currently selected period
+  onSelect: (viewType: ViewType) => void; // Selection callback
+}
+
+type ViewType = 'live' | '2m' | '4m' | '6m' | '1y' | 'all';
+```
+
+#### Usage
+
+```typescript
+<TimePeriodSelector
+  selected={viewType}
+  onSelect={handleViewTypeChange}
+/>
+```
+
+#### Features
+- **Golden Highlight**: Animated background that slides to selected option
+- **Spring Physics**: Natural spring animations with custom damping
+- **Accessibility**: Full VoiceOver support with descriptive labels
+- **Touch Feedback**: Visual feedback on press
+
+---
+
+### TodayCard
+
+Date navigation and quick-add interface component.
+
+**Location**: `/src/components/HomeScreen/TodayCard.tsx`
+
+#### Props
+
+```typescript
+interface TodayCardProps {
+  selectedDate: string;               // Currently selected date
+  selectedDateData?: ContributionData; // Data for selected date
+  tasks: Task[];                      // Available tasks
+  onQuickAdd: (taskId: string, date?: string) => void; // Quick add callback
+  onViewMore: () => void;            // View more callback
+  onDateChange: (date: string) => void; // Date change callback
+}
+```
+
+#### Features
+- **Date Navigation**: Previous/next day navigation
+- **Quick Add**: Add completions for any selected date
+- **Task Preview**: Shows tasks with completion counts
+- **Responsive Layout**: Adapts to screen size
+
+---
+
+### MonthMarker
+
+Overlay component for displaying month labels on calendar grid.
+
+**Location**: `/src/components/ContributionGraph/MonthMarker.tsx`
+
+#### Props
+
+```typescript
+interface MonthMarkerProps {
+  date: string;                       // Date string for month
+  boxSize: number;                    // Size of calendar box
+  contributionColor: string;          // Background color of day
+}
+```
+
+#### Features
+- **Overlay Design**: Positioned absolutely over calendar day
+- **Contrast Text**: Automatically adjusts text color for readability
+- **Abbreviated Months**: Shows 3-letter month abbreviations
 
 ---
 
@@ -232,6 +358,272 @@ const handleCreateTask = async (data) => {
 };
 ```
 
+## Custom Hooks API
+
+### useTaskActions
+
+Provides task-related operations with service layer integration.
+
+**Location**: `/src/hooks/useTaskActions.ts`
+
+#### Return Type
+
+```typescript
+interface UseTaskActionsReturn {
+  handleQuickAdd: (taskId: string, date?: string) => Promise<void>;
+  handleQuickRemove: (taskId: string, date?: string) => Promise<void>;
+  refreshAllData: () => Promise<void>;
+  refreshContributionData: () => Promise<void>;
+}
+```
+
+#### Usage
+
+```typescript
+const { handleQuickAdd, refreshAllData } = useTaskActions();
+
+// Add completion for specific date
+await handleQuickAdd(taskId, '2026-01-05');
+
+// Add completion for today (date optional)
+await handleQuickAdd(taskId);
+
+// Refresh all application data
+await refreshAllData();
+```
+
+#### Features
+- **Date Support**: Quick add works with any selected date
+- **Service Integration**: Uses DataService for business logic
+- **Validation**: Validates data before operations
+- **Error Handling**: Comprehensive error logging and re-throwing
+- **Data Refresh**: Automatically refreshes contribution data with expanded date range
+
+---
+
+### useModalState
+
+Centralized modal state management hook.
+
+**Location**: `/src/hooks/useModalState.ts`
+
+#### Return Type
+
+```typescript
+interface UseModalStateReturn {
+  // State
+  showAddTask: boolean;
+  editingTask: Task | null;
+  showDailyLog: boolean;
+  showSettings: boolean;
+  showTaskAnalytics: boolean;
+  
+  // Actions
+  openAddTask: () => void;
+  openEditTask: (task: Task) => void;
+  closeAddTask: () => void;
+  openDailyLog: () => void;
+  closeDailyLog: () => void;
+  openSettings: () => void;
+  closeSettings: () => void;
+  openTaskAnalytics: () => void;
+  closeTaskAnalytics: () => void;
+  closeAllModals: () => void;
+}
+```
+
+#### Usage
+
+```typescript
+const { 
+  showAddTask, 
+  openAddTask, 
+  closeAddTask,
+  closeAllModals 
+} = useModalState();
+
+// Open add task modal
+openAddTask();
+
+// Open edit task modal with task data
+openEditTask(selectedTask);
+
+// Close all modals at once
+closeAllModals();
+```
+
+---
+
+### useDateNavigation
+
+Date selection and navigation logic.
+
+**Location**: `/src/hooks/useDateNavigation.ts`
+
+#### Return Type
+
+```typescript
+interface UseDateNavigationReturn {
+  selectedDate: string;
+  handleDayPress: (date: string) => void;
+  handleDateChange: (date: string) => void;
+  navigateToToday: () => void;
+  navigateDate: (direction: 'prev' | 'next') => string;
+  isToday: (date?: string) => boolean;
+  setSelectedDate: (date: string) => void;
+}
+```
+
+#### Usage
+
+```typescript
+const { 
+  selectedDate,
+  navigateDate,
+  navigateToToday,
+  isToday 
+} = useDateNavigation();
+
+// Navigate to previous/next day
+const newDate = navigateDate('next');
+
+// Check if date is today
+if (isToday(selectedDate)) {
+  // Show today-specific UI
+}
+
+// Return to current date
+navigateToToday();
+```
+
+---
+
+### useContributionData
+
+Manages contribution graph data loading and caching.
+
+**Location**: `/src/hooks/useContributionData.ts`
+
+#### Features
+- **Smart Loading**: Only loads data when needed
+- **Date Range Management**: Handles expanding date ranges
+- **Performance Optimized**: Caches data to minimize database queries
+- **Error Resilience**: Graceful error handling
+
+## Service Layer API
+
+### DataService
+
+High-level data operations service with business logic.
+
+**Location**: `/src/services/DataService.ts`
+
+#### Key Methods
+
+```typescript
+class DataService {
+  // Task operations
+  async getAllTasks(): Promise<Task[]>
+  async getTaskById(id: string): Promise<Task | null>
+  async createTask(taskData: Omit<Task, 'id' | 'createdAt'>): Promise<Task>
+  async updateTask(id: string, updates: Partial<Task>): Promise<Task>
+  async archiveTask(id: string): Promise<void>
+  async deleteTask(id: string): Promise<void>
+  
+  // Log operations
+  async logTaskCompletion(taskId: string, date: string, count: number): Promise<TaskLog>
+  async getTaskLogs(taskId: string): Promise<TaskLog[]>
+  async getLogForTaskAndDate(taskId: string, date: string): Promise<TaskLog | null>
+  async getContributionData(dates: string[]): Promise<ContributionData[]>
+  async getLogsInDateRange(startDate: string, endDate: string): Promise<TaskLog[]>
+  
+  // Combined operations
+  async getTasksWithRecentActivity(days?: number): Promise<Array<Task & { recentCompletions: number }>>
+  
+  // Streak calculations
+  async calculateCurrentStreak(): Promise<number>
+  async calculateBestStreak(): Promise<number>
+}
+```
+
+#### Usage
+
+```typescript
+import { getDataService } from '../services';
+
+const dataService = getDataService();
+
+// Get tasks with recent activity
+const activeTasks = await dataService.getTasksWithRecentActivity(30);
+
+// Calculate streaks
+const currentStreak = await dataService.calculateCurrentStreak();
+const bestStreak = await dataService.calculateBestStreak();
+
+// Log task completion with validation
+await dataService.logTaskCompletion(taskId, date, count);
+```
+
+---
+
+### ValidationService
+
+Business rule validation service.
+
+**Location**: `/src/services/ValidationService.ts`
+
+#### Key Methods
+
+```typescript
+class ValidationService {
+  validateTask(task: Partial<Task>): ValidationResult
+  validateTaskLog(log: { taskId: string; date: string; count: number }): ValidationResult
+  validateDateRange(startDate: string, endDate: string): ValidationResult
+}
+
+interface ValidationResult {
+  isValid: boolean;
+  errors: string[];
+}
+```
+
+#### Usage
+
+```typescript
+import { getValidationService } from '../services';
+
+const validationService = getValidationService();
+
+// Validate task log
+const validation = validationService.validateTaskLog({
+  taskId: 'task-123',
+  date: '2026-01-05',
+  count: 3
+});
+
+if (!validation.isValid) {
+  throw new Error(validation.errors.join(', '));
+}
+```
+
+---
+
+### ServiceRegistry
+
+Service dependency injection and management.
+
+**Location**: `/src/services/ServiceRegistry.ts`
+
+#### Pattern
+
+```typescript
+// Get service instances
+import { getDataService, getValidationService } from '../services';
+
+const dataService = getDataService();
+const validationService = getValidationService();
+```
+
 ---
 
 ### useLogsStore
@@ -282,9 +674,81 @@ const handleLogCompletion = async (taskId: string, date: string, count: number) 
 
 ## Repository API
 
+### Repository Interfaces
+
+#### ITaskRepository
+
+**Location**: `/src/database/repositories/interfaces/ITaskRepository.ts`
+
+```typescript
+export interface ITaskRepository {
+  getAll(): Promise<Task[]>;
+  getById(id: string): Promise<Task | null>;
+  create(data: Omit<Task, 'id' | 'createdAt'>): Promise<Task>;
+  update(id: string, data: Partial<Omit<Task, 'id' | 'createdAt'>>): Promise<Task>;
+  archive(id: string): Promise<void>;
+  delete(id: string): Promise<void>;
+}
+```
+
+#### ILogRepository
+
+**Location**: `/src/database/repositories/interfaces/ILogRepository.ts`
+
+```typescript
+export interface ILogRepository {
+  createOrUpdate(taskId: string, date: string, count: number): Promise<TaskLog>;
+  getByTaskAndDate(taskId: string, date: string): Promise<TaskLog | null>;
+  findByTask(taskId: string): Promise<TaskLog[]>;
+  findByDateRange(startDate: string, endDate: string): Promise<TaskLog[]>;
+  getContributionData(dates: string[]): Promise<ContributionData[]>;
+  deleteByTask(taskId: string): Promise<void>;
+}
+```
+
+---
+
+### RepositoryFactory
+
+Factory pattern for repository dependency injection.
+
+**Location**: `/src/database/repositories/RepositoryFactory.ts`
+
+#### Methods
+
+```typescript
+class RepositoryFactory {
+  static getInstance(): RepositoryFactory
+  getTaskRepository(): ITaskRepository
+  getLogRepository(): ILogRepository
+  setTaskRepository(repository: ITaskRepository): void
+  setLogRepository(repository: ILogRepository): void
+  resetToDefaults(): void
+}
+```
+
+#### Usage
+
+```typescript
+import { repositoryFactory } from '../database/repositories/RepositoryFactory';
+
+// Get repository instances
+const taskRepo = repositoryFactory.getTaskRepository();
+const logRepo = repositoryFactory.getLogRepository();
+
+// For testing - inject mocks
+import { MockTaskRepository } from '../database/repositories/mocks';
+repositoryFactory.setTaskRepository(new MockTaskRepository());
+
+// Reset after tests
+repositoryFactory.resetToDefaults();
+```
+
+---
+
 ### TaskRepository
 
-Database access layer for task-related operations.
+Concrete implementation of ITaskRepository.
 
 **Location**: `/src/database/repositories/TaskRepository.ts`
 
