@@ -40,6 +40,7 @@ import {
   Home,
   User,
   Loader,
+  Edit3,
   type LucideIcon
 } from 'lucide-react-native';
 import { colors } from '../../theme';
@@ -85,6 +86,7 @@ export const ICON_MAP = {
   home: Home,
   user: User,
   loader: Loader,
+  edit: Edit3,
 } as const;
 
 export type IconName = keyof typeof ICON_MAP;
