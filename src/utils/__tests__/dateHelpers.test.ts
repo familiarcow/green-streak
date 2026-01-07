@@ -117,18 +117,28 @@ describe('dateHelpers', () => {
   });
 
   describe('getAdaptiveRange', () => {
-    it('returns 5 days for small datasets', () => {
+    it('returns 35 days minimum for small datasets', () => {
       const result = getAdaptiveRange(3);
-      expect(result).toHaveLength(5);
+      expect(result).toHaveLength(35);
     });
 
-    it('returns 14 days for medium datasets', () => {
-      const result = getAdaptiveRange(10);
-      expect(result).toHaveLength(14);
+    it('returns 35 days for datasets under 35', () => {
+      const result = getAdaptiveRange(20);
+      expect(result).toHaveLength(35);
     });
 
-    it('returns 365 days for large datasets', () => {
-      const result = getAdaptiveRange(100);
+    it('returns 60 days for medium datasets', () => {
+      const result = getAdaptiveRange(40);
+      expect(result).toHaveLength(60);
+    });
+
+    it('returns 90 days for larger datasets', () => {
+      const result = getAdaptiveRange(70);
+      expect(result).toHaveLength(90);
+    });
+
+    it('returns 365 days for very large datasets', () => {
+      const result = getAdaptiveRange(200);
       expect(result).toHaveLength(365);
     });
   });

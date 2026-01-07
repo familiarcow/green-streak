@@ -29,14 +29,15 @@ export const getDateRange = (startDate: Date, endDate: Date): Date[] => {
 export const getAdaptiveRange = (dataPointCount: number, latestDate: Date = new Date()): Date[] => {
   let daysToShow: number;
   
-  if (dataPointCount < 5) {
-    daysToShow = 5;
-  } else if (dataPointCount < 14) {
-    daysToShow = 14;
-  } else if (dataPointCount < 30) {
-    daysToShow = 30;
+  // Start with at least 35 days to match LiveCalendar default view (5 weeks)
+  if (dataPointCount < 35) {
+    daysToShow = 35;
+  } else if (dataPointCount < 60) {
+    daysToShow = 60;
   } else if (dataPointCount < 90) {
     daysToShow = 90;
+  } else if (dataPointCount < 180) {
+    daysToShow = 180;
   } else {
     daysToShow = 365;
   }
