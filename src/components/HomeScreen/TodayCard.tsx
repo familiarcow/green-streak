@@ -1,10 +1,11 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { colors, textStyles, spacing, shadows, borderRadius } from '../../theme';
 import { sizes, gaps, radiusValues } from '../../theme/utils';
 import { TodayCardProps, Task } from '../../types';
 import { formatDisplayDate, getTodayString } from '../../utils/dateHelpers';
 import { Icon } from '../common/Icon';
+import { DatePickerModal } from '../common/DatePickerModal';
 
 export const TodayCard: React.FC<TodayCardProps> = React.memo(({
   selectedDate,
@@ -14,6 +15,9 @@ export const TodayCard: React.FC<TodayCardProps> = React.memo(({
   onViewMore,
   onDateChange,
 }) => {
+  // State for date picker
+  const [showDatePicker, setShowDatePicker] = useState(false);
+
   // Memoized computed values
   const isToday = useMemo(() => selectedDate === getTodayString(), [selectedDate]);
   const hasCompletions = useMemo(() => selectedDateData && selectedDateData.count > 0, [selectedDateData]);
@@ -41,6 +45,20 @@ export const TodayCard: React.FC<TodayCardProps> = React.memo(({
     const nextDate = currentDate.toISOString().split('T')[0];
     onDateChange(nextDate);
   }, [selectedDate, onDateChange]);
+
+  // Date picker handlers
+  const handleOpenDatePicker = useCallback(() => {
+    setShowDatePicker(true);
+  }, []);
+
+  const handleCloseDatePicker = useCallback(() => {
+    setShowDatePicker(false);
+  }, []);
+
+  const handleDateSelect = useCallback((date: string) => {
+    onDateChange(date);
+    setShowDatePicker(false);
+  }, [onDateChange]);
 
 
 
@@ -126,9 +144,17 @@ export const TodayCard: React.FC<TodayCardProps> = React.memo(({
             <Icon name="chevron-left" size={16} color={colors.text.secondary} />
           </TouchableOpacity>
           
-          <Text style={styles.dateTitle}>
-            {isToday ? 'Today' : formatDisplayDate(new Date(selectedDate))}
-          </Text>
+          <TouchableOpacity
+            onPress={handleOpenDatePicker}
+            style={styles.dateTitleButton}
+            accessibilityRole="button"
+            accessibilityLabel="Open date picker"
+            accessibilityHint="Tap to select any date"
+          >
+            <Text style={styles.dateTitle}>
+              {isToday ? 'Today' : formatDisplayDate(new Date(selectedDate))}
+            </Text>
+          </TouchableOpacity>
           
           {canGoForward && (
             <TouchableOpacity
@@ -172,6 +198,15 @@ export const TodayCard: React.FC<TodayCardProps> = React.memo(({
         </View>
       )}
 
+      {/* Date Picker Modal */}
+      <DatePickerModal
+        visible={showDatePicker}
+        selectedDate={selectedDate}
+        onDateSelect={handleDateSelect}
+        onClose={handleCloseDatePicker}
+        maximumDate={new Date()}
+        minimumDate={new Date('2020-01-01')}
+      />
     </View>
   );
 });
@@ -222,6 +257,14 @@ const styles = StyleSheet.create({
     backgroundColor: colors.interactive.default,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+
+  dateTitleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing[2],
+    paddingVertical: spacing[1],
+    borderRadius: radiusValues.md,
   },
 
   dateTitle: {
