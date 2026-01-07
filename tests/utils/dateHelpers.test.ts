@@ -22,23 +22,28 @@ describe('dateHelpers', () => {
   });
 
   describe('getAdaptiveRange', () => {
-    it('should return 5 days for small data counts', () => {
+    it('should return 35 days minimum for small data counts', () => {
       const range = getAdaptiveRange(3);
-      expect(range).toHaveLength(5);
+      expect(range).toHaveLength(35);
     });
 
-    it('should return 14 days for medium data counts', () => {
-      const range = getAdaptiveRange(10);
-      expect(range).toHaveLength(14);
+    it('should return 35 days for data counts under 35', () => {
+      const range = getAdaptiveRange(20);
+      expect(range).toHaveLength(35);
     });
 
-    it('should return 30 days for larger data counts', () => {
-      const range = getAdaptiveRange(25);
-      expect(range).toHaveLength(30);
+    it('should return 60 days for medium data counts', () => {
+      const range = getAdaptiveRange(40);
+      expect(range).toHaveLength(60);
+    });
+
+    it('should return 90 days for larger data counts', () => {
+      const range = getAdaptiveRange(70);
+      expect(range).toHaveLength(90);
     });
 
     it('should return 365 days for very large data counts', () => {
-      const range = getAdaptiveRange(100);
+      const range = getAdaptiveRange(200);
       expect(range).toHaveLength(365);
     });
   });

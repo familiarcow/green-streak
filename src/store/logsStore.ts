@@ -67,8 +67,12 @@ export const useLogsStore = create<LogsState>((set, get) => ({
       const allLogs = Object.values(state.logs).flat();
       const dataPointCount = allLogs.length;
       
-      // Generate adaptive date range
-      let adaptiveDates = getAdaptiveRange(dataPointCount);
+      // MINIMUM_DAYS should match what LiveCalendar shows (35 days for 5 weeks)
+      // This ensures we always load enough data for the default "Live" view
+      const MINIMUM_DAYS = 35;
+      
+      // Generate adaptive date range, but ensure minimum for calendar display
+      let adaptiveDates = getAdaptiveRange(Math.max(dataPointCount, MINIMUM_DAYS));
       
       // Expand range if we need to include a specific date
       if (minDate) {
