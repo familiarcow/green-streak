@@ -14,6 +14,7 @@ import { radiusValues, fontSizes } from '../../theme/utils';
 import { getTodayString } from '../../utils/dateHelpers';
 import { TimePeriodSelector, ViewType } from './TimePeriodSelector';
 import { MonthMarker } from './MonthMarker';
+import Icon from '../common/Icon';
 
 export type { ViewType };
 
@@ -69,6 +70,7 @@ export const LiveCalendar: React.FC<LiveCalendarProps> = ({
 }) => {
   const todayString = getTodayString();
   const [containerWidth, setContainerWidth] = useState(0);
+  const [dateOffset, setDateOffset] = useState(0); // 0 = current period, 1 = one period back, etc.
 
   // Calculate box size based on container width and view type
   const boxSize = useMemo(() => {
@@ -87,17 +89,20 @@ export const LiveCalendar: React.FC<LiveCalendarProps> = ({
     const baseDays = getDaysForViewType(viewType, data);
     const weeks: ContributionData[][] = [];
     
+    // Calculate the end date based on the navigation offset
+    const endDate = new Date(today);
+    endDate.setDate(today.getDate() - (dateOffset * baseDays));
+    
     // Calculate how many days we need to go back to fill complete weeks
-    // We want to end with today and ensure all weeks are complete
     const totalWeeksNeeded = Math.ceil(baseDays / DAYS_PER_WEEK);
     const totalDaysNeeded = totalWeeksNeeded * DAYS_PER_WEEK;
     
-    // Generate all days needed for complete weeks, ending with today
+    // Generate all days needed for complete weeks, ending with the calculated end date
     const allDays: ContributionData[] = [];
     for (let i = 0; i < totalDaysNeeded; i++) {
-      const daysAgo = totalDaysNeeded - 1 - i; // Count backwards from today
-      const targetDate = new Date(today);
-      targetDate.setDate(today.getDate() - daysAgo);
+      const daysAgo = totalDaysNeeded - 1 - i; // Count backwards from end date
+      const targetDate = new Date(endDate);
+      targetDate.setDate(endDate.getDate() - daysAgo);
       
       const dateString = targetDate.toISOString().split('T')[0];
       const existingData = data.find(d => d.date === dateString);
@@ -118,7 +123,7 @@ export const LiveCalendar: React.FC<LiveCalendarProps> = ({
     }
     
     return weeks;
-  }, [data, viewType]);
+  }, [data, viewType, dateOffset]);
 
   // Calculate maximum count for color scaling
   const maxCount = useMemo(() => {
@@ -162,17 +167,37 @@ export const LiveCalendar: React.FC<LiveCalendarProps> = ({
     onViewTypeChange?.(newViewType);
   }, [onViewTypeChange]);
 
+  // Reset date offset when view type changes
+  useEffect(() => {
+    setDateOffset(0);
+  }, [viewType]);
+
+  // Navigation handlers
+  const handleNavigateBackward = useCallback(() => {
+    setDateOffset(prev => prev + 1);
+  }, []);
+
+  const handleNavigateForward = useCallback(() => {
+    if (dateOffset > 0) {
+      setDateOffset(prev => prev - 1);
+    }
+  }, [dateOffset]);
+
+  // Check if forward navigation is available (not at current period)
+  const canNavigateForward = dateOffset > 0;
+  const canNavigateBackward = true; // Always allow going back in time
+
   // Add animation values for smooth transitions
   const fadeInValue = useSharedValue(0);
   
   useEffect(() => {
-    // Animate in when view type changes
+    // Animate in when view type or date offset changes
     fadeInValue.value = 0;
-    fadeInValue.value = withDelay(100, withSpring(1, {
+    fadeInValue.value = withDelay(50, withSpring(1, {
       damping: 15,
       stiffness: 200,
     }));
-  }, [viewType]);
+  }, [viewType, dateOffset]);
 
   const animatedContainerStyle = useAnimatedStyle(() => ({
     opacity: fadeInValue.value,
@@ -252,6 +277,41 @@ export const LiveCalendar: React.FC<LiveCalendarProps> = ({
         </View>
       </Animated.View>
       
+      {/* Navigation Controls */}
+      <View style={styles.navigationContainer}>
+        <TouchableOpacity
+          style={styles.navButton}
+          onPress={handleNavigateBackward}
+          activeOpacity={0.7}
+        >
+          <Icon 
+            name="chevron-left" 
+            size={20} 
+            color={colors.text.primary} 
+          />
+          <Text style={styles.navButtonText}>
+            Previous
+          </Text>
+        </TouchableOpacity>
+        
+        {canNavigateForward && (
+          <TouchableOpacity
+            style={styles.navButton}
+            onPress={handleNavigateForward}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.navButtonText}>
+              Next
+            </Text>
+            <Icon 
+              name="chevron-right" 
+              size={20} 
+              color={colors.text.primary} 
+            />
+          </TouchableOpacity>
+        )}
+      </View>
+      
       {/* Time Period Selector */}
       {onViewTypeChange && (
         <TimePeriodSelector
@@ -322,6 +382,36 @@ const styles = StyleSheet.create({
   selectedBox: {
     borderWidth: 1,
     borderColor: colors.primary,
+  },
+
+  navigationContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: spacing[4],
+    marginHorizontal: spacing[2],
+  },
+
+  navButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing[2],
+    paddingHorizontal: spacing[3],
+    borderRadius: radiusValues.md,
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.border,
+    minHeight: 40,
+    minWidth: 80,
+    justifyContent: 'center',
+    gap: spacing[1],
+  },
+
+  navButtonText: {
+    ...textStyles.caption,
+    color: colors.text.primary,
+    fontSize: fontSizes.small,
+    fontWeight: '500',
   },
 });
 
