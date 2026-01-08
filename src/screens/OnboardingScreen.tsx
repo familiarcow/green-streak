@@ -185,6 +185,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
                 >
                   <ContributionGraph
                     data={sampleContributionData}
+                    tasks={[]}
                     onDayPress={() => {}}
                     selectedDate=""
                   />

@@ -13,7 +13,7 @@ import Animated, {
   FadeOut,
   Layout,
 } from 'react-native-reanimated';
-import { ContributionData } from '../../types';
+import { ContributionData, Task } from '../../types';
 import { ContributionDay } from './ContributionDay';
 import { LiveCalendar, ViewType } from './LiveCalendar';
 import { colors, textStyles, shadows, spacing } from '../../theme';
@@ -22,6 +22,7 @@ import { getMonthName, getTodayString } from '../../utils/dateHelpers';
 
 interface ContributionGraphProps {
   data: ContributionData[];
+  tasks: Task[];
   onDayPress: (date: string) => void;
   selectedDate?: string;
   firstDayOfWeek?: 'sunday' | 'monday';
@@ -57,6 +58,7 @@ const AnimatedTouchableOpacity = Animated.createAnimatedComponent(TouchableOpaci
 
 export const ContributionGraph: React.FC<ContributionGraphProps> = ({
   data,
+  tasks,
   onDayPress,
   selectedDate,
   firstDayOfWeek = 'sunday',
@@ -84,6 +86,7 @@ export const ContributionGraph: React.FC<ContributionGraphProps> = ({
   return (
     <LiveCalendar
       data={data}
+      tasks={tasks}
       onDayPress={onDayPress}
       selectedDate={selectedDate || selectedDateInternal}
       viewType={viewType}

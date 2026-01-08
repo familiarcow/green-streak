@@ -32,6 +32,7 @@ describe('ContributionGraph', () => {
     const { getByTestId } = renderWithProviders(
       <ContributionGraph
         data={mockData}
+        tasks={[]}
         onDayPress={mockOnDayPress}
         selectedDate=""
       />
@@ -46,6 +47,7 @@ describe('ContributionGraph', () => {
     const { getByText } = renderWithProviders(
       <ContributionGraph
         data={[]}
+        tasks={[]}
         onDayPress={mockOnDayPress}
         selectedDate=""
       />
@@ -59,6 +61,7 @@ describe('ContributionGraph', () => {
     const { getByTestId } = renderWithProviders(
       <ContributionGraph
         data={mockData}
+        tasks={[]}
         onDayPress={mockOnDayPress}
         selectedDate=""
       />
@@ -72,6 +75,7 @@ describe('ContributionGraph', () => {
     const { getByText } = renderWithProviders(
       <ContributionGraph
         data={mockData}
+        tasks={[]}
         onDayPress={mockOnDayPress}
         selectedDate=""
       />
@@ -84,6 +88,7 @@ describe('ContributionGraph', () => {
     const { getByText } = renderWithProviders(
       <ContributionGraph
         data={mockData}
+        tasks={[]}
         onDayPress={mockOnDayPress}
         selectedDate=""
       />
@@ -98,6 +103,7 @@ describe('ContributionGraph', () => {
     const { getByTestId } = renderWithProviders(
       <ContributionGraph
         data={mockData}
+        tasks={[]}
         onDayPress={mockOnDayPress}
         selectedDate="2024-01-01"
       />
@@ -113,6 +119,7 @@ describe('ContributionGraph', () => {
     const { getAllByTestId } = renderWithProviders(
       <ContributionGraph
         data={largeData}
+        tasks={[]}
         onDayPress={mockOnDayPress}
         selectedDate=""
       />
