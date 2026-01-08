@@ -1,5 +1,5 @@
 import React, { useMemo, useCallback, useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions, ScrollView } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -8,18 +8,19 @@ import Animated, {
   FadeIn,
   FadeInDown,
 } from 'react-native-reanimated';
-import { ContributionData } from '../../types';
+import { ContributionData, Task } from '../../types';
 import { colors, textStyles, spacing, shadows } from '../../theme';
 import { radiusValues, fontSizes } from '../../theme/utils';
 import { getTodayString } from '../../utils/dateHelpers';
 import { TimePeriodSelector, ViewType } from './TimePeriodSelector';
 import { MonthMarker } from './MonthMarker';
-import Icon from '../common/Icon';
+import Icon, { IconName, ICON_MAP } from '../common/Icon';
 
 export type { ViewType };
 
 interface LiveCalendarProps {
   data: ContributionData[];
+  tasks: Task[];
   onDayPress: (date: string) => void;
   selectedDate?: string;
   viewType?: ViewType;
@@ -63,6 +64,7 @@ const getDaysForViewType = (viewType: ViewType, data: ContributionData[]): numbe
 
 export const LiveCalendar: React.FC<LiveCalendarProps> = ({
   data,
+  tasks,
   onDayPress,
   selectedDate,
   viewType = 'live',
@@ -71,6 +73,7 @@ export const LiveCalendar: React.FC<LiveCalendarProps> = ({
   const todayString = getTodayString();
   const [containerWidth, setContainerWidth] = useState(0);
   const [dateOffset, setDateOffset] = useState(0); // 0 = current period, 1 = one period back, etc.
+  const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]); // Empty array means "ALL" is selected
 
   // Calculate box size based on container width and view type
   const boxSize = useMemo(() => {
@@ -82,11 +85,31 @@ export const LiveCalendar: React.FC<LiveCalendarProps> = ({
     return Math.floor(baseSize * multiplier);
   }, [containerWidth, viewType]);
 
+  // Filter contribution data based on selected tasks
+  const filteredData = useMemo(() => {
+    if (selectedTaskIds.length === 0) {
+      // "ALL" selected - return original data
+      return data;
+    }
+
+    // Filter and sum counts for selected tasks only
+    return data.map(dayData => {
+      const filteredTasks = dayData.tasks.filter(task => selectedTaskIds.includes(task.taskId));
+      const totalCount = filteredTasks.reduce((sum, task) => sum + task.count, 0);
+      
+      return {
+        ...dayData,
+        count: totalCount,
+        tasks: filteredTasks,
+      };
+    });
+  }, [data, selectedTaskIds]);
+
   // Generate data array structured as weeks for proper layout
   const calendarData = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const baseDays = getDaysForViewType(viewType, data);
+    const baseDays = getDaysForViewType(viewType, filteredData);
     const weeks: ContributionData[][] = [];
     
     // Calculate the end date based on the navigation offset
@@ -105,7 +128,7 @@ export const LiveCalendar: React.FC<LiveCalendarProps> = ({
       targetDate.setDate(endDate.getDate() - daysAgo);
       
       const dateString = targetDate.toISOString().split('T')[0];
-      const existingData = data.find(d => d.date === dateString);
+      const existingData = filteredData.find(d => d.date === dateString);
       
       allDays.push(existingData || {
         date: dateString,
@@ -123,7 +146,7 @@ export const LiveCalendar: React.FC<LiveCalendarProps> = ({
     }
     
     return weeks;
-  }, [data, viewType, dateOffset]);
+  }, [filteredData, viewType, dateOffset]);
 
   // Calculate maximum count for color scaling
   const maxCount = useMemo(() => {
@@ -187,17 +210,63 @@ export const LiveCalendar: React.FC<LiveCalendarProps> = ({
   const canNavigateForward = dateOffset > 0;
   const canNavigateBackward = true; // Always allow going back in time
 
+  // Habit filter handlers
+  const handleTaskToggle = useCallback((taskId: string) => {
+    setSelectedTaskIds(prev => {
+      if (prev.includes(taskId)) {
+        // Remove task from selection
+        return prev.filter(id => id !== taskId);
+      } else {
+        // Add task to selection
+        return [...prev, taskId];
+      }
+    });
+  }, []);
+
+  const handleSelectAll = useCallback(() => {
+    setSelectedTaskIds([]);
+  }, []);
+
+  const isAllSelected = selectedTaskIds.length === 0;
+  const isTaskSelected = useCallback((taskId: string) => {
+    return selectedTaskIds.includes(taskId);
+  }, [selectedTaskIds]);
+
+  // Helper function to render task icon (handles both emoji and icon names)
+  const renderTaskIcon = useCallback((task: Task) => {
+    const isSelected = isTaskSelected(task.id);
+    const showAsSelected = isSelected || isAllSelected;
+    
+    if (!task.icon) {
+      return <Text style={styles.filterPillIcon}>📋</Text>;
+    }
+    
+    // Check if it's a known icon name from the Icon component
+    if (task.icon in ICON_MAP) {
+      return (
+        <Icon 
+          name={task.icon as IconName} 
+          size={16} 
+          color={showAsSelected ? colors.background : colors.text.primary}
+        />
+      );
+    }
+    
+    // Otherwise treat it as an emoji
+    return <Text style={styles.filterPillIcon}>{task.icon}</Text>;
+  }, [isTaskSelected, isAllSelected]);
+
   // Add animation values for smooth transitions
   const fadeInValue = useSharedValue(0);
   
   useEffect(() => {
-    // Animate in when view type or date offset changes
+    // Animate in when view type, date offset, or task selection changes
     fadeInValue.value = 0;
     fadeInValue.value = withDelay(50, withSpring(1, {
       damping: 15,
       stiffness: 200,
     }));
-  }, [viewType, dateOffset]);
+  }, [viewType, dateOffset, selectedTaskIds]);
 
   const animatedContainerStyle = useAnimatedStyle(() => ({
     opacity: fadeInValue.value,
@@ -277,10 +346,18 @@ export const LiveCalendar: React.FC<LiveCalendarProps> = ({
         </View>
       </Animated.View>
       
-      {/* Navigation Controls */}
-      <View style={styles.navigationContainer}>
+      {/* Time Period Selector */}
+      {onViewTypeChange && (
+        <TimePeriodSelector
+          selected={viewType}
+          onSelect={handleViewTypeChange}
+        />
+      )}
+      
+      {/* Habit Filter Pills with Navigation */}
+      <View style={styles.filterContainer}>
         <TouchableOpacity
-          style={styles.navButton}
+          style={styles.navArrow}
           onPress={handleNavigateBackward}
           activeOpacity={0.7}
         >
@@ -289,20 +366,61 @@ export const LiveCalendar: React.FC<LiveCalendarProps> = ({
             size={20} 
             color={colors.text.primary} 
           />
-          <Text style={styles.navButtonText}>
-            Previous
-          </Text>
         </TouchableOpacity>
+        
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.filterScrollContainer}
+          contentContainerStyle={styles.filterScrollContent}
+        >
+          {/* ALL pill */}
+          <TouchableOpacity
+            style={[
+              styles.filterPill,
+              isAllSelected && {
+                backgroundColor: colors.primary,
+                borderColor: colors.primary,
+              }
+            ]}
+            onPress={handleSelectAll}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.filterPillText, isAllSelected && styles.filterPillTextSelected]}>
+              ALL
+            </Text>
+          </TouchableOpacity>
+          
+          {/* Individual habit pills */}
+          {tasks.map((task) => {
+            const isSelected = isTaskSelected(task.id);
+            const showAsSelected = isSelected || isAllSelected;
+            
+            return (
+              <TouchableOpacity
+                key={task.id}
+                style={[
+                  styles.filterPill,
+                  showAsSelected && {
+                    backgroundColor: task.color,
+                    borderColor: task.color,
+                  }
+                ]}
+                onPress={() => handleTaskToggle(task.id)}
+                activeOpacity={0.7}
+              >
+                {renderTaskIcon(task)}
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
         
         {canNavigateForward && (
           <TouchableOpacity
-            style={styles.navButton}
+            style={styles.navArrow}
             onPress={handleNavigateForward}
             activeOpacity={0.7}
           >
-            <Text style={styles.navButtonText}>
-              Next
-            </Text>
             <Icon 
               name="chevron-right" 
               size={20} 
@@ -311,14 +429,6 @@ export const LiveCalendar: React.FC<LiveCalendarProps> = ({
           </TouchableOpacity>
         )}
       </View>
-      
-      {/* Time Period Selector */}
-      {onViewTypeChange && (
-        <TimePeriodSelector
-          selected={viewType}
-          onSelect={handleViewTypeChange}
-        />
-      )}
     </View>
   );
 };
@@ -384,34 +494,62 @@ const styles = StyleSheet.create({
     borderColor: colors.primary,
   },
 
-  navigationContainer: {
+  filterContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: spacing[4],
+    marginTop: spacing[2],
     marginHorizontal: spacing[2],
   },
 
-  navButton: {
+  navArrow: {
+    padding: spacing[2],
+    justifyContent: 'center',
+    alignItems: 'center',
+    minWidth: 40,
+    minHeight: 40,
+  },
+
+  filterScrollContainer: {
+    flex: 1,
+    marginHorizontal: spacing[2],
+  },
+
+  filterScrollContent: {
+    paddingVertical: spacing[1],
+    gap: spacing[2],
+    alignItems: 'center',
+  },
+
+  filterPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: spacing[2],
-    paddingHorizontal: spacing[3],
-    borderRadius: radiusValues.md,
+    justifyContent: 'center',
+    paddingVertical: spacing[1],
+    paddingHorizontal: spacing[2],
+    borderRadius: radiusValues.lg,
     backgroundColor: colors.background,
     borderWidth: 1,
     borderColor: colors.border,
-    minHeight: 40,
-    minWidth: 80,
-    justifyContent: 'center',
+    minHeight: 32,
+    minWidth: 32,
     gap: spacing[1],
   },
 
-  navButtonText: {
+
+  filterPillIcon: {
+    fontSize: fontSizes.medium,
+    lineHeight: fontSizes.medium * 1.2,
+  },
+
+  filterPillText: {
     ...textStyles.caption,
-    color: colors.text.primary,
-    fontSize: fontSizes.small,
+    color: colors.text.secondary,
+    fontSize: fontSizes.tiny,
     fontWeight: '500',
+  },
+
+  filterPillTextSelected: {
+    color: colors.background,
   },
 });
 

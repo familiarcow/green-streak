@@ -235,6 +235,7 @@ export const HomeScreen: React.FC = () => {
             <View style={styles.graphSection}>
               <ContributionGraph
                 data={contributionData}
+                tasks={tasks}
                 onDayPress={handleDayPress}
                 selectedDate={selectedDate}
                 firstDayOfWeek={firstDayOfWeek}
