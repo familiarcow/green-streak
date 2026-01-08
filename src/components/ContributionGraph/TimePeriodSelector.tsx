@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
     marginTop: spacing[4],
-    marginBottom: spacing[4],
+    marginBottom: 0,
   },
 
   selectorContainer: {
