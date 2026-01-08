@@ -73,6 +73,10 @@ export const ContributionGraph: React.FC<ContributionGraphProps> = ({
   const [periodOffset, setPeriodOffset] = useState(0); // For navigation
   const [isTransitioning, setIsTransitioning] = useState(false);
   const previousPeriod = useRef<TimePeriod>('LIVE');
+  
+  // Filter state
+  const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
+  const [dateOffset, setDateOffset] = useState(0);
 
   if (!data || data.length === 0) {
     return (
@@ -91,6 +95,10 @@ export const ContributionGraph: React.FC<ContributionGraphProps> = ({
       selectedDate={selectedDate || selectedDateInternal}
       viewType={viewType}
       onViewTypeChange={setViewType}
+      selectedTaskIds={selectedTaskIds}
+      onTaskSelectionChange={setSelectedTaskIds}
+      dateOffset={dateOffset}
+      onDateOffsetChange={setDateOffset}
     />
   );
 };

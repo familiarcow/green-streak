@@ -7,6 +7,7 @@ import Animated, {
   withDelay,
   FadeIn,
   FadeInDown,
+  FadeOut,
 } from 'react-native-reanimated';
 import { ContributionData, Task } from '../../types';
 import { colors, textStyles, spacing, shadows } from '../../theme';
@@ -25,6 +26,10 @@ interface LiveCalendarProps {
   selectedDate?: string;
   viewType?: ViewType;
   onViewTypeChange?: (viewType: ViewType) => void;
+  selectedTaskIds?: string[];
+  onTaskSelectionChange?: (selectedTaskIds: string[]) => void;
+  dateOffset?: number;
+  onDateOffsetChange?: (offset: number) => void;
 }
 
 const DAYS_PER_WEEK = 7;
@@ -69,11 +74,15 @@ export const LiveCalendar: React.FC<LiveCalendarProps> = ({
   selectedDate,
   viewType = 'live',
   onViewTypeChange,
+  selectedTaskIds = [],
+  onTaskSelectionChange,
+  dateOffset = 0,
+  onDateOffsetChange,
 }) => {
   const todayString = getTodayString();
   const [containerWidth, setContainerWidth] = useState(0);
-  const [dateOffset, setDateOffset] = useState(0); // 0 = current period, 1 = one period back, etc.
-  const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]); // Empty array means "ALL" is selected
+  const [isFilterExpanded, setIsFilterExpanded] = useState(false);
+  
 
   // Calculate box size based on container width and view type
   const boxSize = useMemo(() => {
@@ -192,47 +201,49 @@ export const LiveCalendar: React.FC<LiveCalendarProps> = ({
 
   // Reset date offset when view type changes
   useEffect(() => {
-    setDateOffset(0);
-  }, [viewType]);
+    onDateOffsetChange?.(0);
+  }, [viewType, onDateOffsetChange]);
 
-  // Navigation handlers
-  const handleNavigateBackward = useCallback(() => {
-    setDateOffset(prev => prev + 1);
+  // Filter and navigation handlers
+  const handleToggleFilter = useCallback(() => {
+    setIsFilterExpanded(prev => !prev);
   }, []);
+
+  const handleNavigateBackward = useCallback(() => {
+    onDateOffsetChange?.(dateOffset + 1);
+  }, [dateOffset, onDateOffsetChange]);
 
   const handleNavigateForward = useCallback(() => {
     if (dateOffset > 0) {
-      setDateOffset(prev => prev - 1);
+      onDateOffsetChange?.(dateOffset - 1);
     }
-  }, [dateOffset]);
+  }, [dateOffset, onDateOffsetChange]);
 
-  // Check if forward navigation is available (not at current period)
-  const canNavigateForward = dateOffset > 0;
-  const canNavigateBackward = true; // Always allow going back in time
-
-  // Habit filter handlers
   const handleTaskToggle = useCallback((taskId: string) => {
-    setSelectedTaskIds(prev => {
-      if (prev.includes(taskId)) {
-        // Remove task from selection
-        return prev.filter(id => id !== taskId);
-      } else {
-        // Add task to selection
-        return [...prev, taskId];
-      }
-    });
-  }, []);
+    if (!onTaskSelectionChange) return;
+    
+    if (selectedTaskIds.includes(taskId)) {
+      // Remove task from selection
+      onTaskSelectionChange(selectedTaskIds.filter(id => id !== taskId));
+    } else {
+      // Add task to selection
+      onTaskSelectionChange([...selectedTaskIds, taskId]);
+    }
+  }, [selectedTaskIds, onTaskSelectionChange]);
 
   const handleSelectAll = useCallback(() => {
-    setSelectedTaskIds([]);
-  }, []);
+    onTaskSelectionChange?.([]);
+  }, [onTaskSelectionChange]);
 
+  // Helper functions
   const isAllSelected = selectedTaskIds.length === 0;
   const isTaskSelected = useCallback((taskId: string) => {
     return selectedTaskIds.includes(taskId);
   }, [selectedTaskIds]);
 
-  // Helper function to render task icon (handles both emoji and icon names)
+  const canNavigateForward = dateOffset > 0;
+
+  // Helper function to render task icon
   const renderTaskIcon = useCallback((task: Task) => {
     const isSelected = isTaskSelected(task.id);
     const showAsSelected = isSelected || isAllSelected;
@@ -271,6 +282,7 @@ export const LiveCalendar: React.FC<LiveCalendarProps> = ({
   const animatedContainerStyle = useAnimatedStyle(() => ({
     opacity: fadeInValue.value,
   }));
+
 
   return (
     <View style={styles.container}>
@@ -354,81 +366,114 @@ export const LiveCalendar: React.FC<LiveCalendarProps> = ({
         />
       )}
       
-      {/* Habit Filter Pills with Navigation */}
-      <View style={styles.filterContainer}>
-        <TouchableOpacity
-          style={styles.navArrow}
-          onPress={handleNavigateBackward}
+      {/* Filter Toggle Bump */}
+      <View style={styles.filterBumpContainer}>
+        <TouchableOpacity 
+          style={styles.filterBump}
+          onPress={handleToggleFilter}
           activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel={`${isFilterExpanded ? 'Collapse' : 'Expand'} habit filters`}
+          accessibilityHint="Double tap to show filtering and navigation options"
+          accessibilityState={{ expanded: isFilterExpanded }}
         >
-          <Icon 
-            name="chevron-left" 
-            size={20} 
-            color={colors.text.primary} 
-          />
-        </TouchableOpacity>
-        
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.filterScrollContainer}
-          contentContainerStyle={styles.filterScrollContent}
-        >
-          {/* ALL pill */}
-          <TouchableOpacity
-            style={[
-              styles.filterPill,
-              isAllSelected && {
-                backgroundColor: colors.primary,
-                borderColor: colors.primary,
-              }
-            ]}
-            onPress={handleSelectAll}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.filterPillText, isAllSelected && styles.filterPillTextSelected]}>
-              ALL
-            </Text>
-          </TouchableOpacity>
-          
-          {/* Individual habit pills */}
-          {tasks.map((task) => {
-            const isSelected = isTaskSelected(task.id);
-            const showAsSelected = isSelected || isAllSelected;
-            
-            return (
-              <TouchableOpacity
-                key={task.id}
-                style={[
-                  styles.filterPill,
-                  showAsSelected && {
-                    backgroundColor: task.color,
-                    borderColor: task.color,
-                  }
-                ]}
-                onPress={() => handleTaskToggle(task.id)}
-                activeOpacity={0.7}
-              >
-                {renderTaskIcon(task)}
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-        
-        {canNavigateForward && (
-          <TouchableOpacity
-            style={styles.navArrow}
-            onPress={handleNavigateForward}
-            activeOpacity={0.7}
+          <Animated.View
+            style={{
+              transform: [{ rotate: isFilterExpanded ? '180deg' : '0deg' }]
+            }}
           >
             <Icon 
-              name="chevron-right" 
-              size={20} 
-              color={colors.text.primary} 
+              name="chevron-down" 
+              size={14} 
+              color={colors.text.tertiary} 
             />
-          </TouchableOpacity>
-        )}
+          </Animated.View>
+        </TouchableOpacity>
       </View>
+      
+      {/* Collapsible Filter Section */}
+      {isFilterExpanded && (
+        <Animated.View 
+          style={styles.filterSection}
+          entering={FadeIn.duration(200)}
+          exiting={FadeOut.duration(200)}
+        >
+          <View style={styles.filterContainer}>
+            <TouchableOpacity
+              style={styles.navArrow}
+              onPress={handleNavigateBackward}
+              activeOpacity={0.7}
+            >
+              <Icon 
+                name="chevron-left" 
+                size={20} 
+                color={colors.text.primary} 
+              />
+            </TouchableOpacity>
+            
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.filterScrollContainer}
+              contentContainerStyle={styles.filterScrollContent}
+            >
+              {/* ALL pill */}
+              <TouchableOpacity
+                style={[
+                  styles.filterPill,
+                  isAllSelected && {
+                    backgroundColor: colors.primary,
+                    borderColor: colors.primary,
+                  }
+                ]}
+                onPress={handleSelectAll}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.filterPillText, isAllSelected && styles.filterPillTextSelected]}>
+                  ALL
+                </Text>
+              </TouchableOpacity>
+              
+              {/* Individual habit pills */}
+              {tasks.map((task) => {
+                const isSelected = isTaskSelected(task.id);
+                const showAsSelected = isSelected || isAllSelected;
+                
+                return (
+                  <TouchableOpacity
+                    key={task.id}
+                    style={[
+                      styles.filterPill,
+                      showAsSelected && {
+                        backgroundColor: task.color,
+                        borderColor: task.color,
+                      }
+                    ]}
+                    onPress={() => handleTaskToggle(task.id)}
+                    activeOpacity={0.7}
+                  >
+                    {renderTaskIcon(task)}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+            
+            {canNavigateForward && (
+              <TouchableOpacity
+                style={styles.navArrow}
+                onPress={handleNavigateForward}
+                activeOpacity={0.7}
+              >
+                <Icon 
+                  name="chevron-right" 
+                  size={20} 
+                  color={colors.text.primary} 
+                />
+              </TouchableOpacity>
+            )}
+          </View>
+        </Animated.View>
+      )}
     </View>
   );
 };
@@ -440,6 +485,7 @@ const styles = StyleSheet.create({
     borderRadius: radiusValues.xl,
     marginHorizontal: spacing[4],
     marginBottom: spacing[6],
+    position: 'relative',
     ...shadows.md,
   },
 
@@ -494,11 +540,29 @@ const styles = StyleSheet.create({
     borderColor: colors.primary,
   },
 
+  filterBumpContainer: {
+    position: 'absolute',
+    bottom: -20,
+    alignSelf: 'center',
+    zIndex: 10,
+  },
+
+  filterBump: {
+    width: 30,
+    height: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  filterSection: {
+    marginTop: spacing[1],
+  },
+
   filterContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: spacing[2],
     marginHorizontal: spacing[2],
+    paddingBottom: spacing[3],
   },
 
   navArrow: {
@@ -534,7 +598,6 @@ const styles = StyleSheet.create({
     minWidth: 32,
     gap: spacing[1],
   },
-
 
   filterPillIcon: {
     fontSize: fontSizes.medium,
