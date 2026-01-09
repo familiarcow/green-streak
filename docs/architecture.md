@@ -1,7 +1,7 @@
 # Architecture Documentation
 
 *Created: January 3, 2026*  
-*Last Modified: January 5, 2026*
+*Last Modified: January 9, 2026*
 
 ## Table of Contents
 
@@ -122,20 +122,50 @@ Green Streak implements a robust layered architecture that enforces clean separa
   - Connection pooling
   - Query execution
 
-### Data Flow Example
+### Data Flow Example with TaskService
 
 ```typescript
+// Example 1: Creating a New Task
+// 1. User fills form and clicks "Save" in EditTaskModal
+<TouchableOpacity onPress={() => handleSave(formData)}>
+
+// 2. Store action delegates to TaskService
+const { createTask } = useTasksStore();
+await createTask(formData);
+
+// 3. Store calls TaskService
+const taskService = getTaskService();
+const task = await taskService.createTask(taskData);
+
+// 4. TaskService validates via ValidationService
+const validation = validationService.validateTask(taskData);
+if (!validation.isValid) throw new Error(validation.errors);
+
+// 5. TaskService creates task via Repository
+const task = await this.taskRepository.create(taskData);
+
+// 6. TaskService schedules notifications if enabled
+if (task.reminderEnabled) {
+  await notificationService.scheduleTaskReminder(task);
+}
+
+// 7. Store updates state and UI re-renders
+set(state => ({ 
+  tasks: [task, ...state.tasks]
+}));
+
+// Example 2: Quick Add Completion
 // 1. User clicks "Quick Add" in UI
 <TouchableOpacity onPress={() => handleQuickAdd(task.id)}>
 
 // 2. Custom Hook handles the action
 const { handleQuickAdd } = useTaskActions();
 
-// 3. Hook uses Service Layer
+// 3. Hook uses DataService for log operations
 const dataService = getDataService();
 await dataService.logTaskCompletion(taskId, date, count);
 
-// 4. Service validates and uses Repository
+// 4. DataService validates and uses Repository
 const validation = validationService.validateTaskLog(data);
 await this.logRepository.createOrUpdate(taskId, date, count);
 
@@ -225,12 +255,31 @@ export class RepositoryFactory {
 
 ### Overview
 
-The service layer encapsulates business logic and orchestrates operations across multiple repositories.
+The service layer encapsulates business logic and orchestrates operations across multiple repositories. With the introduction of TaskService, the architecture now provides a cleaner separation between state management (stores) and data access (repositories).
 
 ### Key Services
 
+#### TaskService
+- **Purpose**: Centralized task management with business logic encapsulation
+- **Location**: `/src/services/TaskService.ts`
+- **Key Methods**:
+  - `getAllTasks()`: Retrieves active (non-archived) tasks
+  - `createTask()`: Creates tasks with validation and notification scheduling
+  - `updateTask()`: Updates tasks with validation and notification sync
+  - `archiveTask()`: Soft delete with notification cleanup
+  - `deleteTask()`: Permanent deletion with full cleanup
+  - `restoreTask()`: Unarchive tasks and restore notifications
+  - `validateTask()`: Delegate validation to ValidationService
+  - `getTasksWithRecentActivity()`: Analyze task activity patterns
+- **Factory Pattern**: Uses `createTaskService()` for dependency injection
+- **Key Features**:
+  - Integrated validation via ValidationService
+  - Automatic notification scheduling/cancellation
+  - Comprehensive error handling and logging
+  - Non-throwing notification failures (graceful degradation)
+
 #### DataService
-- **Purpose**: High-level data operations
+- **Purpose**: High-level data operations across multiple entities
 - **Location**: `/src/services/DataService.ts`
 - **Key Methods**:
   - `getTasksWithRecentActivity()`: Combines task and log data
@@ -246,9 +295,98 @@ The service layer encapsulates business logic and orchestrates operations across
   - `validateDateRange()`: Date range validation
 
 #### ServiceRegistry
-- **Purpose**: Service dependency injection
+- **Purpose**: Service dependency injection and lifecycle management
 - **Location**: `/src/services/ServiceRegistry.ts`
 - **Pattern**: Singleton with lazy initialization
+- **Key Features**:
+  - Centralized service registration
+  - Health check monitoring
+  - Dependency injection for all services
+  - Service discovery and retrieval
+
+### Service Registry Implementation
+
+```typescript
+// ServiceRegistry registers and manages all services
+export class ServiceRegistry {
+  private services: Map<string, any> = new Map();
+  
+  // Register TaskService with dependencies
+  private registerDefaultServices(): void {
+    const taskRepository = repositoryFactory.getTaskRepository();
+    const taskService = createTaskService(taskRepository, validationService);
+    
+    this.register('task', taskService);
+    this.register('data', dataService);
+    this.register('validation', validationService);
+    this.register('notification', notificationService);
+  }
+  
+  // Get services with type safety
+  get<T>(name: string): T {
+    const service = this.services.get(name);
+    if (!service) throw new Error(`Service '${name}' not found`);
+    return service as T;
+  }
+  
+  // Health monitoring
+  getHealthStatus(): ServiceHealthStatus {
+    // Check each service's health
+    for (const serviceName of this.getRegisteredServices()) {
+      try {
+        const service = this.get(serviceName);
+        healthStatus.services[serviceName] = { status: 'healthy' };
+      } catch (error) {
+        healthStatus.services[serviceName] = { status: 'unhealthy', error };
+      }
+    }
+    return healthStatus;
+  }
+}
+
+// Convenient service getters
+export const getTaskService = () => serviceRegistry.get('task');
+export const getDataService = () => serviceRegistry.get('data');
+```
+
+### Service Abstraction Layer Pattern
+
+The introduction of TaskService establishes a robust Service Abstraction Layer that decouples the presentation/state layer from the data layer:
+
+#### Architecture Evolution
+
+**Before TaskService (Direct Repository Access):**
+```
+Store → Repository → Database
+```
+
+**After TaskService (Service Abstraction):**
+```
+Store → TaskService → Repository → Database
+         ↓
+   ValidationService
+         ↓
+   NotificationService
+```
+
+#### Key Benefits of Service Abstraction
+
+1. **Separation of Concerns**: 
+   - Stores focus solely on state management
+   - Services handle all business logic
+   - Repositories manage data persistence
+
+2. **Orchestration**: 
+   - TaskService coordinates multiple services (validation, notifications)
+   - Complex operations are atomic and consistent
+
+3. **Testability**: 
+   - Services can be mocked independently
+   - Business logic testing separated from UI/state testing
+
+4. **Maintainability**: 
+   - Changes to business rules only affect service layer
+   - Repository changes don't impact stores directly
 
 ### Service Layer Benefits
 
@@ -257,6 +395,81 @@ The service layer encapsulates business logic and orchestrates operations across
 3. **Validation**: Consistent validation across the app
 4. **Error Handling**: Centralized error recovery
 5. **Performance**: Caching and optimization strategies
+6. **Notification Management**: Automated scheduling and cleanup
+7. **Health Monitoring**: Service-level health checks
+
+### TaskService: Benefits and Limitations
+
+#### Benefits
+
+1. **Encapsulation of Business Logic**
+   - All task-related business rules centralized in one service
+   - Validation integrated seamlessly
+   - Notification lifecycle managed automatically
+
+2. **Improved Error Handling**
+   - Consistent error messages and logging
+   - Graceful degradation for non-critical failures (notifications)
+   - Comprehensive validation before operations
+
+3. **Simplified Store Implementation**
+   - Stores delegate complex logic to TaskService
+   - Cleaner, more focused state management code
+   - Reduced coupling between UI state and business logic
+
+4. **Enhanced Testability**
+   - Mock TaskService for store testing
+   - Test business logic independently
+   - Clear separation of concerns
+
+5. **Notification Coordination**
+   - Automatic scheduling on task creation
+   - Sync notifications on task updates
+   - Clean up notifications on archive/delete
+
+#### Current Limitations
+
+1. **Incomplete Activity Tracking**
+   - `getTasksWithRecentActivity()` is a placeholder
+   - Needs integration with LogRepository for actual activity data
+   - Currently returns all active tasks regardless of activity
+
+2. **Limited Batch Operations**
+   - No bulk create/update/delete methods
+   - Each operation is atomic, no transaction support across multiple tasks
+   
+3. **Missing Advanced Features**
+   - No task templates or presets
+   - No task dependencies or relationships
+   - No recurring task patterns beyond basic reminders
+
+#### Future Enhancements
+
+1. **Activity Analytics Integration**
+   ```typescript
+   async getTasksWithRecentActivity(days: number): Promise<TaskWithActivity[]> {
+     const tasks = await this.getAllTasks();
+     const logs = await this.logRepository.getRecentLogs(days);
+     return this.mergeTasksWithActivity(tasks, logs);
+   }
+   ```
+
+2. **Batch Operations Support**
+   ```typescript
+   async bulkUpdate(updates: Array<{id: string, data: UpdateTaskData}>): Promise<Task[]> {
+     return await this.taskRepository.transaction(async () => {
+       return Promise.all(updates.map(u => this.updateTask(u.id, u.data)));
+     });
+   }
+   ```
+
+3. **Task Templates**
+   ```typescript
+   async createFromTemplate(templateId: string, overrides?: Partial<Task>): Promise<Task> {
+     const template = await this.getTemplate(templateId);
+     return this.createTask({ ...template, ...overrides });
+   }
+   ```
 
 ## Custom Hooks Architecture
 
@@ -994,12 +1207,106 @@ Jest-based testing with TypeScript support:
 
 #### Test Categories
 1. **Unit Tests**: Individual functions and utilities
-2. **Integration Tests**: Store and repository interactions
-3. **Component Tests**: React Native component behavior
-4. **End-to-End Tests**: Complete user workflows (planned)
+2. **Service Tests**: Business logic and service orchestration  
+3. **Integration Tests**: Store and repository interactions
+4. **Component Tests**: React Native component behavior
+5. **End-to-End Tests**: Complete user workflows (planned)
+
+#### TaskService Testing Pattern
+
+```typescript
+// Mock dependencies for isolated testing
+const createMockTaskRepository = (): jest.Mocked<ITaskRepository> => ({
+  getAll: jest.fn(),
+  getById: jest.fn(),
+  create: jest.fn(),
+  update: jest.fn(),
+  archive: jest.fn(),
+  delete: jest.fn(),
+});
+
+const createMockValidationService = (): jest.Mocked<ValidationService> => ({
+  validateTask: jest.fn(),
+  validateTaskLog: jest.fn(),
+});
+
+// Test TaskService in isolation
+describe('TaskService', () => {
+  let taskService: TaskService;
+  let mockTaskRepository: jest.Mocked<ITaskRepository>;
+  let mockValidationService: jest.Mocked<ValidationService>;
+  
+  beforeEach(() => {
+    mockTaskRepository = createMockTaskRepository();
+    mockValidationService = createMockValidationService();
+    taskService = new TaskService(mockTaskRepository, mockValidationService);
+  });
+  
+  it('should create task with validation and notifications', async () => {
+    // Setup mocks
+    mockValidationService.validateTask.mockReturnValue({
+      isValid: true,
+      errors: [],
+      warnings: []
+    });
+    
+    mockTaskRepository.create.mockResolvedValue(mockTask);
+    
+    // Execute
+    const result = await taskService.createTask(taskData);
+    
+    // Verify
+    expect(mockValidationService.validateTask).toHaveBeenCalledWith(taskData);
+    expect(mockTaskRepository.create).toHaveBeenCalledWith(taskData);
+    expect(notificationService.scheduleTaskReminder).toHaveBeenCalled();
+    expect(result).toEqual(mockTask);
+  });
+  
+  it('should handle validation failures gracefully', async () => {
+    mockValidationService.validateTask.mockReturnValue({
+      isValid: false,
+      errors: ['Name is required'],
+      warnings: []
+    });
+    
+    await expect(taskService.createTask(taskData))
+      .rejects.toThrow('Task validation failed: Name is required');
+      
+    expect(mockTaskRepository.create).not.toHaveBeenCalled();
+  });
+});
+```
+
+#### Store Testing with TaskService
+
+```typescript
+// Mock TaskService for store testing
+jest.mock('../services', () => ({
+  getTaskService: jest.fn(() => ({
+    getAllTasks: jest.fn(),
+    createTask: jest.fn(),
+    updateTask: jest.fn(),
+    archiveTask: jest.fn(),
+  }))
+}));
+
+describe('TasksStore', () => {
+  it('should delegate task creation to TaskService', async () => {
+    const mockTaskService = getTaskService();
+    mockTaskService.createTask.mockResolvedValue(mockTask);
+    
+    const { createTask } = useTasksStore.getState();
+    const result = await createTask(taskData);
+    
+    expect(mockTaskService.createTask).toHaveBeenCalledWith(taskData);
+    expect(useTasksStore.getState().tasks).toContain(mockTask);
+  });
+});
+```
 
 #### Coverage Requirements
 - Utilities: 90%+ coverage required
+- Services: 85%+ coverage required (including TaskService)
 - Repositories: 85%+ coverage required
 - Components: 70%+ coverage required
 - Stores: 80%+ coverage required
@@ -1073,19 +1380,62 @@ const handleQuickAdd = useCallback(async (taskId: string) => {
 }, []);
 ```
 
-#### 3. Service Level
+#### 3. Service Level (TaskService Pattern)
 ```typescript
-async logTaskCompletion(taskId: string, date: string, count: number) {
+// TaskService provides comprehensive error handling
+async createTask(taskData: CreateTaskData): Promise<Task> {
   try {
-    // Validate task exists
-    const task = await this.taskRepository.getById(taskId);
-    if (!task) {
-      throw new Error(`Task with ID ${taskId} not found`);
+    logger.debug('SERVICES', 'Creating new task', { name: taskData.name });
+    
+    // Validate with detailed error messages
+    const validation = this.validationService.validateTask(taskData);
+    if (!validation.isValid) {
+      const error = new Error(`Task validation failed: ${validation.errors.join(', ')}`);
+      logger.error('SERVICES', 'Task validation failed', { 
+        errors: validation.errors,
+        warnings: validation.warnings 
+      });
+      throw error;
     }
-    // Continue operation
+    
+    // Log warnings without failing
+    if (validation.warnings.length > 0) {
+      logger.warn('SERVICES', 'Task validation warnings', { 
+        warnings: validation.warnings 
+      });
+    }
+    
+    // Create task
+    const task = await this.taskRepository.create(taskData);
+    
+    // Non-critical operations don't throw
+    if (task.reminderEnabled) {
+      try {
+        await this.scheduleTaskNotification(task);
+      } catch (notifError) {
+        // Log but don't fail task creation
+        logger.error('SERVICES', 'Failed to schedule notification', { 
+          error: notifError,
+          taskId: task.id 
+        });
+      }
+    }
+    
+    return task;
   } catch (error) {
-    logger.error('SERVICE', 'Failed to log completion', { error });
-    throw error;
+    logger.error('SERVICES', 'Failed to create task', { error });
+    throw error; // Re-throw for store handling
+  }
+}
+
+// Graceful degradation for non-critical features
+private async cancelTaskNotifications(taskId: string): Promise<void> {
+  try {
+    await notificationService.cancelTaskReminder(taskId);
+    logger.debug('SERVICES', 'Task notifications cancelled', { taskId });
+  } catch (error) {
+    // Log but don't throw - notification failure shouldn't fail task operations
+    logger.error('SERVICES', 'Failed to cancel notifications', { error, taskId });
   }
 }
 ```
