@@ -12,7 +12,7 @@ import { useTasksStore } from './src/store/tasksStore';
 import { setupDevEnvironment, getDevConfig } from './src/utils/devConfig';
 import HomeScreen from './src/screens/HomeScreen';
 import OnboardingScreen from './src/screens/OnboardingScreen';
-import AddTaskScreen from './src/screens/AddTaskScreen';
+import EditTaskModal from './src/screens/EditTaskModal';
 import { colors, textStyles, spacing } from './src/theme';
 import logger from './src/utils/logger';
 
@@ -141,7 +141,7 @@ export default function App() {
   if (showAddTask) {
     return (
       <SafeAreaProvider>
-        <AddTaskScreen
+        <EditTaskModal
           onClose={() => setShowAddTask(false)}
           onTaskAdded={handleTaskAdded}
         />

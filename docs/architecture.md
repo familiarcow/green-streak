@@ -335,7 +335,7 @@ App
 │   │   └── ContributionDay (multiple)
 │   ├── TaskPreview (multiple)
 │   └── Modal Components
-│       ├── AddTaskScreen
+│       ├── EditTaskModal
 │       └── DailyLogScreen
 └── StatusBar
 ```
@@ -345,7 +345,7 @@ App
 #### 1. Screen Components
 **Location**: `/src/screens/`
 - **HomeScreen.tsx**: Main dashboard with contribution graph and task overview
-- **AddTaskScreen.tsx**: Task creation and editing interface
+- **EditTaskModal.tsx**: Task creation and editing interface
 - **DailyLogScreen.tsx**: Daily completion logging interface
 
 **Responsibilities**:
@@ -400,6 +400,291 @@ interface ComponentProps {
 }
 ```
 
+## Modal Architecture
+
+### Overview
+
+Modal components in Green Streak follow a consistent architecture pattern that ensures proper scrolling behavior, accessibility, and performance. This architecture was refined during the EditTaskModal implementation to resolve scrolling issues.
+
+### Modal Structure Pattern
+
+#### The One Proven Modal Implementation
+
+After extensive debugging, there is exactly ONE pattern that works reliably for all modals. **The key insight: backdrop and content must be siblings, not parent-child.**
+
+```typescript
+// HomeScreen.tsx - Modal Container (Works for ALL modal types)
+<Modal transparent visible={showModal} animationType="slide" statusBarTranslucent>
+  <View 
+    style={{
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.6)',
+      justifyContent: 'flex-end'
+    }}
+  >
+    {/* Backdrop as sibling - only handles backdrop clicks */}
+    <Pressable 
+      style={{ flex: 1 }} 
+      onPress={closeModal} 
+    />
+    
+    {/* Content as sibling - receives all touch events freely */}
+    <Animated.View 
+      style={{
+        backgroundColor: colors.background,
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
+        height: '85%',
+        minHeight: 400
+        /* Add transform animations here if needed */
+      }}
+    >
+      {/* Swipe handle */}
+      <View style={styles.handle} />
+      
+      <ModalScreen onClose={closeModal} />
+    </Animated.View>
+  </View>
+</Modal>
+
+// Modal Screen Component (same for all)
+const ModalScreen = ({ onClose }) => (
+  <SafeAreaView style={styles.container}>
+    {/* Fixed header outside ScrollView */}
+    <View style={styles.header}>
+      <TouchableOpacity onPress={onClose}>
+        <Text>Cancel</Text>
+      </TouchableOpacity>
+      <Text style={styles.title}>Modal Title</Text>
+      <TouchableOpacity onPress={handleSave}>
+        <Text>Save</Text>
+      </TouchableOpacity>
+    </View>
+    
+    {/* Scrollable content */}
+    <ScrollView 
+      style={styles.scrollView} 
+      contentContainerStyle={styles.scrollContent}
+      showsVerticalScrollIndicator={false}
+    >
+      {/* Modal content */}
+    </ScrollView>
+  </SafeAreaView>
+);
+```
+
+### Architecture Principles
+
+#### 1. Touch Event Handling
+- **Backdrop and content must be siblings** - this is the fundamental requirement  
+- **Use `Pressable` for the backdrop** to close modal when clicking outside
+- **Use `Animated.View` for content** to preserve touch event handling
+- **ScrollView must receive touch events from any area** for proper scrolling
+
+#### 🚫 NEVER Do These Things (Hard-Learned Lessons)
+
+**NEVER make backdrop the parent of content:**
+- Wrapping content in `<Pressable onPress={closeModal}>` breaks scrolling
+- Touch events bubble up from child to parent, closing the modal unexpectedly
+
+**NEVER add unnecessary Pressable wrappers:**
+- Adding `<Pressable onPress={() => {}}>` inside working modals breaks touch handling
+- If a modal scrolls properly, don't add "fixes" that break it
+
+**NEVER use stopPropagation on modal content:**
+- `onTouchStart={(e) => e.stopPropagation()}` interferes with ScrollView
+- The sibling structure eliminates the need for event stopping
+
+**NEVER change working modal structure without testing:**
+- If Settings modal works perfectly, use the exact same pattern
+- Don't "improve" working code without verification
+
+#### 2. Layout Structure
+- **SafeAreaView** as the root container for proper safe area handling
+- **Fixed header outside ScrollView** to prevent header from scrolling away
+- **ScrollView with `contentContainerStyle`** for proper content padding and layout
+
+#### 3. Performance Considerations
+- Use `React.memo()` for modal screens to prevent unnecessary re-renders
+- Implement proper cleanup in `useEffect` hooks
+- Use `useCallback` for event handlers to prevent recreation
+
+### Common Pitfalls and Solutions
+
+#### ❌ Problem: Scrolling Only Works from Interactive Elements
+
+```typescript
+// This pattern blocks scrolling from background areas
+<Pressable onPress={(e) => e.stopPropagation()}>
+  <ScrollView>
+    {/* Content - scrolling will only work when dragging from buttons/inputs */}
+  </ScrollView>
+</Pressable>
+```
+
+**Root Cause**: Without event propagation prevention, touches inside modal content bubble up to the backdrop `Pressable`, causing unwanted modal closure.
+
+**✅ Solution**: Use `Pressable` with empty handler for content containers:
+
+```typescript
+<Pressable onPress={() => {}}>
+  <ScrollView>
+    {/* Content - scrolling works from any touch area, but doesn't close modal */}
+  </ScrollView>
+</Pressable>
+```
+
+#### ❌ Problem: Header Disappears When Scrolling
+
+```typescript
+// Header inside ScrollView causes it to scroll away
+<ScrollView>
+  <View style={styles.header}>
+    {/* Header content */}
+  </View>
+  {/* Body content */}
+</ScrollView>
+```
+
+**✅ Solution**: Keep header outside ScrollView:
+
+```typescript
+<SafeAreaView>
+  <View style={styles.header}>
+    {/* Fixed header */}
+  </View>
+  <ScrollView>
+    {/* Body content */}
+  </ScrollView>
+</SafeAreaView>
+```
+
+### Modal State Management
+
+Modal state is managed through the `useModalState` hook, providing centralized control:
+
+```typescript
+export const useModalState = (): UseModalStateReturn => {
+  const [showAddTask, setShowAddTask] = useState(false);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  
+  const openAddTask = useCallback(() => {
+    setEditingTask(null);
+    setShowAddTask(true);
+  }, []);
+  
+  const openEditTask = useCallback((task: Task) => {
+    setEditingTask(task);
+    setShowAddTask(true);
+  }, []);
+  
+  const closeAddTask = useCallback(() => {
+    setShowAddTask(false);
+    setEditingTask(null);
+  }, []);
+  
+  return {
+    showAddTask,
+    editingTask,
+    openAddTask,
+    openEditTask,
+    closeAddTask,
+  };
+};
+```
+
+### Animation Integration
+
+Modals integrate with React Native Reanimated for smooth transitions:
+
+```typescript
+// Custom animated modal opening
+const handleModalOpen = useCallback(() => {
+  openModal();
+  
+  // Background fade in
+  Animated.timing(backgroundOpacity, {
+    toValue: 1,
+    duration: 200,
+    useNativeDriver: true,
+  }).start(() => {
+    // Content slide up
+    Animated.timing(slideAnim, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  });
+}, []);
+```
+
+### Accessibility Support
+
+All modals include proper accessibility support:
+
+```typescript
+<Modal
+  transparent
+  visible={showModal}
+  animationType="slide"
+  statusBarTranslucent
+  accessibilityViewIsModal={true}
+>
+  <View
+    accessibilityRole="dialog"
+    accessibilityLabel="Task creation modal"
+  >
+    <TouchableOpacity
+      accessibilityRole="button"
+      accessibilityLabel="Close modal"
+      accessibilityHint="Closes the task creation screen"
+      onPress={onClose}
+    >
+      <Text>Cancel</Text>
+    </TouchableOpacity>
+  </View>
+</Modal>
+```
+
+### Error Boundaries
+
+Each modal includes error boundary protection:
+
+```typescript
+<ScreenErrorBoundary 
+  screenName="Add Task"
+  onClose={closeModal}
+  onRetry={() => {
+    closeModal();
+    setTimeout(() => openModal(), 100);
+  }}
+>
+  <EditTaskModal onClose={closeModal} />
+</ScreenErrorBoundary>
+```
+
+### Testing Strategies
+
+Modal testing focuses on behavior and accessibility:
+
+```typescript
+describe('EditTaskModal', () => {
+  it('should scroll from any touch area', () => {
+    // Test scrolling from background areas
+  });
+  
+  it('should maintain fixed header during scroll', () => {
+    // Test header position during scroll
+  });
+  
+  it('should handle keyboard interactions properly', () => {
+    // Test form interactions with virtual keyboard
+  });
+});
+```
+
+This modal architecture ensures consistent behavior, accessibility compliance, and maintainable code across all modal implementations in Green Streak.
+
 ## Data Flow
 
 ### Unidirectional Data Flow
@@ -411,7 +696,7 @@ User Interaction → Store Action → Repository → Database → Store Update �
 ### Example: Creating a New Task
 
 1. **User**: Presses "Add Task" button in HomeScreen
-2. **UI**: AddTaskScreen modal opens
+2. **UI**: EditTaskModal modal opens
 3. **User**: Fills form and presses "Save"
 4. **Store**: `tasksStore.createTask()` called with form data
 5. **Repository**: `TaskRepository.create()` validates and inserts to database

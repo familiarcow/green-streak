@@ -350,6 +350,337 @@ interface EmptyStateSectionProps {
 
 ## Modal Components
 
+### Modal Architecture Best Practices
+
+Based on extensive testing and debugging of modal scrolling issues, there is ONE proven pattern that works for all modals in React Native. The key insight is that **backdrop and content must be siblings, not parent-child**.
+
+#### ✅ The One Working Modal Pattern
+
+All modals follow this exact structure - backdrop and content as siblings:
+
+```tsx
+// HomeScreen.tsx - Modal Container (Works for ALL modal types)
+<Modal transparent visible={showModal} animationType="slide" statusBarTranslucent>
+  <View 
+    style={{ 
+      flex: 1, 
+      backgroundColor: 'rgba(0,0,0,0.6)', 
+      justifyContent: 'flex-end' 
+    }}
+  >
+    {/* Backdrop as sibling - only handles backdrop clicks */}
+    <Pressable 
+      style={{ flex: 1 }} 
+      onPress={closeModal} 
+    />
+    
+    {/* Content as sibling - receives all touch events freely */}
+    <Animated.View 
+      style={{ 
+        backgroundColor: colors.background,
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
+        height: '85%',
+        minHeight: 400
+        /* Add transform animations here if needed */
+      }}
+    >
+      {/* Swipe handle */}
+      <View style={handleStyles} />
+      
+      <ScreenContent onClose={closeModal} />
+    </Animated.View>
+  </View>
+</Modal>
+```
+
+#### Variations by Animation Type
+
+**For Static Animations (AddTask, TaskAnalytics):**
+- Use `animationType="slide"` on Modal
+- Use `<View>` as outer container
+- Use `<Animated.View>` as content container (no transform needed)
+
+**For Custom Animations (Settings, DailyLog):**
+- Use `animationType="none"` on Modal  
+- Use `<Animated.View>` as outer container with opacity animation
+- Use `<Animated.View>` as content container with transform animation
+
+#### Screen Component Structure (same for all)
+```tsx
+const ScreenContent = ({ onClose }) => (
+  <SafeAreaView style={styles.container}>
+    <View style={styles.header}>
+      {/* Fixed header content - cancel button, title, save button */}
+    </View>
+    <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+      {/* Scrollable content */}
+    </ScrollView>
+  </SafeAreaView>
+);
+```
+
+#### 🔄 Repeatable Pattern for Creating New Modals
+
+Follow this exact pattern to create any new modal that works correctly:
+
+**Step 1: Add modal state to useModalState hook**
+```typescript
+// src/hooks/useModalState.ts
+const [showYourModal, setShowYourModal] = useState(false);
+
+const openYourModal = useCallback(() => {
+  setShowYourModal(true);
+}, []);
+
+const closeYourModal = useCallback(() => {
+  setShowYourModal(false);
+}, []);
+
+// Add to return object
+return {
+  showYourModal,
+  openYourModal,
+  closeYourModal,
+  // ... other modals
+};
+```
+
+**Step 2: Add modal JSX to HomeScreen.tsx** 
+```tsx
+// Copy this exact structure - change only the highlighted parts
+{showYourModal && (
+  <Modal
+    transparent
+    visible={showYourModal}                    // ← Your modal state
+    animationType="slide"                      // ← "slide" or "none"
+    statusBarTranslucent
+  >
+    <View                                      // ← or <Animated.View> for custom animations
+      style={{
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.6)',
+        justifyContent: 'flex-end'
+      }}
+    >
+      <Pressable 
+        style={{ flex: 1 }} 
+        onPress={closeYourModal}               // ← Your close function
+      />
+      
+      <Animated.View 
+        style={{
+          backgroundColor: colors.background,
+          borderTopLeftRadius: 20,
+          borderTopRightRadius: 20,
+          height: '85%',                       // ← Adjust height as needed
+          minHeight: 400
+          // Add transform animations here if using custom animations
+        }}
+      >
+        <View style={{
+          width: 40,
+          height: 4,
+          backgroundColor: colors.border,
+          borderRadius: 2,
+          alignSelf: 'center',
+          marginTop: 8,
+          marginBottom: 4
+        }} />
+        
+        <ScreenErrorBoundary 
+          screenName="Your Modal"              // ← Your modal name
+          onClose={closeYourModal}             // ← Your close function
+          onRetry={() => {
+            closeYourModal();
+            setTimeout(() => openYourModal(), 100);
+          }}
+        >
+          <YourModalScreen                     // ← Your screen component
+            onClose={closeYourModal}           // ← Your close function
+            // Add other props as needed
+          />
+        </ScreenErrorBoundary>
+      </Animated.View>
+    </View>
+  </Modal>
+)}
+```
+
+**Step 3: Create your modal screen component**
+```tsx
+// src/screens/YourModalScreen.tsx - Copy this exact structure
+export const YourModalScreen: React.FC<YourModalScreenProps> = ({ onClose, /* other props */ }) => {
+  return (
+    <SafeAreaView style={styles.container}>
+      {/* Fixed header outside ScrollView */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={onClose} style={styles.cancelButton}>
+          <Text style={styles.cancelButtonText}>Cancel</Text>
+        </TouchableOpacity>
+        <Text style={styles.title}>Your Modal Title</Text>
+        <TouchableOpacity onPress={handleSave}>
+          <Text style={styles.saveButtonText}>Save</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Scrollable content */}
+      <ScrollView 
+        style={styles.scrollView} 
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Your modal content here */}
+      </ScrollView>
+    </SafeAreaView>
+  );
+};
+
+// Required styles
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: spacing[4],
+    borderBottomWidth: 1,
+    borderBottomColor: colors.divider,
+  },
+  title: {
+    ...textStyles.h2,
+    color: colors.text.primary,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: spacing[4],
+  },
+  // Add other styles as needed
+});
+```
+
+**That's it!** This pattern works for:
+- ✅ Static modals (use `animationType="slide"`)
+- ✅ Animated modals (use `animationType="none"` + custom animations) 
+- ✅ All screen sizes and content lengths
+- ✅ Proper scrolling from any touch point
+- ✅ Backdrop closing functionality
+
+#### 📝 Existing Modal Examples in Codebase
+
+**Working Modal Examples to Reference:**
+1. **EditTask Modal** (`showAddTask`) - Uses EditTaskModal component
+   - For both creating new tasks and editing existing tasks
+   - Static modal with `animationType="slide"`
+   - Opens in edit mode when `openEditTask(task)` is called
+
+2. **Settings Modal** (`showSettings`) - Uses SettingsScreen component  
+   - Custom animations with opacity and transform
+   - Uses `animationType="none"`
+
+3. **DailyLog Modal** (`showDailyLog`) - Uses DailyLogScreen component
+   - Custom animations with opacity and transform
+   - Uses `animationType="none"`
+
+4. **TaskAnalytics Modal** (`showTaskAnalytics`) - Uses TaskAnalyticsScreen component
+   - Static modal with `animationType="slide"`
+
+All follow the exact same sibling structure pattern documented above.
+
+#### 🚫 NEVER Do These Things (Lessons Learned)
+
+**NEVER make backdrop the parent of content:**
+```tsx
+// ❌ NEVER - Backdrop wrapping content breaks scrolling
+<Pressable onPress={closeModal}> {/* Parent */}
+  <Animated.View> {/* Child - touches bubble up */}
+    <ScrollView /> {/* Scrolling broken */}
+  </Animated.View>
+</Pressable>
+```
+
+**NEVER add Pressable wrappers inside working modals:**
+```tsx
+// ❌ NEVER - Adding unnecessary Pressables breaks scrolling
+<Animated.View>
+  <Pressable onPress={() => {}}> {/* This blocks ScrollView touches */}
+    <ScrollView /> {/* Scrolling broken */}
+  </Pressable>
+</Animated.View>
+```
+
+**NEVER use stopPropagation on modal content:**
+```tsx
+// ❌ NEVER - stopPropagation interferes with scrolling
+<Animated.View onTouchStart={(e) => e.stopPropagation()}>
+  <ScrollView /> {/* Scrolling may be broken */}
+</Animated.View>
+```
+
+**NEVER change working modal structure without testing:**
+```tsx
+// ❌ NEVER - If Settings works, don't "fix" it
+// If a modal scrolls properly, leave the structure alone!
+```
+
+#### 🚫 Other Problematic Patterns
+
+2. **Header inside ScrollView**:
+   ```tsx
+   // ❌ This causes header to scroll away
+   <ScrollView>
+     <View style={styles.header}>
+       {/* Header content */}
+     </View>
+     {/* Content */}
+   </ScrollView>
+   ```
+
+#### Key Requirements
+
+1. **Touch Handling**:
+   - Use `Pressable` with empty `onPress={() => {}}` inside modal content to prevent event bubbling to backdrop
+   - Use `Pressable` for the backdrop (to close modal when clicking outside)
+   - For animated modals, nest the content `Pressable` inside `Animated.View`
+
+2. **Layout Structure**:
+   - `SafeAreaView` as the root container
+   - Fixed header outside of ScrollView
+   - ScrollView with `contentContainerStyle` for proper padding
+
+3. **Scrolling**:
+   - ScrollView must be able to receive touch events from any area
+   - Content should scroll regardless of touch start location (background or interactive elements)
+
+4. **Styling Pattern**:
+   ```tsx
+   const styles = StyleSheet.create({
+     container: {
+       flex: 1,
+       backgroundColor: colors.background,
+     },
+     header: {
+       flexDirection: 'row',
+       alignItems: 'center',
+       justifyContent: 'space-between',
+       padding: spacing[4],
+       borderBottomWidth: 1,
+       borderBottomColor: colors.divider,
+     },
+     scrollView: {
+       flex: 1,
+     },
+     scrollContent: {
+       padding: spacing[4],
+     },
+   });
+   ```
+
 ### AnimatedModal
 
 **Purpose**: Reusable modal with animations

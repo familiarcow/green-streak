@@ -78,7 +78,7 @@ green-streak/
 │   ├── screens/             # App screens and navigation
 │   │   ├── HomeScreen.tsx      # Main dashboard
 │   │   ├── DailyLogScreen.tsx  # Task completion interface
-│   │   └── AddTaskScreen.tsx   # Task creation/editing
+│   │   └── EditTaskModal.tsx   # Task creation/editing
 │   ├── database/            # Data persistence layer
 │   │   ├── repositories/       # Data access objects
 │   │   ├── schema.ts          # Database structure

@@ -371,7 +371,7 @@ Documentation            ██████████████████�
 ### Sprint Goals (Next 2 Weeks)
 
 #### 1. Complete Task Management UI (Priority: High)
-- Finish AddTaskScreen with full form validation
+- Finish EditTaskModal with full form validation
 - Implement icon picker component
 - Add color selection interface
 - Improve error handling and user feedback

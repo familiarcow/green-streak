@@ -252,19 +252,19 @@ const { contributionData, loadContributionData, loading: logsLoading } = useLogs
 
 ---
 
-### AddTaskScreen
+### EditTaskModal
 
 Task creation and editing interface with form validation and customization options.
 
-**Location**: `/src/screens/AddTaskScreen.tsx`
+**Location**: `/src/screens/EditTaskModal.tsx`
 
 #### Props
 
 ```typescript
-interface AddTaskScreenProps {
+interface EditTaskModalProps {
   onClose: () => void;                    // Close modal callback
   onTaskAdded: () => void;                // Task creation success callback
-  editTask?: Task;                        // Optional task to edit (vs create)
+  existingTask?: Task;                    // Optional task to edit (vs create)
 }
 ```
 
