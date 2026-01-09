@@ -11,6 +11,8 @@ export { TaskService, createTaskService } from './TaskService';
 export { TaskAnalyticsService, taskAnalyticsService } from './TaskAnalyticsService';
 export { ValidationService, validationService } from './ValidationService';
 export { default as NotificationService } from './NotificationService';
+export { StreakService, createStreakService } from './StreakService';
+export { StreakRulesEngine, createStreakRulesEngine } from './StreakRulesEngine';
 
 // Service Registry
 export { 
@@ -18,6 +20,7 @@ export {
   serviceRegistry,
   getDataService,
   getTaskService,
+  getStreakService,
   getAnalyticsService,
   getValidationService,
   getNotificationService

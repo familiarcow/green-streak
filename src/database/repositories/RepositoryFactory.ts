@@ -1,6 +1,7 @@
-import { ITaskRepository, ILogRepository } from './interfaces';
+import { ITaskRepository, ILogRepository, IStreakRepository } from './interfaces';
 import { TaskRepository } from './TaskRepository';
 import { LogRepository } from './LogRepository';
+import { StreakRepository } from './StreakRepository';
 
 /**
  * Repository Factory
@@ -12,11 +13,13 @@ export class RepositoryFactory {
   private static _instance: RepositoryFactory;
   private _taskRepository: ITaskRepository;
   private _logRepository: ILogRepository;
+  private _streakRepository: IStreakRepository;
 
   private constructor() {
     // Initialize default implementations
     this._taskRepository = new TaskRepository();
     this._logRepository = new LogRepository();
+    this._streakRepository = new StreakRepository();
   }
 
   /**
@@ -44,6 +47,13 @@ export class RepositoryFactory {
   }
 
   /**
+   * Get streak repository instance
+   */
+  public getStreakRepository(): IStreakRepository {
+    return this._streakRepository;
+  }
+
+  /**
    * Set task repository implementation (for testing/dependency injection)
    */
   public setTaskRepository(repository: ITaskRepository): void {
@@ -58,11 +68,19 @@ export class RepositoryFactory {
   }
 
   /**
+   * Set streak repository implementation (for testing/dependency injection)
+   */
+  public setStreakRepository(repository: IStreakRepository): void {
+    this._streakRepository = repository;
+  }
+
+  /**
    * Reset to default implementations
    */
   public resetToDefaults(): void {
     this._taskRepository = new TaskRepository();
     this._logRepository = new LogRepository();
+    this._streakRepository = new StreakRepository();
   }
 }
 
@@ -70,5 +88,6 @@ export class RepositoryFactory {
 export const repositoryFactory = RepositoryFactory.getInstance();
 export const taskRepository = repositoryFactory.getTaskRepository();
 export const logRepository = repositoryFactory.getLogRepository();
+export const streakRepository = repositoryFactory.getStreakRepository();
 
 export default RepositoryFactory;

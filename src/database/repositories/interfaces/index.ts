@@ -9,6 +9,7 @@
 
 export { ITaskRepository } from './ITaskRepository';
 export { ILogRepository } from './ILogRepository';
+export { IStreakRepository } from './IStreakRepository';
 
 export type { default as ITaskRepositoryType } from './ITaskRepository';
 export type { default as ILogRepositoryType } from './ILogRepository';

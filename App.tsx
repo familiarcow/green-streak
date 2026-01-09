@@ -10,6 +10,7 @@ import { initializeSettings } from './src/store/settingsStore';
 import { useOnboardingStore } from './src/store/onboardingStore';
 import { useTasksStore } from './src/store/tasksStore';
 import { setupDevEnvironment, getDevConfig } from './src/utils/devConfig';
+import { getStreakService } from './src/services';
 import HomeScreen from './src/screens/HomeScreen';
 import OnboardingScreen from './src/screens/OnboardingScreen';
 import EditTaskModal from './src/screens/EditTaskModal';
@@ -62,6 +63,22 @@ export default function App() {
 
         // Load tasks to determine if we should show onboarding
         await loadTasks();
+        
+        // IMPORTANT: Validate streaks AFTER all data is loaded
+        // This ensures we recalculate from actual completion history
+        await new Promise(resolve => setTimeout(resolve, 500)); // Small delay to ensure DB is ready
+        
+        try {
+          logger.info('UI', 'Starting streak validation/recalculation');
+          const streakService = getStreakService();
+          await streakService.validateAllStreaks();
+          logger.info('UI', 'Streak validation completed successfully');
+        } catch (error) {
+          logger.error('UI', 'Failed to validate streaks on startup', { 
+            error: error instanceof Error ? error.message : 'Unknown error',
+            stack: error instanceof Error ? error.stack : undefined
+          });
+        }
         
         setIsInitialized(true);
         logger.info('UI', 'App initialization completed');

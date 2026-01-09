@@ -4,3 +4,5 @@ export { default as TodayCard } from './TodayCard';
 export { default as HistorySection } from './HistorySection';
 export { default as EmptyStateSection } from './EmptyStateSection';
 export { default as TasksSection } from './TasksSection';
+export { StreakBadge } from './StreakBadge';
+export { StreaksSection } from './StreaksSection';

@@ -1,11 +1,13 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { colors, textStyles, spacing, shadows, borderRadius } from '../../theme';
 import { sizes, gaps, radiusValues } from '../../theme/utils';
-import { TodayCardProps, Task } from '../../types';
+import { TodayCardProps, Task, TaskStreak } from '../../types';
 import { formatDisplayDate, getTodayString } from '../../utils/dateHelpers';
 import { Icon } from '../common/Icon';
 import { DatePickerModal } from '../common/DatePickerModal';
+import { useStreaksStore } from '../../store/streaksStore';
+import logger from '../../utils/logger';
 
 export const TodayCard: React.FC<TodayCardProps> = React.memo(({
   selectedDate,
@@ -17,6 +19,19 @@ export const TodayCard: React.FC<TodayCardProps> = React.memo(({
 }) => {
   // State for date picker
   const [showDatePicker, setShowDatePicker] = useState(false);
+  
+  // Streaks store
+  const { streaks, loadStreaks, loadStreaksForDate, getStreakForTaskOnDate } = useStreaksStore();
+  
+  // Load streaks on mount
+  useEffect(() => {
+    loadStreaks();
+  }, [loadStreaks]);
+  
+  // Load date-specific streaks when selected date changes
+  useEffect(() => {
+    loadStreaksForDate(selectedDate);
+  }, [loadStreaksForDate, selectedDate]);
 
   // Memoized computed values
   const isToday = useMemo(() => selectedDate === getTodayString(), [selectedDate]);
@@ -67,6 +82,20 @@ export const TodayCard: React.FC<TodayCardProps> = React.memo(({
   const renderTaskQuickAdd = useCallback((task: Task) => {
     const completionCount = getTaskCompletionCount(task.id);
     const hasCompletions = completionCount > 0;
+    
+    // Get date-specific streak for this task
+    const dateStreak = getStreakForTaskOnDate(task.id, selectedDate);
+    const streakCount = dateStreak?.streakCount || 0;
+    
+    // For debugging
+    logger.debug('UI', 'Task streak display', {
+      taskId: task.id,
+      taskName: task.name,
+      selectedDate,
+      streakCount,
+      hasCompletedToday: dateStreak?.hasCompletedToday,
+      isActiveStreak: dateStreak?.isActiveStreak
+    });
 
     const handleQuickAddPress = () => {
       console.log('Quick add button pressed for task:', task.id, 'selectedDate:', selectedDate);
@@ -96,19 +125,30 @@ export const TodayCard: React.FC<TodayCardProps> = React.memo(({
           </View>
           
           <View style={styles.taskDetails}>
-            <Text style={styles.taskName} numberOfLines={1}>{task.name}</Text>
-            {hasCompletions && (
-              <View style={styles.progressDots}>
-                {Array.from({ length: Math.min(completionCount, 5) }).map((_, index) => (
-                  <View key={index} style={styles.progressDot} />
-                ))}
-                {completionCount > 5 && (
-                  <Text style={styles.extraCount}>+{completionCount - 5}</Text>
-                )}
-              </View>
-            )}
+            <View style={styles.taskNameRow}>
+              <Text style={styles.taskName} numberOfLines={1}>{task.name}</Text>
+              {hasCompletions && (
+                <View style={styles.progressDots}>
+                  {Array.from({ length: Math.min(completionCount, 5) }).map((_, index) => (
+                    <View key={index} style={styles.progressDot} />
+                  ))}
+                  {completionCount > 5 && (
+                    <Text style={styles.extraCount}>+{completionCount - 5}</Text>
+                  )}
+                </View>
+              )}
+            </View>
           </View>
         </View>
+        
+        {task.streakEnabled && streakCount > 0 && (
+          <View style={styles.streakContainer}>
+            <Icon name="flame" size={14} color={colors.accent.warm} />
+            <Text style={styles.streakText}>
+              {streakCount}
+            </Text>
+          </View>
+        )}
 
         <TouchableOpacity
           style={[
@@ -128,7 +168,7 @@ export const TodayCard: React.FC<TodayCardProps> = React.memo(({
         </TouchableOpacity>
       </View>
     );
-  }, [getTaskCompletionCount, onQuickAdd, selectedDate]);
+  }, [getTaskCompletionCount, onQuickAdd, selectedDate, getStreakForTaskOnDate]);
 
   return (
     <View style={styles.container}>
@@ -355,18 +395,50 @@ const styles = StyleSheet.create({
     marginLeft: spacing[3],
   },
 
+  taskNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
+  },
+
   taskName: {
     ...textStyles.body,
     color: colors.text.primary,
     fontWeight: '600',
-    marginBottom: spacing[1] / 2,
+    flex: 1,
+  },
+
+  taskMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[3],
+  },
+
+  streakContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[1],
+    marginRight: spacing[2],
+  },
+
+  streakBadge: {
+    backgroundColor: colors.accent.warm,
+    paddingHorizontal: spacing[2],
+    paddingVertical: spacing[1] / 2,
+    borderRadius: spacing[2],
+  },
+
+  streakText: {
+    ...textStyles.caption,
+    color: colors.text.secondary,
+    fontWeight: '500',
+    fontSize: 11,
   },
 
   progressDots: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: gaps.xxs,
-    marginTop: gaps.xxs,
   },
 
   progressDot: {

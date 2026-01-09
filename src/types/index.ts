@@ -10,7 +10,8 @@ export type LogCategory =
   | 'ERROR'
   | 'APP'
   | 'SERVICE'
-  | 'SERVICES';
+  | 'SERVICES'
+  | 'STORE';
 
 export interface Task {
   id: string;
@@ -24,6 +25,10 @@ export interface Task {
   reminderEnabled: boolean;
   reminderTime?: string;
   reminderFrequency?: 'daily' | 'weekly';
+  streakEnabled?: boolean;
+  streakSkipWeekends?: boolean;
+  streakSkipDays?: string[]; // Array of days to skip (e.g., ['2024-01-01', '2024-12-25'])
+  streakMinimumCount?: number;
 }
 
 export interface TaskLog {
@@ -36,6 +41,23 @@ export interface TaskLog {
 
 // Alias for export/import operations
 export type Log = TaskLog;
+
+export interface TaskStreak {
+  id: string;
+  taskId: string;
+  currentStreak: number;
+  bestStreak: number;
+  lastCompletionDate?: string;
+  streakStartDate?: string;
+  updatedAt: string;
+}
+
+export interface StreakConfig {
+  enabled: boolean;
+  skipWeekends: boolean;
+  skipDays: string[];
+  minimumCount: number;
+}
 
 export interface AppSettings {
   globalReminderEnabled: boolean;

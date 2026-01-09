@@ -1,5 +1,6 @@
 import { DataService, dataService } from './DataService';
 import { createTaskService } from './TaskService';
+import { createStreakService } from './StreakService';
 import { TaskAnalyticsService, taskAnalyticsService } from './TaskAnalyticsService';
 import { ValidationService, validationService } from './ValidationService';
 import notificationService from './NotificationService';
@@ -38,8 +39,14 @@ export class ServiceRegistry {
       const taskRepository = repositoryFactory.getTaskRepository();
       const taskService = createTaskService(taskRepository, validationService);
       
+      // Create StreakService with dependencies
+      const streakRepository = repositoryFactory.getStreakRepository();
+      const logRepository = repositoryFactory.getLogRepository();
+      const streakService = createStreakService(streakRepository, logRepository, taskRepository);
+      
       this.register('data', dataService);
       this.register('task', taskService);
+      this.register('streak', streakService);
       this.register('analytics', taskAnalyticsService);
       this.register('validation', validationService);
       this.register('notification', notificationService);
@@ -174,6 +181,7 @@ export const serviceRegistry = ServiceRegistry.getInstance();
 // Service getters for easy access
 export const getDataService = (): DataService => serviceRegistry.get<DataService>('data');
 export const getTaskService = () => serviceRegistry.get('task');
+export const getStreakService = () => serviceRegistry.get('streak');
 export const getAnalyticsService = (): TaskAnalyticsService => serviceRegistry.get<TaskAnalyticsService>('analytics');
 export const getValidationService = (): ValidationService => serviceRegistry.get<ValidationService>('validation');
 export const getNotificationService = () => serviceRegistry.get('notification');

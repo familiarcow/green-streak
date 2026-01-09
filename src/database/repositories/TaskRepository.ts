@@ -19,6 +19,33 @@ export class TaskRepository implements ITaskRepository {
     return this.findById(id);
   }
 
+  async getByIds(ids: string[]): Promise<Task[]> {
+    if (ids.length === 0) {
+      return [];
+    }
+
+    const db = getDatabase();
+    
+    try {
+      const placeholders = ids.map(() => '?').join(',');
+      const sql = `
+        SELECT * FROM tasks 
+        WHERE id IN (${placeholders}) 
+        AND archived_at IS NULL
+        ORDER BY created_at DESC
+      `;
+      
+      const results = await db.getAllAsync(sql, ...ids);
+      const tasks = results.map(row => this.mapRowToTask(row));
+      
+      logger.debug('DATA', 'Tasks fetched by IDs', { count: tasks.length, requestedCount: ids.length });
+      return tasks;
+    } catch (error: any) {
+      logger.error('DATA', 'Failed to fetch tasks by IDs', { error: error.message, ids });
+      throw error;
+    }
+  }
+
   async create(taskData: Omit<Task, 'id' | 'createdAt'>): Promise<Task> {
     const db = getDatabase();
     const id = this.generateId();
@@ -34,8 +61,9 @@ export class TaskRepository implements ITaskRepository {
       const sql = `
         INSERT INTO tasks (
           id, name, description, icon, color, is_multi_completion,
-          created_at, reminder_enabled, reminder_time, reminder_frequency
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          created_at, reminder_enabled, reminder_time, reminder_frequency,
+          streak_enabled, streak_skip_weekends, streak_skip_days, streak_minimum_count
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
 
       await db.runAsync(
@@ -50,6 +78,10 @@ export class TaskRepository implements ITaskRepository {
         task.reminderEnabled ? 1 : 0,
         task.reminderTime || null,
         task.reminderFrequency || null,
+        task.streakEnabled !== false ? 1 : 0,
+        task.streakSkipWeekends ? 1 : 0,
+        task.streakSkipDays ? JSON.stringify(task.streakSkipDays) : null,
+        task.streakMinimumCount || 1
       );
 
       logger.info('DATA', 'Task created', { taskId: task.id, name: task.name });
@@ -112,7 +144,9 @@ export class TaskRepository implements ITaskRepository {
         UPDATE tasks SET 
           name = ?, description = ?, icon = ?, color = ?, 
           is_multi_completion = ?, reminder_enabled = ?, 
-          reminder_time = ?, reminder_frequency = ?
+          reminder_time = ?, reminder_frequency = ?,
+          streak_enabled = ?, streak_skip_weekends = ?,
+          streak_skip_days = ?, streak_minimum_count = ?
         WHERE id = ?
       `;
 
@@ -126,7 +160,11 @@ export class TaskRepository implements ITaskRepository {
         updatedTask.reminderEnabled ? 1 : 0,
         updatedTask.reminderTime || null,
         updatedTask.reminderFrequency || null,
-        id,
+        updatedTask.streakEnabled !== false ? 1 : 0,
+        updatedTask.streakSkipWeekends ? 1 : 0,
+        updatedTask.streakSkipDays ? JSON.stringify(updatedTask.streakSkipDays) : null,
+        updatedTask.streakMinimumCount || 1,
+        id
       );
 
       logger.info('DATA', 'Task updated', { taskId: id, updates: Object.keys(updates) });
@@ -179,6 +217,10 @@ export class TaskRepository implements ITaskRepository {
       reminderEnabled: Boolean(row.reminder_enabled),
       reminderTime: row.reminder_time,
       reminderFrequency: row.reminder_frequency,
+      streakEnabled: row.streak_enabled !== null ? Boolean(row.streak_enabled) : true,
+      streakSkipWeekends: Boolean(row.streak_skip_weekends),
+      streakSkipDays: row.streak_skip_days ? JSON.parse(row.streak_skip_days) : [],
+      streakMinimumCount: row.streak_minimum_count || 1,
     };
   }
 }

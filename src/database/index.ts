@@ -1,5 +1,6 @@
 import * as SQLite from 'expo-sqlite';
 import { CREATE_TABLES, DEFAULT_SETTINGS } from './schema';
+import { addStreaksSupport } from './migrations/addStreaksSupport';
 import logger from '../utils/logger';
 
 let database: SQLite.SQLiteDatabase;
@@ -15,6 +16,10 @@ export const initializeDatabase = async (): Promise<SQLite.SQLiteDatabase> => {
     
     // Initialize default settings
     await initializeDefaultSettings();
+    
+    // Run migrations
+    await addStreaksSupport();
+    
     logger.info('DATA', 'Database initialized successfully');
     
     return database;

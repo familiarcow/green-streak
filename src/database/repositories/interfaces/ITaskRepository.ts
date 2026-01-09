@@ -16,6 +16,11 @@ export interface ITaskRepository {
   getById(id: string): Promise<Task | null>;
   
   /**
+   * Find multiple tasks by IDs (batch loading)
+   */
+  getByIds(ids: string[]): Promise<Task[]>;
+  
+  /**
    * Create a new task
    */
   create(taskData: Omit<Task, 'id' | 'createdAt'>): Promise<Task>;

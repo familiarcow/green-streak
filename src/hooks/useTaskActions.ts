@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { useTasksStore } from '../store/tasksStore';
 import { useLogsStore } from '../store/logsStore';
+import { useStreaksStore } from '../store/streaksStore';
 import { getTodayString } from '../utils/dateHelpers';
 import { UseTaskActionsReturn } from '../types';
 import { getDataService, getValidationService } from '../services';
@@ -13,6 +14,7 @@ import logger from '../utils/logger';
 export const useTaskActions = (): UseTaskActionsReturn => {
   const { loadTasks } = useTasksStore();
   const { logTaskCompletion, getLogForTaskAndDate, loadContributionData } = useLogsStore();
+  const { updateStreakOnCompletion } = useStreaksStore();
 
   const handleQuickAdd = useCallback(async (taskId: string, date?: string) => {
     try {
@@ -40,6 +42,9 @@ export const useTaskActions = (): UseTaskActionsReturn => {
       
       await logTaskCompletion(taskId, targetDate, newCount);
       
+      // Update streak for the task
+      await updateStreakOnCompletion(taskId, targetDate, newCount);
+      
       // Refresh data to reflect changes - expand date range to include target date if needed
       await loadContributionData(true, targetDate);
       
@@ -50,7 +55,7 @@ export const useTaskActions = (): UseTaskActionsReturn => {
       logger.error('UI', 'Failed to quick add task', { error, taskId });
       throw error; // Re-throw so components can handle UI feedback
     }
-  }, [logTaskCompletion, loadContributionData]);
+  }, [logTaskCompletion, loadContributionData, updateStreakOnCompletion]);
 
   const handleQuickRemove = useCallback(async (taskId: string, date?: string) => {
     try {

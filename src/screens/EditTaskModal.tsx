@@ -15,6 +15,7 @@ import { useTasksStore } from '../store/tasksStore';
 import { colors, textStyles, spacing, shadows } from '../theme';
 import { COLOR_PALETTE } from '../database/schema';
 import { EditTaskModalProps } from '../types';
+import { StreakRulesEngine } from '../services/StreakRulesEngine';
 import logger from '../utils/logger';
 
 export const EditTaskModal: React.FC<EditTaskModalProps> = ({ 
@@ -33,6 +34,9 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
   const [customColor, setCustomColor] = useState('');
   const [showCustomColorInput, setShowCustomColorInput] = useState(false);
   const [reminderFrequency, setReminderFrequency] = useState<'daily' | 'weekly'>('daily');
+  const [streakEnabled, setStreakEnabled] = useState(true);
+  const [streakSkipWeekends, setStreakSkipWeekends] = useState(false);
+  const [streakMinimumCount, setStreakMinimumCount] = useState(1);
   
   const { createTask, updateTask, deleteTask } = useTasksStore();
   const isEditing = !!existingTask;
@@ -60,6 +64,9 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
         setShowCustomTimeInput(true);
       }
       setReminderFrequency((existingTask.reminderFrequency as 'daily' | 'weekly') || 'daily');
+      setStreakEnabled(existingTask.streakEnabled !== false);
+      setStreakSkipWeekends(existingTask.streakSkipWeekends || false);
+      setStreakMinimumCount(existingTask.streakMinimumCount || 1);
     }
   }, [existingTask]);
 
@@ -76,6 +83,20 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
       return;
     }
 
+    // Validate streak configuration
+    const streakConfig = {
+      enabled: streakEnabled,
+      skipWeekends: streakSkipWeekends,
+      skipDays: [],
+      minimumCount: streakMinimumCount
+    };
+
+    const validation = StreakRulesEngine.validateConfiguration(streakConfig);
+    if (!validation.isValid) {
+      Alert.alert('Invalid Streak Configuration', validation.errors.join('\n'));
+      return;
+    }
+
     try {
       const taskData = {
         name: name.trim(),
@@ -86,6 +107,9 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
         reminderEnabled,
         reminderTime: reminderEnabled ? reminderTime : undefined,
         reminderFrequency: reminderEnabled ? reminderFrequency : undefined,
+        streakEnabled,
+        streakSkipWeekends: streakEnabled ? streakSkipWeekends : false,
+        streakMinimumCount: streakEnabled ? streakMinimumCount : 1,
       };
 
       if (isEditing && existingTask) {
@@ -424,6 +448,81 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                 </View>
               </View>
             </View>
+          )}
+        </View>
+
+        {/* Streak Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Streaks</Text>
+          
+          <View style={styles.settingItem}>
+            <View style={styles.settingInfo}>
+              <Text style={styles.settingTitle}>Track Streaks</Text>
+              <Text style={styles.settingDescription}>
+                Track consecutive days of completion
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={[styles.toggle, streakEnabled && styles.toggleActive]}
+              onPress={() => setStreakEnabled(!streakEnabled)}
+              accessibilityRole="button"
+              accessibilityLabel="Streak tracking"
+              accessibilityHint={`${streakEnabled ? 'Disable' : 'Enable'} streak tracking for this habit`}
+              accessibilityState={{ checked: streakEnabled }}
+            >
+              {streakEnabled && <View style={styles.toggleIndicator} />}
+            </TouchableOpacity>
+          </View>
+
+          {streakEnabled && (
+            <>
+              <View style={styles.settingItem}>
+                <View style={styles.settingInfo}>
+                  <Text style={styles.settingTitle}>Skip Weekends</Text>
+                  <Text style={styles.settingDescription}>
+                    Don't break streak on weekends
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={[styles.toggle, streakSkipWeekends && styles.toggleActive]}
+                  onPress={() => setStreakSkipWeekends(!streakSkipWeekends)}
+                  accessibilityRole="button"
+                  accessibilityLabel="Skip weekends"
+                  accessibilityHint={`${streakSkipWeekends ? 'Disable' : 'Enable'} weekend skipping`}
+                  accessibilityState={{ checked: streakSkipWeekends }}
+                >
+                  {streakSkipWeekends && <View style={styles.toggleIndicator} />}
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.settingItem}>
+                <View style={styles.settingInfo}>
+                  <Text style={styles.settingTitle}>Minimum Daily Count</Text>
+                  <Text style={styles.settingDescription}>
+                    Completions needed to maintain streak
+                  </Text>
+                </View>
+                <View style={styles.countSelector}>
+                  <TouchableOpacity
+                    style={styles.countButton}
+                    onPress={() => setStreakMinimumCount(Math.max(1, streakMinimumCount - 1))}
+                    accessibilityRole="button"
+                    accessibilityLabel="Decrease minimum count"
+                  >
+                    <Text style={styles.countButtonText}>-</Text>
+                  </TouchableOpacity>
+                  <Text style={styles.countValue}>{streakMinimumCount}</Text>
+                  <TouchableOpacity
+                    style={styles.countButton}
+                    onPress={() => setStreakMinimumCount(Math.min(10, streakMinimumCount + 1))}
+                    accessibilityRole="button"
+                    accessibilityLabel="Increase minimum count"
+                  >
+                    <Text style={styles.countButtonText}>+</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </>
           )}
         </View>
 
@@ -770,6 +869,35 @@ const styles = StyleSheet.create({
   frequencyOptionTextSelected: {
     color: colors.text.inverse,
     fontWeight: '600',
+  },
+
+  countSelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[3],
+  },
+
+  countButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  countButtonText: {
+    ...textStyles.body,
+    color: colors.text.inverse,
+    fontWeight: 'bold',
+    fontSize: 18,
+  },
+
+  countValue: {
+    ...textStyles.body,
+    fontWeight: 'bold',
+    minWidth: 30,
+    textAlign: 'center',
   },
 
   deleteSection: {
