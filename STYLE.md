@@ -276,6 +276,8 @@ delay: 100-200ms                           // Staggered animations
 
 ### Screen Structure Template
 ```typescript
+import { SafeAreaView } from 'react-native-safe-area-context';
+
 const Screen: React.FC = () => (
   <SafeAreaView style={styles.container}>
     <View style={styles.header}>
@@ -519,7 +521,7 @@ const [data, setData] = useState<DataType[]>([]);
 - `TaskCard` - Individual task display component
 
 #### Layout
-- Standard screen structure with SafeAreaView, header, and ScrollView
+- Standard screen structure with SafeAreaView (from react-native-safe-area-context), header, and ScrollView
 - Section pattern with title and content area
 - Card pattern with surface styling and shadows
 

@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Modal, Pressable, Animated } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Pressable, Animated } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { ContributionGraph } from '../components/ContributionGraph';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { ScreenErrorBoundary } from '../components/ScreenErrorBoundary';

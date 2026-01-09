@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { View, Text, StyleSheet } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AnimatedLoader } from './src/components/AnimatedLoader';
 import { initializeDatabase } from './src/database';
 import { runSeed } from './src/utils/devSeed';
@@ -101,55 +102,59 @@ export default function App() {
 
   if (initError) {
     return (
-      <View style={styles.errorContainer}>
-        <Text style={styles.errorTitle}>Initialization Error</Text>
-        <Text style={styles.errorText}>{initError}</Text>
-        <StatusBar style="auto" />
-      </View>
+      <SafeAreaProvider>
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorTitle}>Initialization Error</Text>
+          <Text style={styles.errorText}>{initError}</Text>
+          <StatusBar style="auto" />
+        </View>
+      </SafeAreaProvider>
     );
   }
 
   if (!isInitialized) {
     return (
-      <View style={styles.loadingContainer}>
-        <AnimatedLoader 
-          text="Initializing Green Streak..." 
-          size="large"
-          color={colors.primary}
-        />
-        <StatusBar style="auto" />
-      </View>
+      <SafeAreaProvider>
+        <View style={styles.loadingContainer}>
+          <AnimatedLoader 
+            text="Initializing Green Streak..." 
+            size="large"
+            color={colors.primary}
+          />
+          <StatusBar style="auto" />
+        </View>
+      </SafeAreaProvider>
     );
   }
 
   // Show onboarding if needed
   if (showOnboarding) {
     return (
-      <>
+      <SafeAreaProvider>
         <OnboardingScreen onComplete={handleOnboardingComplete} />
         <StatusBar style="dark" backgroundColor={colors.background} />
-      </>
+      </SafeAreaProvider>
     );
   }
 
   // Show add task screen if user chose to set up task after onboarding
   if (showAddTask) {
     return (
-      <>
+      <SafeAreaProvider>
         <AddTaskScreen
           onClose={() => setShowAddTask(false)}
           onTaskAdded={handleTaskAdded}
         />
         <StatusBar style="dark" backgroundColor={colors.background} />
-      </>
+      </SafeAreaProvider>
     );
   }
 
   return (
-    <>
+    <SafeAreaProvider>
       <HomeScreen />
       <StatusBar style="dark" backgroundColor={colors.background} />
-    </>
+    </SafeAreaProvider>
   );
 }
 
