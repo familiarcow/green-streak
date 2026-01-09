@@ -132,7 +132,7 @@ export interface UseDateNavigationReturn {
 }
 
 // Screen Props Interfaces
-export interface AddTaskScreenProps {
+export interface EditTaskModalProps {
   onClose: () => void;
   onTaskAdded: () => void;
   existingTask?: Task;

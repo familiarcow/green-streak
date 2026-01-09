@@ -1,15 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  ScrollView, 
+  TouchableOpacity, 
+  TextInput,
+  Alert,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AnimatedButton } from '../components/AnimatedButton';
 import { Icon, IconName } from '../components/common/Icon';
 import { useTasksStore } from '../store/tasksStore';
 import { colors, textStyles, spacing, shadows } from '../theme';
 import { COLOR_PALETTE } from '../database/schema';
-import { AddTaskScreenProps } from '../types';
+import { EditTaskModalProps } from '../types';
 import logger from '../utils/logger';
 
-export const AddTaskScreen: React.FC<AddTaskScreenProps> = ({ 
+export const EditTaskModal: React.FC<EditTaskModalProps> = ({ 
   onClose, 
   onTaskAdded, 
   existingTask 
@@ -132,277 +140,290 @@ export const AddTaskScreen: React.FC<AddTaskScreenProps> = ({
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
-          <TouchableOpacity 
-            onPress={onClose} 
-            style={styles.cancelButton}
-            accessibilityRole="button"
-            accessibilityLabel={isEditing ? "Cancel editing habit" : "Cancel adding habit"}
-            accessibilityHint="Double tap to cancel and return to the previous screen"
-          >
-            <Text style={styles.cancelButtonText}>Cancel</Text>
-          </TouchableOpacity>
-          <Text style={styles.title}>{isEditing ? 'Edit Habit' : 'Add New Habit'}</Text>
-          <AnimatedButton
-            title="Save"
-            onPress={handleSave}
-            variant="primary"
-            size="medium"
-          />
-        </View>
+      <View style={styles.header}>
+        <TouchableOpacity 
+          onPress={onClose} 
+          style={styles.cancelButton}
+          accessibilityRole="button"
+          accessibilityLabel={isEditing ? "Cancel editing habit" : "Cancel adding habit"}
+          accessibilityHint="Double tap to cancel and return to the previous screen"
+        >
+          <Text style={styles.cancelButtonText}>Cancel</Text>
+        </TouchableOpacity>
+        <Text style={styles.title}>{isEditing ? 'Edit Habit' : 'Add New Habit'}</Text>
+        <AnimatedButton
+          title="Save"
+          onPress={handleSave}
+          variant="primary"
+          size="medium"
+        />
+      </View>
 
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        
+        {/* Name Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Name *</Text>
-          <TextInput
-            style={styles.textInput}
-            value={name}
-            onChangeText={setName}
-            placeholder="Enter habit name"
-            placeholderTextColor={colors.text.tertiary}
-            maxLength={50}
-          />
+          <View style={styles.settingItem}>
+            <TextInput
+              style={styles.textInput}
+              value={name}
+              onChangeText={setName}
+              placeholder="Enter habit name"
+              placeholderTextColor={colors.text.tertiary}
+              maxLength={50}
+            />
+          </View>
         </View>
 
+        {/* Description Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Description (Optional)</Text>
-          <TextInput
-            style={[styles.textInput, styles.multilineInput]}
-            value={description}
-            onChangeText={setDescription}
-            placeholder="Add a description..."
-            placeholderTextColor={colors.text.tertiary}
-            multiline
-            numberOfLines={3}
-            maxLength={200}
-          />
+          <View style={styles.settingItem}>
+            <TextInput
+              style={[styles.textInput, styles.multilineInput]}
+              value={description}
+              onChangeText={setDescription}
+              placeholder="Add a description..."
+              placeholderTextColor={colors.text.tertiary}
+              multiline
+              numberOfLines={3}
+              maxLength={200}
+            />
+          </View>
         </View>
 
+        {/* Icon Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Icon</Text>
-          <View style={styles.iconGrid}>
-            {ICON_OPTIONS.map((icon, index) => (
-              <TouchableOpacity
-                key={index}
-                style={[
-                  styles.iconOption,
-                  selectedIcon === icon && styles.selectedIconOption,
-                ]}
-                onPress={() => setSelectedIcon(icon)}
-                accessibilityRole="button"
-                accessibilityLabel={`Select ${icon} icon`}
-                accessibilityHint="Double tap to select this icon for your habit"
-                accessibilityState={{ selected: selectedIcon === icon }}
-              >
-                <Icon name={icon} size={20} color={colors.text.primary} />
-              </TouchableOpacity>
-            ))}
+          <View style={styles.settingItem}>
+            <View style={styles.iconGrid}>
+              {ICON_OPTIONS.map((icon, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={[
+                    styles.iconOption,
+                    selectedIcon === icon && styles.selectedIconOption,
+                  ]}
+                  onPress={() => setSelectedIcon(icon)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Select ${icon} icon`}
+                  accessibilityHint="Double tap to select this icon for your habit"
+                  accessibilityState={{ selected: selectedIcon === icon }}
+                >
+                  <Icon name={icon} size={20} color={colors.text.primary} />
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
         </View>
 
+        {/* Color Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Color</Text>
-          <View style={styles.colorGrid}>
-            {COLOR_PALETTE.map((color, index) => (
+          <View style={styles.settingItem}>
+            <View style={styles.colorGrid}>
+              {COLOR_PALETTE.map((color, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={[
+                    styles.colorOption,
+                    { backgroundColor: color },
+                    selectedColor === color && styles.selectedColorOption,
+                  ]}
+                  onPress={() => {
+                    setSelectedColor(color);
+                    setShowCustomColorInput(false);
+                    setCustomColor('');
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Select color ${index + 1}`}
+                  accessibilityHint="Double tap to select this color for your habit"
+                  accessibilityState={{ selected: selectedColor === color && !showCustomColorInput }}
+                />
+              ))}
+              
               <TouchableOpacity
-                key={index}
                 style={[
                   styles.colorOption,
-                  { backgroundColor: color },
-                  selectedColor === color && styles.selectedColorOption,
+                  styles.customColorOption,
+                  { backgroundColor: showCustomColorInput && customColor ? `#${customColor}` : colors.surface },
+                  showCustomColorInput && styles.selectedColorOption,
                 ]}
                 onPress={() => {
-                  setSelectedColor(color);
-                  setShowCustomColorInput(false);
-                  setCustomColor('');
-                }}
-                accessibilityRole="button"
-                accessibilityLabel={`Select color ${index + 1}`}
-                accessibilityHint="Double tap to select this color for your habit"
-                accessibilityState={{ selected: selectedColor === color && !showCustomColorInput }}
-              />
-            ))}
-            
-            <TouchableOpacity
-              style={[
-                styles.colorOption,
-                styles.customColorOption,
-                { backgroundColor: showCustomColorInput && customColor ? `#${customColor}` : colors.surface },
-                showCustomColorInput && styles.selectedColorOption,
-              ]}
-              onPress={() => {
-                setShowCustomColorInput(true);
-                if (customColor) {
-                  setSelectedColor(customColor);
-                }
-              }}
-              accessibilityRole="button"
-              accessibilityLabel="Select custom color"
-              accessibilityHint="Double tap to enter a custom hex color"
-            >
-              <Text style={styles.customColorText}>
-                {showCustomColorInput ? '#' : '+'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {showCustomColorInput && (
-            <View style={styles.customColorContainer}>
-              <Text style={styles.customColorLabel}>Enter hex color (e.g., #FF5733):</Text>
-              <TextInput
-                style={styles.customColorInput}
-                value={customColor}
-                onChangeText={(text) => {
-                  // Remove # if user types it
-                  const cleanText = text.replace('#', '');
-                  setCustomColor(cleanText);
-                  
-                  // Validate and set color if valid hex format
-                  if (/^[0-9A-Fa-f]{6}$/.test(cleanText)) {
-                    setSelectedColor(`#${cleanText}`);
+                  setShowCustomColorInput(true);
+                  if (customColor) {
+                    setSelectedColor(customColor);
                   }
                 }}
-                placeholder="FF5733"
-                placeholderTextColor={colors.text.tertiary}
-                autoCapitalize="characters"
-                maxLength={6}
-              />
-              <View style={styles.colorPreview}>
-                <Text style={styles.colorPreviewLabel}>Preview:</Text>
-                <View 
-                  style={[
-                    styles.colorPreviewSwatch, 
-                    { 
-                      backgroundColor: /^[0-9A-Fa-f]{6}$/.test(customColor) 
-                        ? `#${customColor}` 
-                        : colors.surface 
-                    }
-                  ]} 
-                />
-              </View>
+                accessibilityRole="button"
+                accessibilityLabel="Select custom color"
+                accessibilityHint="Double tap to enter a custom hex color"
+              >
+                <Text style={styles.customColorText}>
+                  {showCustomColorInput ? '#' : '+'}
+                </Text>
+              </TouchableOpacity>
             </View>
-          )}
+
+            {showCustomColorInput && (
+              <View style={styles.customColorContainer}>
+                <Text style={styles.customColorLabel}>Enter hex color (e.g., #FF5733):</Text>
+                <TextInput
+                  style={styles.customColorInput}
+                  value={customColor}
+                  onChangeText={(text) => {
+                    // Remove # if user types it
+                    const cleanText = text.replace('#', '');
+                    setCustomColor(cleanText);
+                    
+                    // Validate and set color if valid hex format
+                    if (/^[0-9A-Fa-f]{6}$/.test(cleanText)) {
+                      setSelectedColor(`#${cleanText}`);
+                    }
+                  }}
+                  placeholder="FF5733"
+                  placeholderTextColor={colors.text.tertiary}
+                  autoCapitalize="characters"
+                  maxLength={6}
+                />
+                <View style={styles.colorPreview}>
+                  <Text style={styles.colorPreviewLabel}>Preview:</Text>
+                  <View 
+                    style={[
+                      styles.colorPreviewSwatch, 
+                      { 
+                        backgroundColor: /^[0-9A-Fa-f]{6}$/.test(customColor) 
+                          ? `#${customColor}` 
+                          : colors.surface 
+                      }
+                    ]} 
+                  />
+                </View>
+              </View>
+            )}
+          </View>
         </View>
 
-
+        {/* Reminder Section */}
         <View style={styles.section}>
-          <TouchableOpacity
-            style={styles.optionRow}
-            onPress={() => setReminderEnabled(!reminderEnabled)}
-            accessibilityRole="button"
-            accessibilityLabel="Reminder setting"
-            accessibilityHint={`${reminderEnabled ? 'Disable' : 'Enable'} reminders for this habit`}
-            accessibilityState={{ checked: reminderEnabled }}
-          >
-            <View>
-              <Text style={styles.optionTitle}>Reminder</Text>
-              <Text style={styles.optionDescription}>
+          <Text style={styles.sectionTitle}>Reminder</Text>
+          
+          <View style={styles.settingItem}>
+            <View style={styles.settingInfo}>
+              <Text style={styles.settingTitle}>Enable Reminder</Text>
+              <Text style={styles.settingDescription}>
                 Get notified to complete this habit
               </Text>
             </View>
-            <View style={[styles.toggle, reminderEnabled && styles.toggleActive]}>
+            <TouchableOpacity
+              style={[styles.toggle, reminderEnabled && styles.toggleActive]}
+              onPress={() => setReminderEnabled(!reminderEnabled)}
+              accessibilityRole="button"
+              accessibilityLabel="Reminder setting"
+              accessibilityHint={`${reminderEnabled ? 'Disable' : 'Enable'} reminders for this habit`}
+              accessibilityState={{ checked: reminderEnabled }}
+            >
               {reminderEnabled && <View style={styles.toggleIndicator} />}
-            </View>
-          </TouchableOpacity>
+            </TouchableOpacity>
+          </View>
 
           {reminderEnabled && (
-            <>
-              <View style={styles.reminderSettings}>
-                <View style={styles.reminderRow}>
-                  <Text style={styles.reminderLabel}>Time:</Text>
-                  <View style={styles.timeOptions}>
-                    {['06:00', '07:00', '08:00', '09:00', '12:00', '18:00', '19:00', '20:00', '21:00', '22:00'].map((time) => (
-                      <TouchableOpacity
-                        key={time}
-                        style={[
-                          styles.timeOption,
-                          reminderTime === time && !showCustomTimeInput && styles.timeOptionSelected,
-                        ]}
-                        onPress={() => {
-                          setReminderTime(time);
-                          setShowCustomTimeInput(false);
-                          setCustomTime('');
-                        }}
-                      >
-                        <Text style={[
-                          styles.timeOptionText,
-                          reminderTime === time && !showCustomTimeInput && styles.timeOptionTextSelected,
-                        ]}>
-                          {time}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
+            <View style={styles.reminderSettings}>
+              <View style={styles.reminderRow}>
+                <Text style={styles.reminderLabel}>Time:</Text>
+                <View style={styles.timeOptions}>
+                  {['06:00', '07:00', '08:00', '09:00', '12:00', '18:00', '19:00', '20:00', '21:00', '22:00'].map((time) => (
                     <TouchableOpacity
+                      key={time}
                       style={[
                         styles.timeOption,
-                        styles.customTimeOption,
-                        showCustomTimeInput && styles.timeOptionSelected,
+                        reminderTime === time && !showCustomTimeInput && styles.timeOptionSelected,
                       ]}
                       onPress={() => {
-                        setShowCustomTimeInput(true);
-                        if (customTime) {
-                          setReminderTime(customTime);
-                        }
+                        setReminderTime(time);
+                        setShowCustomTimeInput(false);
+                        setCustomTime('');
                       }}
                     >
                       <Text style={[
                         styles.timeOptionText,
-                        showCustomTimeInput && styles.timeOptionTextSelected,
+                        reminderTime === time && !showCustomTimeInput && styles.timeOptionTextSelected,
                       ]}>
-                        Custom
+                        {time}
                       </Text>
                     </TouchableOpacity>
-                  </View>
-                  
-                  {showCustomTimeInput && (
-                    <View style={styles.customTimeContainer}>
-                      <Text style={styles.customTimeLabel}>Enter custom time (HH:MM):</Text>
-                      <TextInput
-                        style={styles.customTimeInput}
-                        value={customTime}
-                        onChangeText={(text) => {
-                          setCustomTime(text);
-                          // Validate and set reminder time if valid format
-                          if (/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(text)) {
-                            setReminderTime(text);
-                          }
-                        }}
-                        placeholder="20:00"
-                        placeholderTextColor={colors.text.tertiary}
-                        keyboardType="numeric"
-                        maxLength={5}
-                      />
-                    </View>
-                  )}
+                  ))}
+                  <TouchableOpacity
+                    style={[
+                      styles.timeOption,
+                      styles.customTimeOption,
+                      showCustomTimeInput && styles.timeOptionSelected,
+                    ]}
+                    onPress={() => {
+                      setShowCustomTimeInput(true);
+                      if (customTime) {
+                        setReminderTime(customTime);
+                      }
+                    }}
+                  >
+                    <Text style={[
+                      styles.timeOptionText,
+                      showCustomTimeInput && styles.timeOptionTextSelected,
+                    ]}>
+                      Custom
+                    </Text>
+                  </TouchableOpacity>
                 </View>
-
-                <View style={styles.reminderRow}>
-                  <Text style={styles.reminderLabel}>Frequency:</Text>
-                  <View style={styles.frequencyOptions}>
-                    {[
-                      { value: 'daily', label: 'Daily' },
-                      { value: 'weekly', label: 'Weekly' },
-                    ].map((freq) => (
-                      <TouchableOpacity
-                        key={freq.value}
-                        style={[
-                          styles.frequencyOption,
-                          reminderFrequency === freq.value && styles.frequencyOptionSelected,
-                        ]}
-                        onPress={() => setReminderFrequency(freq.value as 'daily' | 'weekly')}
-                      >
-                        <Text style={[
-                          styles.frequencyOptionText,
-                          reminderFrequency === freq.value && styles.frequencyOptionTextSelected,
-                        ]}>
-                          {freq.label}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
+                
+                {showCustomTimeInput && (
+                  <View style={styles.customTimeContainer}>
+                    <Text style={styles.customTimeLabel}>Enter custom time (HH:MM):</Text>
+                    <TextInput
+                      style={styles.customTimeInput}
+                      value={customTime}
+                      onChangeText={(text) => {
+                        setCustomTime(text);
+                        // Validate and set reminder time if valid format
+                        if (/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(text)) {
+                          setReminderTime(text);
+                        }
+                      }}
+                      placeholder="20:00"
+                      placeholderTextColor={colors.text.tertiary}
+                      keyboardType="numeric"
+                      maxLength={5}
+                    />
                   </View>
+                )}
+              </View>
+
+              <View style={styles.reminderRow}>
+                <Text style={styles.reminderLabel}>Frequency:</Text>
+                <View style={styles.frequencyOptions}>
+                  {[
+                    { value: 'daily', label: 'Daily' },
+                    { value: 'weekly', label: 'Weekly' },
+                  ].map((freq) => (
+                    <TouchableOpacity
+                      key={freq.value}
+                      style={[
+                        styles.frequencyOption,
+                        reminderFrequency === freq.value && styles.frequencyOptionSelected,
+                      ]}
+                      onPress={() => setReminderFrequency(freq.value as 'daily' | 'weekly')}
+                    >
+                      <Text style={[
+                        styles.frequencyOptionText,
+                        reminderFrequency === freq.value && styles.frequencyOptionTextSelected,
+                      ]}>
+                        {freq.label}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
                 </View>
               </View>
-            </>
+            </View>
           )}
         </View>
 
@@ -431,16 +452,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   
-  scrollView: {
-    flex: 1,
-    padding: spacing[4],
-  },
-  
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: spacing[6],
+    padding: spacing[4],
+    borderBottomWidth: 1,
+    borderBottomColor: colors.divider,
   },
   
   title: {
@@ -457,6 +475,13 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
   },
   
+  scrollView: {
+    flex: 1,
+  },
+  
+  scrollContent: {
+    padding: spacing[4],
+  },
   
   section: {
     marginBottom: spacing[6],
@@ -466,6 +491,30 @@ const styles = StyleSheet.create({
     ...textStyles.h3,
     color: colors.text.primary,
     marginBottom: spacing[3],
+  },
+  
+  settingItem: {
+    backgroundColor: colors.surface,
+    borderRadius: spacing[2],
+    padding: spacing[4],
+    marginBottom: spacing[2],
+    ...shadows.sm,
+  },
+  
+  settingInfo: {
+    flex: 1,
+  },
+  
+  settingTitle: {
+    ...textStyles.body,
+    color: colors.text.primary,
+    fontWeight: '600',
+  },
+  
+  settingDescription: {
+    ...textStyles.bodySmall,
+    color: colors.text.secondary,
+    marginTop: spacing[1],
   },
   
   textInput: {
@@ -488,6 +537,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing[2],
+    marginTop: spacing[2],
   },
   
   iconOption: {
@@ -511,6 +561,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing[2],
+    marginTop: spacing[2],
   },
   
   colorOption: {
@@ -587,28 +638,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     borderColor: colors.border,
-  },
-  
-  optionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: spacing[4],
-    backgroundColor: colors.surface,
-    borderRadius: spacing[2],
-    ...shadows.sm,
-  },
-  
-  optionTitle: {
-    ...textStyles.body,
-    color: colors.text.primary,
-    fontWeight: '600',
-  },
-  
-  optionDescription: {
-    ...textStyles.bodySmall,
-    color: colors.text.secondary,
-    marginTop: spacing[1],
   },
   
   toggle: {
@@ -768,4 +797,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default AddTaskScreen;
+export default EditTaskModal;

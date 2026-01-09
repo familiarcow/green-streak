@@ -19,12 +19,12 @@ jest.mock('../../store/logsStore', () => ({
 }));
 
 // Mock the screens and components that are rendered in modals
-jest.mock('../AddTaskScreen', () => {
-  return function MockAddTaskScreen({ onClose, onTaskAdded }: any) {
+jest.mock('../EditTaskModal', () => {
+  return function MockEditTaskModal({ onClose, onTaskAdded }: any) {
     const { TouchableOpacity, Text } = require('react-native');
     return (
       <TouchableOpacity 
-        testID="add-task-screen"
+        testID="edit-task-modal"
         onPress={() => {
           onTaskAdded();
           onClose();

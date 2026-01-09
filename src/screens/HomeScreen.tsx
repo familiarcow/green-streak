@@ -12,7 +12,7 @@ import { useSettingsStore } from '../store/settingsStore';
 import { useTaskActions, useModalState, useDateNavigation } from '../hooks';
 import { colors, textStyles, spacing } from '../theme';
 import { getTodayString } from '../utils/dateHelpers';
-import AddTaskScreen from './AddTaskScreen';
+import EditTaskModal from './EditTaskModal';
 import DailyLogScreen from './DailyLogScreen';
 import SettingsScreen from './SettingsScreen';
 import TaskAnalyticsScreen from './TaskAnalyticsScreen';
@@ -289,15 +289,19 @@ export const HomeScreen: React.FC = () => {
           animationType="slide"
           statusBarTranslucent
         >
-          <Pressable 
+          <View 
             style={{
               flex: 1,
               backgroundColor: 'rgba(0,0,0,0.6)',
               justifyContent: 'flex-end'
             }}
-            onPress={closeAddTask}
           >
             <Pressable 
+              style={{ flex: 1 }}
+              onPress={closeAddTask}
+            />
+            
+            <Animated.View
               style={{
                 backgroundColor: colors.background,
                 borderTopLeftRadius: 20,
@@ -305,7 +309,6 @@ export const HomeScreen: React.FC = () => {
                 height: '85%',
                 minHeight: 400
               }}
-              onPress={(e) => e.stopPropagation()}
             >
               <View style={{
                 width: 40,
@@ -318,7 +321,7 @@ export const HomeScreen: React.FC = () => {
               }} />
               
               <ScreenErrorBoundary 
-                screenName="Add Task"
+                screenName="Edit Task"
                 onClose={closeAddTask}
                 onRetry={() => {
                   // Reset the modal by closing and reopening
@@ -326,14 +329,14 @@ export const HomeScreen: React.FC = () => {
                   setTimeout(() => openAddTask(), 100);
                 }}
               >
-                <AddTaskScreen
+                <EditTaskModal
                   onClose={closeAddTask}
                   onTaskAdded={handleTaskAdded}
                   existingTask={editingTask || undefined}
                 />
               </ScreenErrorBoundary>
-            </Pressable>
-          </Pressable>
+            </Animated.View>
+          </View>
         </Modal>
       )}
 
@@ -482,7 +485,7 @@ export const HomeScreen: React.FC = () => {
               onPress={handleTaskAnalyticsClose}
             />
             
-            <View 
+            <Pressable 
               style={{
                 position: 'absolute',
                 bottom: 0,
@@ -493,6 +496,7 @@ export const HomeScreen: React.FC = () => {
                 borderTopRightRadius: 20,
                 maxHeight: '90%',
               }}
+              onPress={() => {}}
             >
                 <View style={{
                   width: 40,
@@ -517,10 +521,11 @@ export const HomeScreen: React.FC = () => {
                     onClose={handleTaskAnalyticsClose}
                   />
                 </ScreenErrorBoundary>
-            </View>
+            </Pressable>
           </View>
         </Modal>
       )}
+
     </SafeAreaView>
     </ErrorBoundary>
   );
