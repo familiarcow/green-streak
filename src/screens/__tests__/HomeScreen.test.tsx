@@ -18,6 +18,47 @@ jest.mock('../../store/logsStore', () => ({
   useLogsStore: jest.fn(),
 }));
 
+jest.mock('../../store/settingsStore', () => ({
+  useSettingsStore: jest.fn(() => ({
+    firstDayOfWeek: 0,
+  })),
+}));
+
+// Mock the new hooks
+jest.mock('../../hooks', () => ({
+  useTaskActions: jest.fn(() => ({
+    handleQuickAdd: jest.fn(),
+    refreshAllData: jest.fn(),
+    refreshContributionData: jest.fn(),
+  })),
+  useModalManager: jest.fn(() => ({
+    activeModal: null,
+    modalConfig: null,
+    openAddTask: jest.fn(),
+    openEditTask: jest.fn(),
+    openDailyLog: jest.fn(),
+    openSettings: jest.fn(),
+    openTaskAnalytics: jest.fn(),
+    closeModal: jest.fn(),
+    getAnimationStyle: jest.fn(() => ({})),
+    animations: {
+      backgroundOpacity: { _value: 0 },
+    },
+  })),
+  useDateNavigation: jest.fn(() => ({
+    selectedDate: '2024-01-15',
+    handleDayPress: jest.fn(),
+    handleDateChange: jest.fn(),
+  })),
+}));
+
+// Mock the AnimatedModal component
+jest.mock('../../components/modals', () => ({
+  AnimatedModal: ({ children, isVisible }: any) => {
+    return isVisible ? children : null;
+  },
+}));
+
 // Mock the screens and components that are rendered in modals
 jest.mock('../EditTaskModal', () => {
   return function MockEditTaskModal({ onClose, onTaskAdded }: any) {
@@ -129,16 +170,47 @@ describe('HomeScreen', () => {
   });
 
   it('opens add task modal when add button pressed', async () => {
+    const mockOpenAddTask = jest.fn();
+    const { useModalManager } = require('../../hooks');
+    
+    useModalManager.mockReturnValue({
+      activeModal: 'addTask',
+      modalConfig: { type: 'addTask', animationType: 'slide' },
+      openAddTask: mockOpenAddTask,
+      openEditTask: jest.fn(),
+      openDailyLog: jest.fn(),
+      openSettings: jest.fn(),
+      openTaskAnalytics: jest.fn(),
+      closeModal: jest.fn(),
+      getAnimationStyle: jest.fn(() => ({})),
+      animations: { backgroundOpacity: { _value: 0 } },
+    });
+
     const { getByText, getByTestId } = renderWithProviders(<HomeScreen />);
     
     fireEvent.press(getByText('Add Your First Habit'));
     
     await waitFor(() => {
-      expect(getByTestId('add-task-screen')).toBeTruthy();
+      expect(getByTestId('edit-task-modal')).toBeTruthy();
     });
   });
 
   it('opens daily log modal when log button pressed', async () => {
+    const { useModalManager } = require('../../hooks');
+    
+    useModalManager.mockReturnValue({
+      activeModal: 'dailyLog',
+      modalConfig: { type: 'dailyLog', animationType: 'slide' },
+      openAddTask: jest.fn(),
+      openEditTask: jest.fn(),
+      openDailyLog: jest.fn(),
+      openSettings: jest.fn(),
+      openTaskAnalytics: jest.fn(),
+      closeModal: jest.fn(),
+      getAnimationStyle: jest.fn(() => ({})),
+      animations: { backgroundOpacity: { _value: 0 } },
+    });
+
     const { getByText, getByTestId } = renderWithProviders(<HomeScreen />);
     
     fireEvent.press(getByText("Log Today's Tasks"));
@@ -149,6 +221,21 @@ describe('HomeScreen', () => {
   });
 
   it('opens settings modal when settings button pressed', async () => {
+    const { useModalManager } = require('../../hooks');
+    
+    useModalManager.mockReturnValue({
+      activeModal: 'settings',
+      modalConfig: { type: 'settings', animationType: 'slide' },
+      openAddTask: jest.fn(),
+      openEditTask: jest.fn(),
+      openDailyLog: jest.fn(),
+      openSettings: jest.fn(),
+      openTaskAnalytics: jest.fn(),
+      closeModal: jest.fn(),
+      getAnimationStyle: jest.fn(() => ({})),
+      animations: { backgroundOpacity: { _value: 0 } },
+    });
+
     const { getByLabelText, getByTestId } = renderWithProviders(<HomeScreen />);
     
     fireEvent.press(getByLabelText('Settings'));
@@ -159,17 +246,26 @@ describe('HomeScreen', () => {
   });
 
   it('refreshes data after task is added', async () => {
-    const mockLoadTasks = jest.fn();
-    const mockLoadContributionData = jest.fn();
+    const mockRefreshAllData = jest.fn();
+    const { useTaskActions, useModalManager } = require('../../hooks');
     
-    useTasksStore.mockReturnValue({
-      ...mockTasksStoreState,
-      loadTasks: mockLoadTasks,
+    useTaskActions.mockReturnValue({
+      handleQuickAdd: jest.fn(),
+      refreshAllData: mockRefreshAllData,
+      refreshContributionData: jest.fn(),
     });
-    
-    useLogsStore.mockReturnValue({
-      ...mockLogsStoreState,
-      loadContributionData: mockLoadContributionData,
+
+    useModalManager.mockReturnValue({
+      activeModal: 'addTask',
+      modalConfig: { type: 'addTask', animationType: 'slide' },
+      openAddTask: jest.fn(),
+      openEditTask: jest.fn(),
+      openDailyLog: jest.fn(),
+      openSettings: jest.fn(),
+      openTaskAnalytics: jest.fn(),
+      closeModal: jest.fn(),
+      getAnimationStyle: jest.fn(() => ({})),
+      animations: { backgroundOpacity: { _value: 0 } },
     });
 
     const { getByText, getByTestId } = renderWithProviders(<HomeScreen />);
@@ -178,15 +274,14 @@ describe('HomeScreen', () => {
     fireEvent.press(getByText('Add Your First Habit'));
     
     await waitFor(() => {
-      expect(getByTestId('add-task-screen')).toBeTruthy();
+      expect(getByTestId('edit-task-modal')).toBeTruthy();
     });
 
     // Simulate adding a task (mock component calls onTaskAdded then onClose)
-    fireEvent.press(getByTestId('add-task-screen'));
+    fireEvent.press(getByTestId('edit-task-modal'));
     
     await waitFor(() => {
-      expect(mockLoadTasks).toHaveBeenCalled();
-      expect(mockLoadContributionData).toHaveBeenCalledWith(true);
+      expect(mockRefreshAllData).toHaveBeenCalled();
     });
   });
 
@@ -236,30 +331,27 @@ describe('HomeScreen', () => {
   it('opens task analytics when task is pressed', async () => {
     const mockTask = createMockTask();
     const mockTasks = [mockTask];
+    const { useModalManager } = require('../../hooks');
     
     useTasksStore.mockReturnValue({
       ...mockTasksStoreState,
       tasks: mockTasks,
     });
 
-    // Mock AnimatedTaskList to simulate task press
-    jest.mock('../../components/AnimatedTaskList', () => {
-      return function MockAnimatedTaskList({ onTaskPress }: any) {
-        const { TouchableOpacity, Text } = require('react-native');
-        return (
-          <TouchableOpacity 
-            testID="task-item"
-            onPress={() => onTaskPress(mockTask)}
-          >
-            <Text>{mockTask.name}</Text>
-          </TouchableOpacity>
-        );
-      };
+    useModalManager.mockReturnValue({
+      activeModal: 'taskAnalytics',
+      modalConfig: { type: 'taskAnalytics', animationType: 'fade', props: { task: mockTask } },
+      openAddTask: jest.fn(),
+      openEditTask: jest.fn(),
+      openDailyLog: jest.fn(),
+      openSettings: jest.fn(),
+      openTaskAnalytics: jest.fn(),
+      closeModal: jest.fn(),
+      getAnimationStyle: jest.fn(() => ({})),
+      animations: { backgroundOpacity: { _value: 0 } },
     });
 
     const { getByTestId } = renderWithProviders(<HomeScreen />);
-    
-    fireEvent.press(getByTestId('task-item'));
     
     await waitFor(() => {
       expect(getByTestId('task-analytics-screen')).toBeTruthy();

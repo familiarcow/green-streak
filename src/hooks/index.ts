@@ -5,5 +5,6 @@
 
 export { useTaskActions } from './useTaskActions';
 export { useModalState } from './useModalState';
+export { useModalManager } from './useModalManager';
 export { useDateNavigation } from './useDateNavigation';
 export { useContributionData } from './useContributionData';

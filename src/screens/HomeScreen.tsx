@@ -1,17 +1,17 @@
-import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Pressable, Animated } from 'react-native';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ContributionGraph } from '../components/ContributionGraph';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { ScreenErrorBoundary } from '../components/ScreenErrorBoundary';
 import { Icon } from '../components/common/Icon';
 import { TodayCard, HistorySection, EmptyStateSection, TasksSection } from '../components/HomeScreen';
+import { BaseModal } from '../components/modals';
 import { useTasksStore } from '../store/tasksStore';
 import { useLogsStore } from '../store/logsStore';
 import { useSettingsStore } from '../store/settingsStore';
-import { useTaskActions, useModalState, useDateNavigation } from '../hooks';
+import { useTaskActions, useModalManager, useDateNavigation } from '../hooks';
 import { colors, textStyles, spacing } from '../theme';
-import { getTodayString } from '../utils/dateHelpers';
 import EditTaskModal from './EditTaskModal';
 import DailyLogScreen from './DailyLogScreen';
 import SettingsScreen from './SettingsScreen';
@@ -20,32 +20,32 @@ import { Task } from '../types';
 import logger from '../utils/logger';
 
 export const HomeScreen: React.FC = () => {
-  // Custom hooks for business logic
+  // Business logic hooks
   const { handleQuickAdd, refreshAllData, refreshContributionData } = useTaskActions();
-  const {
-    showAddTask, editingTask, showDailyLog, showSettings, showTaskAnalytics,
-    openAddTask, openEditTask, closeAddTask, openDailyLog, closeDailyLog,
-    openSettings, closeSettings, openTaskAnalytics, closeTaskAnalytics
-  } = useModalState();
   const { selectedDate, handleDayPress, handleDateChange } = useDateNavigation();
-  
-  // Animation refs for custom modal animations
-  const dailyLogBackgroundOpacity = useRef(new Animated.Value(0)).current;
-  const dailyLogSlideAnim = useRef(new Animated.Value(0)).current;
-  const settingsBackgroundOpacity = useRef(new Animated.Value(0)).current;
-  const settingsSlideAnim = useRef(new Animated.Value(0)).current;
-  
-  // Component-specific state
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [showHistory, setShowHistory] = useState(false);
-  const [historyDays, setHistoryDays] = useState<string[]>([]);
-  
+  const {
+    activeModal,
+    modalConfig,
+    openAddTask,
+    openEditTask,
+    openDailyLog,
+    openSettings,
+    openTaskAnalytics,
+    closeModal,
+    getAnimationStyle,
+    animations,
+  } = useModalManager();
+
   // Store hooks
   const { tasks, loading: tasksLoading } = useTasksStore();
   const { contributionData, loading: logsLoading } = useLogsStore();
   const { firstDayOfWeek } = useSettingsStore();
 
-  
+  // Local component state
+  const [showHistory, setShowHistory] = useState(false);
+  const [historyDays, setHistoryDays] = useState<string[]>([]);
+
+  // Initialize data on mount
   useEffect(() => {
     const initializeData = async () => {
       try {
@@ -67,10 +67,21 @@ export const HomeScreen: React.FC = () => {
       days.push(date.toISOString().split('T')[0]);
     }
     setHistoryDays(days);
-  }, []);
-  
+  }, [refreshAllData]);
+
+  // Memoized computed values
+  const selectedDateData = useMemo(() => 
+    contributionData.find(d => d.date === selectedDate), 
+    [contributionData, selectedDate]
+  );
+
+  const isLoading = useMemo(() => 
+    tasksLoading || logsLoading, 
+    [tasksLoading, logsLoading]
+  );
+
+  // Event handlers
   const loadMoreHistory = useCallback(() => {
-    // Load 30 more days
     const lastDate = historyDays[historyDays.length - 1];
     if (!lastDate) return;
     
@@ -83,103 +94,29 @@ export const HomeScreen: React.FC = () => {
     }
     setHistoryDays([...historyDays, ...newDays]);
   }, [historyDays]);
-  
+
   const handleHistoryDayPress = useCallback((date: string) => {
     handleDayPress(date);
-    openDailyLog();
+    openDailyLog(date);
   }, [handleDayPress, openDailyLog]);
 
   const handleTaskAdded = useCallback(async () => {
     try {
       await refreshAllData();
-      closeAddTask();
+      closeModal();
     } catch (error) {
       logger.error('UI', 'Failed to refresh after task added', { error });
     }
-  }, [refreshAllData, closeAddTask]);
+  }, [refreshAllData, closeModal]);
 
-  const handleDailyLogClose = async () => {
-    // Animate slide down first
-    Animated.timing(dailyLogSlideAnim, {
-      toValue: 0,
-      duration: 300,
-      useNativeDriver: true,
-    }).start(() => {
-      // Then fade out background
-      Animated.timing(dailyLogBackgroundOpacity, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: true,
-      }).start(async () => {
-        try {
-          await refreshContributionData();
-          closeDailyLog();
-        } catch (error) {
-          logger.error('UI', 'Failed to refresh after daily log close', { error });
-        }
-        
-        // Reset animation values for next time
-        dailyLogBackgroundOpacity.setValue(0);
-        dailyLogSlideAnim.setValue(0);
-      });
-    });
-  };
-  
-  const handleDailyLogPress = useCallback(() => {
-    openDailyLog();
-    // Start background fade in immediately
-    Animated.timing(dailyLogBackgroundOpacity, {
-      toValue: 1,
-      duration: 200,
-      useNativeDriver: true,
-    }).start(() => {
-      // Then slide up the content
-      Animated.timing(dailyLogSlideAnim, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    });
-  }, [openDailyLog, dailyLogBackgroundOpacity, dailyLogSlideAnim]);
-
-  const handleSettingsPress = useCallback(() => {
-    openSettings();
-    // Start background fade in immediately
-    Animated.timing(settingsBackgroundOpacity, {
-      toValue: 1,
-      duration: 200,
-      useNativeDriver: true,
-    }).start(() => {
-      // Then slide up the content
-      Animated.timing(settingsSlideAnim, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    });
-  }, [openSettings, settingsBackgroundOpacity, settingsSlideAnim]);
-
-  const handleSettingsClose = async () => {
-    // Animate slide down first
-    Animated.timing(settingsSlideAnim, {
-      toValue: 0,
-      duration: 300,
-      useNativeDriver: true,
-    }).start(() => {
-      // Then fade out background
-      Animated.timing(settingsBackgroundOpacity, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: true,
-      }).start(() => {
-        closeSettings();
-        
-        // Reset animation values for next time
-        settingsBackgroundOpacity.setValue(0);
-        settingsSlideAnim.setValue(0);
-      });
-    });
-  };
+  const handleDailyLogClose = useCallback(async () => {
+    try {
+      await refreshContributionData();
+      closeModal();
+    } catch (error) {
+      logger.error('UI', 'Failed to refresh after daily log close', { error });
+    }
+  }, [refreshContributionData, closeModal]);
 
   const handleTaskPress = useCallback((task: Task) => {
     logger.debug('UI', 'Task pressed for editing', { taskId: task.id, taskName: task.name });
@@ -188,42 +125,30 @@ export const HomeScreen: React.FC = () => {
 
   const handleTaskAnalytics = useCallback((task: Task) => {
     logger.debug('UI', 'Task analytics requested', { taskId: task.id, taskName: task.name });
-    setSelectedTask(task);
-    openTaskAnalytics();
+    openTaskAnalytics(task);
   }, [openTaskAnalytics]);
 
-  const handleTaskAnalyticsClose = useCallback(() => {
-    setSelectedTask(null);
-    closeTaskAnalytics();
-  }, [closeTaskAnalytics]);
-
-  // Memoized computed values
-  const selectedDateData = useMemo(() => 
-    contributionData.find(d => d.date === selectedDate), 
-    [contributionData, selectedDate]
-  );
-  
-  const isLoading = useMemo(() => 
-    tasksLoading || logsLoading, 
-    [tasksLoading, logsLoading]
-  );
-
-  // Memoized toggle function
   const handleToggleHistory = useCallback(() => {
     setShowHistory(prev => !prev);
   }, []);
+
+  const handleDailyLogPress = useCallback(() => {
+    openDailyLog(selectedDate);
+  }, [openDailyLog, selectedDate]);
+
 
   return (
     <ErrorBoundary>
       <SafeAreaView style={styles.container}>
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+          {/* Header */}
           <View style={styles.header}>
             <View style={styles.headerContent}>
               <Text style={styles.title}>Green Streak</Text>
             </View>
             <TouchableOpacity 
               style={styles.settingsButton}
-              onPress={handleSettingsPress}
+              onPress={openSettings}
               accessible={true}
               accessibilityRole="button"
               accessibilityLabel="Settings"
@@ -232,6 +157,7 @@ export const HomeScreen: React.FC = () => {
             </TouchableOpacity>
           </View>
 
+          {/* Contribution Graph */}
           <ErrorBoundary>
             <View style={styles.graphSection}>
               <ContributionGraph
@@ -244,6 +170,7 @@ export const HomeScreen: React.FC = () => {
             </View>
           </ErrorBoundary>
 
+          {/* Today Card */}
           <ErrorBoundary>
             <TodayCard
               selectedDate={selectedDate}
@@ -255,6 +182,7 @@ export const HomeScreen: React.FC = () => {
             />
           </ErrorBoundary>
           
+          {/* History Section */}
           <ErrorBoundary>
             <HistorySection
               showHistory={showHistory}
@@ -266,12 +194,14 @@ export const HomeScreen: React.FC = () => {
             />
           </ErrorBoundary>
 
+          {/* Empty State */}
           {tasks.length === 0 && (
             <ErrorBoundary>
               <EmptyStateSection onAddTask={openAddTask} />
             </ErrorBoundary>
           )}
 
+          {/* Tasks Section */}
           <ErrorBoundary>
             <TasksSection
               tasks={tasks}
@@ -281,252 +211,97 @@ export const HomeScreen: React.FC = () => {
           </ErrorBoundary>
         </ScrollView>
 
-      {/* Only render one modal at a time to avoid conflicts */}
-      {showAddTask && (
-        <Modal
-          transparent
-          visible={showAddTask}
-          animationType="slide"
-          statusBarTranslucent
+        {/* Add Task / Edit Task Modal */}
+        <BaseModal
+          isVisible={activeModal === 'addTask' || activeModal === 'editTask'}
+          onClose={closeModal}
         >
-          <View 
-            style={{
-              flex: 1,
-              backgroundColor: 'rgba(0,0,0,0.6)',
-              justifyContent: 'flex-end'
+          <ScreenErrorBoundary 
+            screenName={activeModal === 'addTask' ? 'Add Task' : 'Edit Task'}
+            onClose={closeModal}
+            onRetry={() => {
+              closeModal();
+              setTimeout(() => {
+                if (activeModal === 'addTask') {
+                  openAddTask();
+                } else if (activeModal === 'editTask' && modalConfig?.props?.task) {
+                  openEditTask(modalConfig.props.task);
+                }
+              }, 100);
             }}
           >
-            <Pressable 
-              style={{ flex: 1 }}
-              onPress={closeAddTask}
+            <EditTaskModal
+              onClose={closeModal}
+              onTaskAdded={handleTaskAdded}
+              existingTask={modalConfig?.props?.task}
             />
-            
-            <Animated.View
-              style={{
-                backgroundColor: colors.background,
-                borderTopLeftRadius: 20,
-                borderTopRightRadius: 20,
-                height: '85%',
-                minHeight: 400
-              }}
-            >
-              <View style={{
-                width: 40,
-                height: 4,
-                backgroundColor: colors.border,
-                borderRadius: 2,
-                alignSelf: 'center',
-                marginTop: 8,
-                marginBottom: 4
-              }} />
-              
-              <ScreenErrorBoundary 
-                screenName="Edit Task"
-                onClose={closeAddTask}
-                onRetry={() => {
-                  // Reset the modal by closing and reopening
-                  closeAddTask();
-                  setTimeout(() => openAddTask(), 100);
-                }}
-              >
-                <EditTaskModal
-                  onClose={closeAddTask}
-                  onTaskAdded={handleTaskAdded}
-                  existingTask={editingTask || undefined}
-                />
-              </ScreenErrorBoundary>
-            </Animated.View>
-          </View>
-        </Modal>
-      )}
+          </ScreenErrorBoundary>
+        </BaseModal>
 
-      {showDailyLog && (
-        <Modal
-          transparent
-          visible={showDailyLog}
-          animationType="none"
-          statusBarTranslucent
+        {/* Daily Log Modal */}
+        <BaseModal
+          isVisible={activeModal === 'dailyLog'}
+          onClose={closeModal}
         >
-          <Animated.View 
-            style={{
-              flex: 1,
-              backgroundColor: 'rgba(0,0,0,0.6)',
-              justifyContent: 'flex-end',
-              opacity: dailyLogBackgroundOpacity,
+          <ScreenErrorBoundary 
+            screenName="Daily Log"
+            onClose={handleDailyLogClose}
+            onRetry={() => {
+              handleDailyLogClose();
+              setTimeout(() => openDailyLog(modalConfig?.props?.date), 100);
             }}
           >
-            <Pressable 
-              style={{ flex: 1 }}
-              onPress={handleDailyLogClose}
+            <DailyLogScreen
+              date={modalConfig?.props?.date || selectedDate}
+              onClose={handleDailyLogClose}
+              onDateChange={handleDateChange}
             />
-            
-            <Animated.View 
-              style={{
-                backgroundColor: colors.background,
-                borderTopLeftRadius: 20,
-                borderTopRightRadius: 20,
-                maxHeight: '90%',
-                minHeight: 400,
-                transform: [{
-                  translateY: dailyLogSlideAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [400, 0], // Slide up from 400px below
-                  }),
-                }],
-              }}
-            >
-              {/* Swipe down handle */}
-              <View style={{
-                width: 40,
-                height: 4,
-                backgroundColor: colors.border,
-                borderRadius: 2,
-                alignSelf: 'center',
-                marginTop: 8,
-                marginBottom: 4
-              }} />
-              
-              <ScreenErrorBoundary 
-                screenName="Daily Log"
-                onClose={handleDailyLogClose}
-                onRetry={() => {
-                  // Reset the modal by closing and reopening
-                  handleDailyLogClose();
-                  setTimeout(() => handleDailyLogPress(), 100);
-                }}
-              >
-                <DailyLogScreen
-                  date={selectedDate}
-                  onClose={handleDailyLogClose}
-                  onDateChange={handleDateChange}
-                />
-              </ScreenErrorBoundary>
-            </Animated.View>
-          </Animated.View>
-        </Modal>
-      )}
+          </ScreenErrorBoundary>
+        </BaseModal>
 
-      {showSettings && (
-        <Modal
-          transparent
-          visible={showSettings}
-          animationType="none"
-          statusBarTranslucent
+        {/* Settings Modal */}
+        <BaseModal
+          isVisible={activeModal === 'settings'}
+          onClose={closeModal}
         >
-          <Animated.View 
-            style={{
-              flex: 1,
-              backgroundColor: 'rgba(0,0,0,0.6)',
-              justifyContent: 'flex-end',
-              opacity: settingsBackgroundOpacity,
+          <ScreenErrorBoundary 
+            screenName="Settings"
+            onClose={closeModal}
+            onRetry={() => {
+              closeModal();
+              setTimeout(() => openSettings(), 100);
             }}
           >
-            <Pressable 
-              style={{ flex: 1 }}
-              onPress={handleSettingsClose}
-            />
-            
-            <Animated.View 
-              style={{
-                backgroundColor: colors.background,
-                borderTopLeftRadius: 20,
-                borderTopRightRadius: 20,
-                height: '85%',
-                transform: [{
-                  translateY: settingsSlideAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [400, 0], // Slide up from 400px below
-                  }),
-                }],
-              }}
-            >
-                <View style={{
-                  width: 40,
-                  height: 4,
-                  backgroundColor: colors.border,
-                  borderRadius: 2,
-                  alignSelf: 'center',
-                  marginTop: 8,
-                  marginBottom: 4
-                }} />
-                
-                <ScreenErrorBoundary 
-                  screenName="Settings"
-                  onClose={handleSettingsClose}
-                  onRetry={() => {
-                    // Reset the modal by closing and reopening
-                    handleSettingsClose();
-                    setTimeout(() => handleSettingsPress(), 100);
-                  }}
-                >
-                  <SettingsScreen
-                    onClose={handleSettingsClose}
-                  />
-                </ScreenErrorBoundary>
-            </Animated.View>
-          </Animated.View>
-        </Modal>
-      )}
+            <SettingsScreen onClose={closeModal} />
+          </ScreenErrorBoundary>
+        </BaseModal>
 
-      {showTaskAnalytics && selectedTask && (
-        <Modal
-          transparent
-          visible={showTaskAnalytics}
-          animationType="slide"
-          statusBarTranslucent
+        {/* Task Analytics Modal */}
+        <BaseModal
+          isVisible={activeModal === 'taskAnalytics'}
+          onClose={closeModal}
         >
-          <View style={{ flex: 1 }}>
-            <Pressable 
-              style={{
-                flex: 1,
-                backgroundColor: 'rgba(0,0,0,0.6)',
-                justifyContent: 'flex-end'
-              }}
-              onPress={handleTaskAnalyticsClose}
-            />
-            
-            <Pressable 
-              style={{
-                position: 'absolute',
-                bottom: 0,
-                left: 0,
-                right: 0,
-                backgroundColor: colors.background,
-                borderTopLeftRadius: 20,
-                borderTopRightRadius: 20,
-                maxHeight: '90%',
-              }}
-              onPress={() => {}}
-            >
-                <View style={{
-                  width: 40,
-                  height: 4,
-                  backgroundColor: colors.border,
-                  borderRadius: 2,
-                  alignSelf: 'center',
-                  marginTop: 8,
-                  marginBottom: 4
-                }} />
-                
-                <ScreenErrorBoundary 
-                  screenName="Task Analytics"
-                  onClose={handleTaskAnalyticsClose}
-                  onRetry={() => {
-                    handleTaskAnalyticsClose();
-                    setTimeout(() => openTaskAnalytics(), 100);
-                  }}
-                >
-                  <TaskAnalyticsScreen
-                    task={selectedTask}
-                    onClose={handleTaskAnalyticsClose}
-                  />
-                </ScreenErrorBoundary>
-            </Pressable>
-          </View>
-        </Modal>
-      )}
-
-    </SafeAreaView>
+          <ScreenErrorBoundary 
+            screenName="Task Analytics"
+            onClose={closeModal}
+            onRetry={() => {
+              closeModal();
+              setTimeout(() => {
+                if (modalConfig?.props?.task) {
+                  openTaskAnalytics(modalConfig.props.task);
+                }
+              }, 100);
+            }}
+          >
+            {modalConfig?.props?.task && (
+              <TaskAnalyticsScreen
+                task={modalConfig.props.task}
+                onClose={closeModal}
+              />
+            )}
+          </ScreenErrorBoundary>
+        </BaseModal>
+      </SafeAreaView>
     </ErrorBoundary>
   );
 };
@@ -577,8 +352,6 @@ const styles = StyleSheet.create({
     marginHorizontal: spacing[4],
     marginBottom: spacing[6],
   },
-  
-  
 });
 
 export default HomeScreen;
