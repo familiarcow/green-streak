@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { AppSettings } from '../types';
-import notificationService from '../services/NotificationService';
+import { getNotificationService } from '../services';
 import logger from '../utils/logger';
 
 interface SettingsState extends AppSettings {
@@ -53,6 +53,7 @@ export const useSettingsStore = create<SettingsState>()(
 
           if (enabled && newTime) {
             // Schedule the notification
+            const notificationService = getNotificationService();
             const notificationId = await notificationService.scheduleGlobalDailyReminder(newTime, enabled);
             
             if (notificationId) {
@@ -71,6 +72,7 @@ export const useSettingsStore = create<SettingsState>()(
             }
           } else {
             // Disable the notification
+            const notificationService = getNotificationService();
             await notificationService.cancelGlobalDailyReminder();
             set({
               globalReminderEnabled: false,
@@ -144,6 +146,7 @@ export const useSettingsStore = create<SettingsState>()(
           logger.debug('STATE', 'Resetting settings to defaults');
           
           // Cancel any existing notifications
+          const notificationService = getNotificationService();
           await notificationService.cancelGlobalDailyReminder();
           
           // Reset to defaults
@@ -177,6 +180,7 @@ export const initializeSettings = async () => {
     
     // Sync notification service with current settings
     if (settingsStore.globalReminderEnabled && settingsStore.globalReminderTime) {
+      const notificationService = getNotificationService();
       await notificationService.scheduleGlobalDailyReminder(
         settingsStore.globalReminderTime,
         settingsStore.globalReminderEnabled

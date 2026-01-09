@@ -2,29 +2,27 @@ import { act, renderHook } from '@testing-library/react-native';
 import { useTasksStore } from '../tasksStore';
 import { createMockTask } from '../../test/utils';
 
-// Mock the database and dependencies
-jest.mock('../../database', () => ({
-  getDatabase: jest.fn(() => ({
-    runAsync: jest.fn(),
-    getFirstAsync: jest.fn(),
-    getAllAsync: jest.fn(),
-  })),
-}));
+// Mock TaskService
+const mockTaskService = {
+  getAllTasks: jest.fn(),
+  createTask: jest.fn(),
+  updateTask: jest.fn(),
+  archiveTask: jest.fn(),
+  deleteTask: jest.fn(),
+  getTaskById: jest.fn(),
+};
 
-jest.mock('../../services/NotificationService', () => ({
-  default: {
-    scheduleTaskNotification: jest.fn(),
-    cancelTaskNotifications: jest.fn(),
-  },
-}));
+// Mock NotificationService
+const mockNotificationService = {
+  syncTaskReminders: jest.fn(),
+  scheduleTaskReminder: jest.fn(),
+  cancelTaskReminder: jest.fn(),
+};
 
-jest.mock('../../database/repositories/TaskRepository', () => ({
-  TaskRepository: {
-    getAll: jest.fn(),
-    create: jest.fn(),
-    update: jest.fn(),
-    delete: jest.fn(),
-  },
+// Mock service registry
+jest.mock('../../services', () => ({
+  getTaskService: () => mockTaskService,
+  getNotificationService: () => mockNotificationService,
 }));
 
 describe('tasksStore', () => {
@@ -50,8 +48,7 @@ describe('tasksStore', () => {
   it('loads tasks successfully', async () => {
     const mockTasks = [createMockTask(), createMockTask({ id: 'task-2', name: 'Task 2' })];
     
-    const { TaskRepository } = require('../../database/repositories/TaskRepository');
-    TaskRepository.getAll.mockResolvedValueOnce(mockTasks);
+    mockTaskService.getAllTasks.mockResolvedValueOnce(mockTasks);
 
     const { result } = renderHook(() => useTasksStore());
 
@@ -62,12 +59,11 @@ describe('tasksStore', () => {
     expect(result.current.tasks).toEqual(mockTasks);
     expect(result.current.loading).toBe(false);
     expect(result.current.error).toBeNull();
-    expect(TaskRepository.getAll).toHaveBeenCalledTimes(1);
+    expect(mockTaskService.getAllTasks).toHaveBeenCalledTimes(1);
   });
 
   it('handles load tasks error', async () => {
-    const { TaskRepository } = require('../../database/repositories/TaskRepository');
-    TaskRepository.getAll.mockRejectedValueOnce(new Error('Database error'));
+    mockTaskService.getAllTasks.mockRejectedValueOnce(new Error('Service error'));
 
     const { result } = renderHook(() => useTasksStore());
 
@@ -77,7 +73,7 @@ describe('tasksStore', () => {
 
     expect(result.current.tasks).toEqual([]);
     expect(result.current.loading).toBe(false);
-    expect(result.current.error).toBe('Database error');
+    expect(result.current.error).toBe('Service error');
   });
 
   it('creates task successfully', async () => {
@@ -92,9 +88,7 @@ describe('tasksStore', () => {
 
     const createdTask = createMockTask(newTaskData);
 
-    const { TaskRepository } = require('../../database/repositories/TaskRepository');
-    TaskRepository.create.mockResolvedValueOnce(createdTask);
-    TaskRepository.getAll.mockResolvedValueOnce([createdTask]);
+    mockTaskService.createTask.mockResolvedValueOnce(createdTask);
 
     const { result } = renderHook(() => useTasksStore());
 
@@ -102,8 +96,8 @@ describe('tasksStore', () => {
       await result.current.createTask(newTaskData);
     });
 
-    expect(result.current.tasks).toEqual([createdTask]);
-    expect(TaskRepository.create).toHaveBeenCalledWith(newTaskData);
+    expect(result.current.tasks).toContain(createdTask);
+    expect(mockTaskService.createTask).toHaveBeenCalledWith(newTaskData);
   });
 
   it('updates task successfully', async () => {
@@ -111,9 +105,7 @@ describe('tasksStore', () => {
     const updatedTaskData = { name: 'Updated Task Name' };
     const updatedTask = { ...existingTask, ...updatedTaskData };
 
-    const { TaskRepository } = require('../../database/repositories/TaskRepository');
-    TaskRepository.update.mockResolvedValueOnce(updatedTask);
-    TaskRepository.getAll.mockResolvedValueOnce([updatedTask]);
+    mockTaskService.updateTask.mockResolvedValueOnce(updatedTask);
 
     const { result } = renderHook(() => useTasksStore());
     
@@ -127,15 +119,33 @@ describe('tasksStore', () => {
     });
 
     expect(result.current.tasks).toEqual([updatedTask]);
-    expect(TaskRepository.update).toHaveBeenCalledWith(existingTask.id, updatedTaskData);
+    expect(mockTaskService.updateTask).toHaveBeenCalledWith(existingTask.id, updatedTaskData);
+  });
+
+  it('archives task successfully', async () => {
+    const taskToArchive = createMockTask();
+
+    mockTaskService.archiveTask.mockResolvedValueOnce(undefined);
+
+    const { result } = renderHook(() => useTasksStore());
+    
+    // Set initial state
+    act(() => {
+      useTasksStore.setState({ tasks: [taskToArchive] });
+    });
+
+    await act(async () => {
+      await result.current.archiveTask(taskToArchive.id);
+    });
+
+    expect(result.current.tasks).toEqual([]);
+    expect(mockTaskService.archiveTask).toHaveBeenCalledWith(taskToArchive.id);
   });
 
   it('deletes task successfully', async () => {
     const taskToDelete = createMockTask();
 
-    const { TaskRepository } = require('../../database/repositories/TaskRepository');
-    TaskRepository.delete.mockResolvedValueOnce(undefined);
-    TaskRepository.getAll.mockResolvedValueOnce([]);
+    mockTaskService.deleteTask.mockResolvedValueOnce(undefined);
 
     const { result } = renderHook(() => useTasksStore());
     
@@ -149,7 +159,7 @@ describe('tasksStore', () => {
     });
 
     expect(result.current.tasks).toEqual([]);
-    expect(TaskRepository.delete).toHaveBeenCalledWith(taskToDelete.id);
+    expect(mockTaskService.deleteTask).toHaveBeenCalledWith(taskToDelete.id);
   });
 
   it('handles create task error', async () => {
@@ -161,59 +171,44 @@ describe('tasksStore', () => {
       reminderEnabled: false,
     };
 
-    const { TaskRepository } = require('../../database/repositories/TaskRepository');
-    TaskRepository.create.mockRejectedValueOnce(new Error('Create failed'));
+    mockTaskService.createTask.mockRejectedValueOnce(new Error('Create failed'));
 
     const { result } = renderHook(() => useTasksStore());
 
     await act(async () => {
-      await result.current.createTask(newTaskData);
+      try {
+        await result.current.createTask(newTaskData);
+      } catch (error) {
+        // Expected error
+      }
     });
 
     expect(result.current.error).toBe('Create failed');
   });
 
-  it('schedules notifications for tasks with reminders', async () => {
-    const taskWithReminder = {
-      name: 'Reminder Task',
-      icon: 'checkCircle' as const,
-      color: '#22c55e',
-      isMultiCompletion: false,
-      reminderEnabled: true,
-      reminderTime: '09:00',
-      reminderFrequency: 'daily' as const,
-    };
-
-    const createdTask = createMockTask(taskWithReminder);
-    const notificationService = require('../../services/NotificationService').default;
-
-    const { TaskRepository } = require('../../database/repositories/TaskRepository');
-    TaskRepository.create.mockResolvedValueOnce(createdTask);
-    TaskRepository.getAll.mockResolvedValueOnce([createdTask]);
+  it('syncs notifications after loading tasks', async () => {
+    const mockTasks = [createMockTask()];
+    
+    mockTaskService.getAllTasks.mockResolvedValueOnce(mockTasks);
+    mockNotificationService.syncTaskReminders.mockResolvedValueOnce(undefined);
 
     const { result } = renderHook(() => useTasksStore());
 
     await act(async () => {
-      await result.current.createTask(taskWithReminder);
+      await result.current.loadTasks();
     });
 
-    expect(notificationService.scheduleTaskNotification).toHaveBeenCalledWith(
-      createdTask,
-      '09:00',
-      'daily'
-    );
+    expect(mockNotificationService.syncTaskReminders).toHaveBeenCalledWith(mockTasks);
   });
 
   it('sets loading state correctly during async operations', async () => {
-    const { TaskRepository } = require('../../database/repositories/TaskRepository');
-    
     // Create a promise that we can control
     let resolvePromise: () => void;
     const promise = new Promise<any[]>((resolve) => {
       resolvePromise = () => resolve([]);
     });
     
-    TaskRepository.getAll.mockReturnValueOnce(promise);
+    mockTaskService.getAllTasks.mockReturnValueOnce(promise);
 
     const { result } = renderHook(() => useTasksStore());
 
@@ -233,5 +228,21 @@ describe('tasksStore', () => {
 
     // Should not be loading anymore
     expect(result.current.loading).toBe(false);
+  });
+
+  it('finds task by ID', () => {
+    const task1 = createMockTask({ id: 'task-1' });
+    const task2 = createMockTask({ id: 'task-2' });
+
+    const { result } = renderHook(() => useTasksStore());
+    
+    // Set initial state
+    act(() => {
+      useTasksStore.setState({ tasks: [task1, task2] });
+    });
+
+    expect(result.current.getTaskById('task-1')).toEqual(task1);
+    expect(result.current.getTaskById('task-2')).toEqual(task2);
+    expect(result.current.getTaskById('nonexistent')).toBeUndefined();
   });
 });

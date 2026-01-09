@@ -1,7 +1,9 @@
 import { DataService, dataService } from './DataService';
+import { createTaskService } from './TaskService';
 import { TaskAnalyticsService, taskAnalyticsService } from './TaskAnalyticsService';
 import { ValidationService, validationService } from './ValidationService';
 import notificationService from './NotificationService';
+import { repositoryFactory } from '../database/repositories/RepositoryFactory';
 import logger from '../utils/logger';
 
 /**
@@ -32,7 +34,12 @@ export class ServiceRegistry {
     try {
       logger.debug('SERVICE', 'Registering default services');
       
+      // Create TaskService with dependencies
+      const taskRepository = repositoryFactory.getTaskRepository();
+      const taskService = createTaskService(taskRepository, validationService);
+      
       this.register('data', dataService);
+      this.register('task', taskService);
       this.register('analytics', taskAnalyticsService);
       this.register('validation', validationService);
       this.register('notification', notificationService);
@@ -166,6 +173,7 @@ export const serviceRegistry = ServiceRegistry.getInstance();
 
 // Service getters for easy access
 export const getDataService = (): DataService => serviceRegistry.get<DataService>('data');
+export const getTaskService = () => serviceRegistry.get('task');
 export const getAnalyticsService = (): TaskAnalyticsService => serviceRegistry.get<TaskAnalyticsService>('analytics');
 export const getValidationService = (): ValidationService => serviceRegistry.get<ValidationService>('validation');
 export const getNotificationService = () => serviceRegistry.get('notification');

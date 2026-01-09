@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { TaskLog, ContributionData } from '../types';
-import { logRepository } from '../database/repositories/RepositoryFactory';
+import { getDataService } from '../services';
 import { formatDate, getAdaptiveRange, getTodayString } from '../utils/dateHelpers';
 import logger from '../utils/logger';
 
@@ -31,8 +31,9 @@ export const useLogsStore = create<LogsState>((set, get) => ({
     set({ loading: true, error: null });
     
     try {
-      logger.debug('STATE', 'Loading logs for task', { taskId });
-      const taskLogs = await logRepository.findByTask(taskId);
+      logger.debug('STATE', 'Loading logs for task via DataService', { taskId });
+      const dataService = getDataService();
+      const taskLogs = await dataService.getTaskLogs(taskId);
       
       set(state => ({
         logs: {
@@ -42,10 +43,10 @@ export const useLogsStore = create<LogsState>((set, get) => ({
         loading: false,
       }));
       
-      logger.debug('STATE', 'Logs loaded for task', { taskId, count: taskLogs.length });
+      logger.debug('STATE', 'Logs loaded for task via DataService', { taskId, count: taskLogs.length });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      logger.error('STATE', 'Failed to load logs for task', { error: errorMessage, taskId });
+      logger.error('STATE', 'Failed to load logs for task via DataService', { error: errorMessage, taskId });
       set({ loading: false, error: errorMessage });
     }
   },
@@ -61,7 +62,7 @@ export const useLogsStore = create<LogsState>((set, get) => ({
     set({ loading: true, error: null });
     
     try {
-      logger.debug('STATE', 'Loading contribution data', { minDate });
+      logger.debug('STATE', 'Loading contribution data via DataService', { minDate });
       
       // Get all logs to determine data range
       const allLogs = Object.values(state.logs).flat();
@@ -90,7 +91,8 @@ export const useLogsStore = create<LogsState>((set, get) => ({
       const dateStrings = adaptiveDates.map(date => formatDate(date));
       
       // Get contribution data for the date range
-      const contributionData = await logRepository.getContributionData(dateStrings);
+      const dataService = getDataService();
+      const contributionData = await dataService.getContributionData(dateStrings);
       
       set({
         contributionData,
@@ -98,21 +100,22 @@ export const useLogsStore = create<LogsState>((set, get) => ({
         loading: false,
       });
       
-      logger.info('STATE', 'Contribution data loaded', {
+      logger.info('STATE', 'Contribution data loaded via DataService', {
         dateRange: dateStrings.length,
         activeDays: contributionData.filter(d => d.count > 0).length,
       });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      logger.error('STATE', 'Failed to load contribution data', { error: errorMessage });
+      logger.error('STATE', 'Failed to load contribution data via DataService', { error: errorMessage });
       set({ loading: false, error: errorMessage });
     }
   },
   
   logTaskCompletion: async (taskId, date, count) => {
     try {
-      logger.debug('STATE', 'Logging task completion', { taskId, date, count });
-      const log = await logRepository.createOrUpdate(taskId, date, count);
+      logger.debug('STATE', 'Logging task completion via DataService', { taskId, date, count });
+      const dataService = getDataService();
+      const log = await dataService.logTaskCompletion(taskId, date, count);
       
       set(state => {
         const taskLogs = state.logs[taskId] || [];
@@ -142,10 +145,10 @@ export const useLogsStore = create<LogsState>((set, get) => ({
         await get().loadContributionData(true);
       }
       
-      logger.info('STATE', 'Task completion logged', { taskId, date, count });
+      logger.info('STATE', 'Task completion logged via DataService', { taskId, date, count });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      logger.error('STATE', 'Failed to log task completion', { 
+      logger.error('STATE', 'Failed to log task completion via DataService', { 
         error: errorMessage, 
         taskId, 
         date, 
@@ -164,7 +167,7 @@ export const useLogsStore = create<LogsState>((set, get) => ({
   
   getTaskContributionData: async (taskId, days = 365) => {
     try {
-      logger.debug('STATE', 'Loading task contribution data', { taskId, days });
+      logger.debug('STATE', 'Loading task contribution data via DataService', { taskId, days });
       
       // Generate date range for the last N days
       const dates: Date[] = [];
@@ -197,7 +200,7 @@ export const useLogsStore = create<LogsState>((set, get) => ({
         };
       });
       
-      logger.info('STATE', 'Task contribution data loaded', {
+      logger.info('STATE', 'Task contribution data loaded via DataService', {
         taskId,
         totalDays: contributionData.length,
         activeDays: contributionData.filter(d => d.count > 0).length,
@@ -207,7 +210,7 @@ export const useLogsStore = create<LogsState>((set, get) => ({
       return contributionData;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      logger.error('STATE', 'Failed to load task contribution data', { error: errorMessage, taskId });
+      logger.error('STATE', 'Failed to load task contribution data via DataService', { error: errorMessage, taskId });
       throw error;
     }
   },

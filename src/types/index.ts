@@ -9,7 +9,8 @@ export type LogCategory =
   | 'DEV' 
   | 'ERROR'
   | 'APP'
-  | 'SERVICE';
+  | 'SERVICE'
+  | 'SERVICES';
 
 export interface Task {
   id: string;

@@ -7,6 +7,7 @@
 
 // Core Services
 export { DataService, dataService } from './DataService';
+export { TaskService, createTaskService } from './TaskService';
 export { TaskAnalyticsService, taskAnalyticsService } from './TaskAnalyticsService';
 export { ValidationService, validationService } from './ValidationService';
 export { default as NotificationService } from './NotificationService';
@@ -16,12 +17,14 @@ export {
   ServiceRegistry, 
   serviceRegistry,
   getDataService,
+  getTaskService,
   getAnalyticsService,
   getValidationService,
   getNotificationService
 } from './ServiceRegistry';
 
 // Type exports
+export type { CreateTaskData, UpdateTaskData } from './TaskService';
 export type { TaskAnalytics, OverviewAnalytics, TaskActivityDistribution } from './TaskAnalyticsService';
 export type { ValidationResult, BulkValidationResult } from './ValidationService';
 export type { ServiceHealthStatus } from './ServiceRegistry';
