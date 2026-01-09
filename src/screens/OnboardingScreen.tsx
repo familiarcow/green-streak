@@ -3,13 +3,13 @@ import {
   View, 
   Text, 
   StyleSheet, 
-  SafeAreaView, 
   ScrollView, 
   Dimensions, 
   TouchableOpacity,
   NativeScrollEvent,
   NativeSyntheticEvent
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { 
   useAnimatedStyle, 
   useSharedValue, 

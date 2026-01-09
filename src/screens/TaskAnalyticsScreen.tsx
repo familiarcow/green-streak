@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeIn, SlideInRight } from 'react-native-reanimated';
 import { Task, ContributionData } from '../types';
 import { TaskContributionGraph } from '../components/ContributionGraph/TaskContributionGraph';

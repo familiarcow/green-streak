@@ -3,12 +3,12 @@ import {
   View, 
   Text, 
   StyleSheet, 
-  SafeAreaView, 
   ScrollView, 
   TouchableOpacity, 
   Switch,
   Alert
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { AnimatedButton } from '../components/AnimatedButton';
 import { Icon } from '../components/common/Icon';
 import { useSettingsStore } from '../store/settingsStore';
