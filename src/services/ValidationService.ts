@@ -1,5 +1,5 @@
 import { Task, TaskLog } from '../types';
-import { formatDateString } from '../utils/dateHelpers';
+import { formatDateString, parseDateString } from '../utils/dateHelpers';
 import logger from '../utils/logger';
 
 /**
@@ -283,10 +283,14 @@ export class ValidationService {
     const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
     if (!dateRegex.test(date)) return false;
     
-    // Check if it's a valid date
-    const parsedDate = new Date(date);
-    return !isNaN(parsedDate.getTime()) && 
-           formatDateString(parsedDate) === date;
+    // Check if it's a valid date using consistent local timezone parsing
+    try {
+      const parsedDate = parseDateString(date);
+      return !isNaN(parsedDate.getTime()) && 
+             formatDateString(parsedDate) === date;
+    } catch {
+      return false;
+    }
   }
 
   private validateReminderTime(time: string): string | null {

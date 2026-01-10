@@ -109,7 +109,6 @@ export const TodayCard: React.FC<TodayCardProps> = React.memo(({
     });
 
     const handleQuickAddPress = () => {
-      console.log('Quick add button pressed for task:', task.id, 'selectedDate:', selectedDate);
       onQuickAdd(task.id, selectedDate);
     };
 
