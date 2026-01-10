@@ -16,10 +16,20 @@ interface TaskCompletion {
 
 export const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ date, onClose, onDateChange }) => {
   const { tasks, loading: tasksLoading } = useTasksStore();
-  const { logTaskCompletion, getLogForTaskAndDate } = useLogsStore();
+  const { logTaskCompletion, contributionData, loadContributionData } = useLogsStore();
   const [completions, setCompletions] = useState<Record<string, number>>({});
   const [isInitializing, setIsInitializing] = useState(true);
   
+  // Find the selected date's data from contributionData (same pattern as TodayCard)
+  const selectedDateData = contributionData.find(d => d.date === date);
+
+  // Load contribution data if navigating to a date outside current range
+  useEffect(() => {
+    if (date && !selectedDateData) {
+      // Date is not in current contribution data, need to load it
+      loadContributionData(true, date);
+    }
+  }, [date, selectedDateData, loadContributionData]);
 
   useEffect(() => {
     try {
@@ -27,8 +37,9 @@ export const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ date, onClose, o
       const initialCompletions: Record<string, number> = {};
       if (tasks && tasks.length > 0) {
         tasks.forEach(task => {
-          const existingLog = getLogForTaskAndDate(task.id, date);
-          initialCompletions[task.id] = existingLog?.count || 0;
+          // Use contributionData pattern like TodayCard
+          const taskData = selectedDateData?.tasks.find(t => t.taskId === task.id);
+          initialCompletions[task.id] = taskData?.count || 0;
         });
         setCompletions(initialCompletions);
       }
@@ -38,7 +49,7 @@ export const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ date, onClose, o
       logger.error('UI', 'Failed to initialize completions', { error, date });
       setIsInitializing(false);
     }
-  }, [tasks, date, getLogForTaskAndDate]);
+  }, [tasks, date, selectedDateData]);
 
   const updateCompletion = async (taskId: string, newCount: number) => {
     const clampedCount = Math.max(0, newCount);
@@ -49,6 +60,9 @@ export const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ date, onClose, o
         ...prev,
         [taskId]: clampedCount,
       }));
+      
+      // Refresh contribution data to keep in sync (this is what updates the store)
+      await loadContributionData(true, date);
       
       logger.debug('UI', 'Task completion updated', { taskId, date, count: clampedCount });
     } catch (error) {

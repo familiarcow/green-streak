@@ -112,8 +112,10 @@ export const HomeScreen: React.FC = () => {
   }, [historyDays]);
 
   const handleHistoryDayPress = useCallback((date: string) => {
+    // Update selected date first so modal will show correct date
     handleDayPress(date);
-    openDailyLog(date);
+    // Small delay to ensure state updates before opening modal
+    setTimeout(() => openDailyLog(), 0);
   }, [handleDayPress, openDailyLog]);
 
   const handleTaskAdded = useCallback(async () => {
@@ -264,11 +266,11 @@ export const HomeScreen: React.FC = () => {
             onClose={handleDailyLogClose}
             onRetry={() => {
               handleDailyLogClose();
-              setTimeout(() => openDailyLog(modalConfig?.props?.date), 100);
+              setTimeout(() => openDailyLog(selectedDate), 100);
             }}
           >
             <DailyLogScreen
-              date={modalConfig?.props?.date || selectedDate}
+              date={selectedDate}
               onClose={handleDailyLogClose}
               onDateChange={handleDateChange}
             />
