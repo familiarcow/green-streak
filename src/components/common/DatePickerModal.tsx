@@ -1,15 +1,13 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
-  Modal,
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   Platform,
-  Pressable,
-  Animated,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { BaseModal } from '../modals/BaseModal';
 import { colors, textStyles, spacing, shadows } from '../../theme';
 import { radiusValues, fontSizes } from '../../theme/utils';
 import { formatDisplayDate, getTodayString, formatDateString } from '../../utils/dateHelpers';
@@ -37,22 +35,6 @@ export const DatePickerModal: React.FC<DatePickerModalProps> = ({
     date.setHours(12, 0, 0, 0); // Set to noon to avoid timezone issues
     return date;
   });
-  
-  // Animation value for smooth entrance
-  const slideAnim = useState(() => new Animated.Value(0))[0];
-  
-  useEffect(() => {
-    if (visible) {
-      Animated.spring(slideAnim, {
-        toValue: 1,
-        tension: 65,
-        friction: 10,
-        useNativeDriver: true,
-      }).start();
-    } else {
-      slideAnim.setValue(0);
-    }
-  }, [visible, slideAnim]);
 
   const handleDateChange = useCallback((event: any, selectedDate?: Date) => {
     if (selectedDate) {
@@ -117,102 +99,67 @@ export const DatePickerModal: React.FC<DatePickerModalProps> = ({
     );
   }
 
-  // iOS and web implementation with custom modal
+  // iOS and web implementation with BaseModal
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="slide"
-      statusBarTranslucent
+    <BaseModal
+      isVisible={visible}
+      onClose={handleCancel}
+      closeOnBackdropPress={true}
+      height="auto"
+      minHeight={300}
+      contentStyle={styles.modalContent}
     >
-      <Pressable 
-        style={styles.backdrop}
-        onPress={handleCancel}
-      >
-        <Animated.View 
-          style={[
-            styles.container,
-            {
-              transform: [
-                {
-                  translateY: slideAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [300, 0],
-                  }),
-                },
-              ],
-            },
-          ]}
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity 
+          style={styles.headerButton}
+          onPress={handleCancel}
         >
-          <Pressable
-            onPress={(e) => e.stopPropagation()}
-          >
-          {/* Header */}
-          <View style={styles.header}>
+          <Text style={styles.cancelText}>Cancel</Text>
+        </TouchableOpacity>
+
+        <View style={{ flex: 1 }} />
+
+        <View style={styles.headerRightButtons}>
+          {formatDateString(tempDate) !== getTodayString() && (
             <TouchableOpacity 
               style={styles.headerButton}
-              onPress={handleCancel}
+              onPress={handleToday}
+              activeOpacity={0.7}
             >
-              <Text style={styles.cancelText}>Cancel</Text>
+              <Text style={styles.todayText}>Today</Text>
             </TouchableOpacity>
+          )}
+          <TouchableOpacity 
+            style={styles.headerButton}
+            onPress={handleConfirm}
+          >
+            <Text style={styles.doneText}>Done</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
 
-            <View style={{ flex: 1 }} />
-
-            <View style={styles.headerRightButtons}>
-              {formatDateString(tempDate) !== getTodayString() && (
-                <TouchableOpacity 
-                  style={styles.headerButton}
-                  onPress={handleToday}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.todayText}>Today</Text>
-                </TouchableOpacity>
-              )}
-              <TouchableOpacity 
-                style={styles.headerButton}
-                onPress={handleConfirm}
-              >
-                <Text style={styles.doneText}>Done</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-
-          {/* Date Picker */}
-          <View style={styles.pickerContainer}>
-            <DateTimePicker
-              value={tempDate}
-              mode="date"
-              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-              onChange={handleDateChange}
-              maximumDate={maximumDate}
-              minimumDate={minimumDate}
-              style={styles.picker}
-              textColor={colors.text.primary}
-              themeVariant="light"
-            />
-          </View>
-          </Pressable>
-        </Animated.View>
-      </Pressable>
-    </Modal>
+      {/* Date Picker */}
+      <View style={styles.pickerContainer}>
+        <DateTimePicker
+          value={tempDate}
+          mode="date"
+          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+          onChange={handleDateChange}
+          maximumDate={maximumDate}
+          minimumDate={minimumDate}
+          style={styles.picker}
+          textColor={colors.text.primary}
+          themeVariant="light"
+        />
+      </View>
+    </BaseModal>
   );
 };
 
 const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.2)',
-    justifyContent: 'flex-end',
-  },
-
-  container: {
-    backgroundColor: colors.surface,
-    borderTopLeftRadius: radiusValues.xl,
-    borderTopRightRadius: radiusValues.xl,
-    paddingBottom: spacing[8],
-    maxHeight: '80%',
-    ...shadows.lg,
+  modalContent: {
+    paddingBottom: spacing[4],
   },
 
   header: {
