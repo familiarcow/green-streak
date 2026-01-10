@@ -148,12 +148,13 @@ export const TodayCard: React.FC<TodayCardProps> = React.memo(({
             )}
           </View>
         </View>
-        
+
         {task.streakEnabled && streakCount > 0 && (
           <StreakBadge
             count={streakCount}
             isActive={dateStreak?.isActiveStreak || false}
             hasCompletedToday={dateStreak?.hasCompletedToday || false}
+            isToday={isToday}
             size="small"
           />
         )}
@@ -364,7 +365,6 @@ const styles = StyleSheet.create({
   taskInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 1,
     gap: spacing[3],
   },
 
@@ -399,14 +399,7 @@ const styles = StyleSheet.create({
   },
 
   taskDetails: {
-    flex: 1,
     marginLeft: spacing[3],
-  },
-
-  taskNameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing[2],
   },
 
   taskName: {
