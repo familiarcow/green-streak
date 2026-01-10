@@ -6,6 +6,7 @@
  */
 
 import { Task, StreakConfig } from '../types';
+import { formatDateString } from '../utils/dateHelpers';
 import logger from '../utils/logger';
 
 export class StreakRulesEngine {
@@ -112,7 +113,7 @@ export class StreakRulesEngine {
       for (let i = 1; i < daysDiff; i++) {
         const checkDate = new Date(lastDate);
         checkDate.setDate(checkDate.getDate() + i);
-        const dateStr = checkDate.toISOString().split('T')[0];
+        const dateStr = formatDateString(checkDate);
         
         if (this.shouldSkipDate(dateStr)) {
           skippableDays++;
@@ -163,7 +164,7 @@ export class StreakRulesEngine {
     
     while (daysChecked < 30) {
       checkDate.setDate(checkDate.getDate() + 1);
-      const dateStr = checkDate.toISOString().split('T')[0];
+      const dateStr = formatDateString(checkDate);
       daysChecked++;
       
       if (!this.shouldSkipDate(dateStr)) {
@@ -198,7 +199,7 @@ export class StreakRulesEngine {
     date.setDate(date.getDate() + 1);
     
     let attempts = 0;
-    while (this.shouldSkipDate(date.toISOString().split('T')[0])) {
+    while (this.shouldSkipDate(formatDateString(date))) {
       date.setDate(date.getDate() + 1);
       attempts++;
       
@@ -209,7 +210,7 @@ export class StreakRulesEngine {
       }
     }
     
-    return date.toISOString().split('T')[0];
+    return formatDateString(date);
   }
 
   /**

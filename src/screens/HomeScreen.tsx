@@ -12,6 +12,7 @@ import { useLogsStore } from '../store/logsStore';
 import { useSettingsStore } from '../store/settingsStore';
 import { useTaskActions, useModalManager, useDateNavigation } from '../hooks';
 import { colors, textStyles, spacing } from '../theme';
+import { formatDateString } from '../utils/dateHelpers';
 import EditTaskModal from './EditTaskModal';
 import DailyLogScreen from './DailyLogScreen';
 import SettingsScreen from './SettingsScreen';
@@ -64,7 +65,7 @@ export const HomeScreen: React.FC = () => {
     for (let i = 1; i <= 30; i++) {
       const date = new Date(today);
       date.setDate(date.getDate() - i);
-      days.push(date.toISOString().split('T')[0]);
+      days.push(formatDateString(date));
     }
     setHistoryDays(days);
   }, [refreshAllData]);
@@ -90,7 +91,7 @@ export const HomeScreen: React.FC = () => {
     for (let i = 1; i <= 30; i++) {
       const date = new Date(startDate);
       date.setDate(date.getDate() - i);
-      newDays.push(date.toISOString().split('T')[0]);
+      newDays.push(formatDateString(date));
     }
     setHistoryDays([...historyDays, ...newDays]);
   }, [historyDays]);

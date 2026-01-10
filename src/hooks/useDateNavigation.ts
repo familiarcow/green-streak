@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { getTodayString } from '../utils/dateHelpers';
+import { getTodayString, formatDateString } from '../utils/dateHelpers';
 import { UseDateNavigationReturn } from '../types';
 import logger from '../utils/logger';
 
@@ -30,7 +30,7 @@ export const useDateNavigation = (): UseDateNavigationReturn => {
     const currentDate = new Date(selectedDate);
     const newDate = new Date(currentDate);
     newDate.setDate(currentDate.getDate() + (direction === 'next' ? 1 : -1));
-    const newDateString = newDate.toISOString().split('T')[0];
+    const newDateString = formatDateString(newDate);
     
     setSelectedDate(newDateString);
     logger.debug('UI', 'Date navigation', { 

@@ -1,4 +1,5 @@
 import { Task, TaskLog } from '../types';
+import { formatDateString } from '../utils/dateHelpers';
 import logger from '../utils/logger';
 
 /**
@@ -285,7 +286,7 @@ export class ValidationService {
     // Check if it's a valid date
     const parsedDate = new Date(date);
     return !isNaN(parsedDate.getTime()) && 
-           parsedDate.toISOString().split('T')[0] === date;
+           formatDateString(parsedDate) === date;
   }
 
   private validateReminderTime(time: string): string | null {

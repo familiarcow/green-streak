@@ -12,7 +12,7 @@ import {
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { colors, textStyles, spacing, shadows } from '../../theme';
 import { radiusValues, fontSizes } from '../../theme/utils';
-import { formatDisplayDate, getTodayString } from '../../utils/dateHelpers';
+import { formatDisplayDate, getTodayString, formatDateString } from '../../utils/dateHelpers';
 import { Icon } from './Icon';
 
 interface DatePickerModalProps {
@@ -71,7 +71,7 @@ export const DatePickerModal: React.FC<DatePickerModalProps> = ({
   }, [maximumDate, minimumDate]);
 
   const handleConfirm = useCallback(() => {
-    const dateString = tempDate.toISOString().split('T')[0];
+    const dateString = formatDateString(tempDate);
     onDateSelect(dateString);
     onClose();
   }, [tempDate, onDateSelect, onClose]);
@@ -105,7 +105,7 @@ export const DatePickerModal: React.FC<DatePickerModalProps> = ({
           display="calendar"
           onChange={(event, selectedDate) => {
             if (event.type === 'set' && selectedDate) {
-              const dateString = selectedDate.toISOString().split('T')[0];
+              const dateString = formatDateString(selectedDate);
               onDateSelect(dateString);
             }
             onClose();
@@ -159,7 +159,7 @@ export const DatePickerModal: React.FC<DatePickerModalProps> = ({
             <View style={{ flex: 1 }} />
 
             <View style={styles.headerRightButtons}>
-              {tempDate.toISOString().split('T')[0] !== getTodayString() && (
+              {formatDateString(tempDate) !== getTodayString() && (
                 <TouchableOpacity 
                   style={styles.headerButton}
                   onPress={handleToday}

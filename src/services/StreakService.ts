@@ -12,6 +12,7 @@ import { ITaskRepository } from '../database/repositories/interfaces/ITaskReposi
 import { StreakRulesEngine } from './StreakRulesEngine';
 import { calculateStreakFromLogs, calculateStreakAsOfDate } from './StreakCalculator';
 import { withTransaction } from '../database/DatabaseTransaction';
+import { formatDateString } from '../utils/dateHelpers';
 import logger from '../utils/logger';
 
 // Cache configuration
@@ -532,7 +533,7 @@ export class StreakService {
   }>> {
     try {
       const allStreaks = await this.streakRepository.getAll();
-      const today = new Date().toISOString().split('T')[0];
+      const today = formatDateString(new Date());
       
       // Filter active streaks and collect task IDs
       const activeStreaks = allStreaks.filter(s => s.currentStreak > 0);
@@ -613,7 +614,7 @@ export class StreakService {
 
   async recalculateAllStreaksFromHistory(): Promise<void> {
     try {
-      const currentDate = new Date().toISOString().split('T')[0];
+      const currentDate = formatDateString(new Date());
       logger.info('SERVICES', 'Recalculating all streaks from history', { currentDate });
       
       const allTasks = await this.taskRepository.getAll();

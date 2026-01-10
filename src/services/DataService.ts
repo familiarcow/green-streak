@@ -1,6 +1,7 @@
 import { Task, TaskLog, ContributionData } from '../types';
 import { repositoryFactory } from '../database/repositories/RepositoryFactory';
 import { ITaskRepository, ILogRepository } from '../database/repositories/interfaces';
+import { formatDateString } from '../utils/dateHelpers';
 import logger from '../utils/logger';
 
 /**
@@ -198,7 +199,7 @@ export class DataService {
       logger.debug('SERVICE', 'Fetching tasks with recent activity', { days });
       
       const tasks = await this.getAllTasks();
-      const endDate = new Date().toISOString().split('T')[0];
+      const endDate = formatDateString(new Date());
       const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000)
         .toISOString()
         .split('T')[0];
@@ -307,7 +308,7 @@ export class DataService {
     const currentDate = new Date(startDate);
     
     while (currentDate <= endDate) {
-      dates.push(currentDate.toISOString().split('T')[0]);
+      dates.push(formatDateString(currentDate));
       currentDate.setDate(currentDate.getDate() + 1);
     }
     

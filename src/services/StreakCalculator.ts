@@ -3,6 +3,7 @@
  */
 
 import { TaskLog } from '../types';
+import { formatDateString } from '../utils/dateHelpers';
 import logger from '../utils/logger';
 
 /**
@@ -65,7 +66,7 @@ export function calculateStreakAsOfDate(
       for (let j = 1; j < daysDiff; j++) {
         const checkDate = new Date(currDate);
         checkDate.setDate(checkDate.getDate() + j);
-        const dateStr = checkDate.toISOString().split('T')[0];
+        const dateStr = formatDateString(checkDate);
         const dayOfWeek = checkDate.getDay();
         
         const canSkip = (skipWeekends && (dayOfWeek === 0 || dayOfWeek === 6)) ||
@@ -100,7 +101,7 @@ export function calculateStreakAsOfDate(
     for (let i = 1; i < daysSinceLastCompletion; i++) {
       const checkDate = new Date(lastCompletionDateObj);
       checkDate.setDate(checkDate.getDate() + i);
-      const dateStr = checkDate.toISOString().split('T')[0];
+      const dateStr = formatDateString(checkDate);
       const dayOfWeek = checkDate.getDay();
       
       const canSkip = (skipWeekends && (dayOfWeek === 0 || dayOfWeek === 6)) ||
@@ -127,7 +128,7 @@ export function calculateStreakFromLogs(
   minimumCount: number = 1,
   skipWeekends: boolean = false,
   skipDays: string[] = [],
-  today: string = new Date().toISOString().split('T')[0]
+  today: string = formatDateString(new Date())
 ): {
   currentStreak: number;
   bestStreak: number;
@@ -172,7 +173,7 @@ export function calculateStreakFromLogs(
       for (let j = 1; j < daysDiff; j++) {
         const checkDate = new Date(currDate);
         checkDate.setDate(checkDate.getDate() + j);
-        const dateStr = checkDate.toISOString().split('T')[0];
+        const dateStr = formatDateString(checkDate);
         const dayOfWeek = checkDate.getDay();
         
         const canSkip = (skipWeekends && (dayOfWeek === 0 || dayOfWeek === 6)) ||
@@ -225,7 +226,7 @@ export function calculateStreakFromLogs(
     for (let i = 1; i < daysSinceLastCompletion; i++) {
       const checkDate = new Date(lastDate);
       checkDate.setDate(checkDate.getDate() + i);
-      const dateStr = checkDate.toISOString().split('T')[0];
+      const dateStr = formatDateString(checkDate);
       const dayOfWeek = checkDate.getDay();
       
       const canSkip = (skipWeekends && (dayOfWeek === 0 || dayOfWeek === 6)) ||

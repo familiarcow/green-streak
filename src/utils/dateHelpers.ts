@@ -22,6 +22,12 @@ export const getTodayString = (): string => {
   return formatDate(getToday());
 };
 
+export const formatDateString = (date: Date): string => {
+  // Always use local timezone for consistent date handling
+  // This replaces toISOString().split('T')[0] which uses UTC
+  return format(date, 'yyyy-MM-dd');
+};
+
 export const getDateRange = (startDate: Date, endDate: Date): Date[] => {
   return eachDayOfInterval({ start: startDate, end: endDate });
 };

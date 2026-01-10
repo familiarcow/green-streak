@@ -12,7 +12,7 @@ import Animated, {
 import { ContributionData, Task } from '../../types';
 import { colors, textStyles, spacing, shadows } from '../../theme';
 import { radiusValues, fontSizes } from '../../theme/utils';
-import { getTodayString } from '../../utils/dateHelpers';
+import { getTodayString, formatDateString } from '../../utils/dateHelpers';
 import { TimePeriodSelector, ViewType } from './TimePeriodSelector';
 import { MonthMarker } from './MonthMarker';
 import Icon, { IconName, ICON_MAP } from '../common/Icon';
@@ -136,7 +136,7 @@ export const LiveCalendar: React.FC<LiveCalendarProps> = ({
       const targetDate = new Date(endDate);
       targetDate.setDate(endDate.getDate() - daysAgo);
       
-      const dateString = targetDate.toISOString().split('T')[0];
+      const dateString = formatDateString(targetDate);
       const existingData = filteredData.find(d => d.date === dateString);
       
       allDays.push(existingData || {
