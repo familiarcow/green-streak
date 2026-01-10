@@ -4,6 +4,7 @@ import { colors, textStyles, spacing, shadows, borderRadius } from '../../theme'
 import { sizes, gaps, radiusValues } from '../../theme/utils';
 import { TodayCardProps, Task, TaskStreak } from '../../types';
 import { formatDisplayDate, getTodayString, parseDateString, formatDateString } from '../../utils/dateHelpers';
+import { useDynamicToday } from '../../hooks/useDateRefresh';
 import { Icon } from '../common/Icon';
 import { DatePickerModal } from '../common/DatePickerModal';
 import { StreakBadge } from '../common/StreakBadge';
@@ -21,6 +22,9 @@ export const TodayCard: React.FC<TodayCardProps> = React.memo(({
   // State for date picker
   const [showDatePicker, setShowDatePicker] = useState(false);
   
+  // Dynamic today string that updates at midnight
+  const dynamicToday = useDynamicToday();
+  
   // Streaks store
   const { streaks, loadStreaks, loadStreaksForDate, getStreakForTaskOnDate } = useStreaksStore();
   
@@ -34,11 +38,17 @@ export const TodayCard: React.FC<TodayCardProps> = React.memo(({
     loadStreaksForDate(selectedDate);
   }, [loadStreaksForDate, selectedDate]);
 
-  // Memoized computed values
-  const isToday = useMemo(() => selectedDate === getTodayString(), [selectedDate]);
+  // Memoized computed values - use dynamicToday for accurate date checks
+  const isToday = useMemo(() => {
+    return selectedDate === dynamicToday;
+  }, [selectedDate, dynamicToday]);
+  
   const hasCompletions = useMemo(() => selectedDateData && selectedDateData.count > 0, [selectedDateData]);
   const totalCompletions = useMemo(() => selectedDateData?.count || 0, [selectedDateData]);
-  const canGoForward = useMemo(() => selectedDate < getTodayString(), [selectedDate]);
+  
+  const canGoForward = useMemo(() => {
+    return selectedDate < dynamicToday;
+  }, [selectedDate, dynamicToday]);
 
   // Memoized completion count lookup function
   const getTaskCompletionCount = useCallback((taskId: string): number => {

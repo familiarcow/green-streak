@@ -10,7 +10,8 @@ import { initializeSettings } from './src/store/settingsStore';
 import { useOnboardingStore } from './src/store/onboardingStore';
 import { useTasksStore } from './src/store/tasksStore';
 import { setupDevEnvironment, getDevConfig } from './src/utils/devConfig';
-import { getStreakService } from './src/services';
+import { getStreakService, getDateService } from './src/services';
+import { setSystemDate } from './src/store/systemStore';
 import HomeScreen from './src/screens/HomeScreen';
 import OnboardingScreen from './src/screens/OnboardingScreen';
 import EditTaskModal from './src/screens/EditTaskModal';
@@ -39,6 +40,24 @@ export default function App() {
 
         // Initialize settings and notifications
         await initializeSettings();
+
+        // Initialize DateService and connect to system store
+        try {
+          logger.info('UI', 'Initializing DateService');
+          const dateService = getDateService();
+          dateService.initialize();
+          
+          // Subscribe to date changes and update system store
+          dateService.subscribe((newDate) => {
+            logger.info('UI', 'Date changed, updating system store', { newDate });
+            setSystemDate(newDate);
+          });
+          
+          logger.info('UI', 'DateService initialized successfully');
+        } catch (error) {
+          logger.error('UI', 'Failed to initialize DateService', { error });
+          // Don't fail app initialization if date service fails
+        }
 
         // Handle development seeding based on CLI flags
         const { shouldSeed, seedConfig } = getDevConfig();

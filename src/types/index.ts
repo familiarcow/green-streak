@@ -11,7 +11,8 @@ export type LogCategory =
   | 'APP'
   | 'SERVICE'
   | 'SERVICES'
-  | 'STORE';
+  | 'STORE'
+  | 'HOOK';
 
 export interface Task {
   id: string;

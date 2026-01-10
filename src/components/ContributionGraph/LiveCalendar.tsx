@@ -13,6 +13,7 @@ import { ContributionData, Task } from '../../types';
 import { colors, textStyles, spacing, shadows } from '../../theme';
 import { radiusValues, fontSizes } from '../../theme/utils';
 import { getTodayString, formatDateString } from '../../utils/dateHelpers';
+import { useDynamicToday } from '../../hooks/useDateRefresh';
 import { TimePeriodSelector, ViewType } from './TimePeriodSelector';
 import { MonthMarker } from './MonthMarker';
 import Icon, { IconName, ICON_MAP } from '../common/Icon';
@@ -79,7 +80,8 @@ export const LiveCalendar: React.FC<LiveCalendarProps> = ({
   dateOffset = 0,
   onDateOffsetChange,
 }) => {
-  const todayString = getTodayString();
+  // Use dynamic today that updates at midnight
+  const todayString = useDynamicToday();
   const [containerWidth, setContainerWidth] = useState(0);
   const [isFilterExpanded, setIsFilterExpanded] = useState(false);
   

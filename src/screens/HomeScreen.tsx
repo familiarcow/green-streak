@@ -11,8 +11,9 @@ import { useTasksStore } from '../store/tasksStore';
 import { useLogsStore } from '../store/logsStore';
 import { useSettingsStore } from '../store/settingsStore';
 import { useTaskActions, useModalManager, useDateNavigation } from '../hooks';
+import { useDateRefresh } from '../hooks/useDateRefresh';
 import { colors, textStyles, spacing } from '../theme';
-import { formatDateString } from '../utils/dateHelpers';
+import { formatDateString, getTodayString } from '../utils/dateHelpers';
 import EditTaskModal from './EditTaskModal';
 import DailyLogScreen from './DailyLogScreen';
 import SettingsScreen from './SettingsScreen';
@@ -45,6 +46,20 @@ export const HomeScreen: React.FC = () => {
   // Local component state
   const [showHistory, setShowHistory] = useState(false);
   const [historyDays, setHistoryDays] = useState<string[]>([]);
+
+  // Handle date changes (midnight, app resume, etc)
+  // Now using centralized DateService through the hook
+  const currentToday = useDateRefresh((newToday) => {
+    logger.info('UI', 'Date refresh triggered in HomeScreen', { newToday });
+    
+    // If we were on "today" and the date changed, update to new today
+    if (selectedDate === newToday || selectedDate < newToday) {
+      handleDateChange(newToday);
+    }
+    
+    // Refresh data to ensure everything is up to date
+    refreshAllData();
+  });
 
   // Initialize data on mount
   useEffect(() => {

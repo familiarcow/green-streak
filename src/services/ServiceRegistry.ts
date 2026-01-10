@@ -1,6 +1,7 @@
 import { DataService, dataService } from './DataService';
-import { createTaskService } from './TaskService';
-import { createStreakService } from './StreakService';
+import { TaskService, createTaskService } from './TaskService';
+import { StreakService, createStreakService } from './StreakService';
+import { DateService, createDateService } from './DateService';
 import { TaskAnalyticsService, taskAnalyticsService } from './TaskAnalyticsService';
 import { ValidationService, validationService } from './ValidationService';
 import notificationService from './NotificationService';
@@ -44,9 +45,13 @@ export class ServiceRegistry {
       const logRepository = repositoryFactory.getLogRepository();
       const streakService = createStreakService(streakRepository, logRepository, taskRepository);
       
+      // Create DateService (singleton)
+      const dateService = createDateService();
+      
       this.register('data', dataService);
       this.register('task', taskService);
       this.register('streak', streakService);
+      this.register('date', dateService);
       this.register('analytics', taskAnalyticsService);
       this.register('validation', validationService);
       this.register('notification', notificationService);
@@ -180,8 +185,9 @@ export const serviceRegistry = ServiceRegistry.getInstance();
 
 // Service getters for easy access
 export const getDataService = (): DataService => serviceRegistry.get<DataService>('data');
-export const getTaskService = () => serviceRegistry.get('task');
-export const getStreakService = () => serviceRegistry.get('streak');
+export const getTaskService = (): TaskService => serviceRegistry.get<TaskService>('task');
+export const getStreakService = (): StreakService => serviceRegistry.get<StreakService>('streak');
+export const getDateService = (): DateService => serviceRegistry.get<DateService>('date');
 export const getAnalyticsService = (): TaskAnalyticsService => serviceRegistry.get<TaskAnalyticsService>('analytics');
 export const getValidationService = (): ValidationService => serviceRegistry.get<ValidationService>('validation');
 export const getNotificationService = () => serviceRegistry.get('notification');

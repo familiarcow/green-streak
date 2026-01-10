@@ -13,6 +13,7 @@ export { ValidationService, validationService } from './ValidationService';
 export { default as NotificationService } from './NotificationService';
 export { StreakService, createStreakService } from './StreakService';
 export { StreakRulesEngine, createStreakRulesEngine } from './StreakRulesEngine';
+export { DateService, createDateService } from './DateService';
 
 // Service Registry
 export { 
@@ -21,6 +22,7 @@ export {
   getDataService,
   getTaskService,
   getStreakService,
+  getDateService,
   getAnalyticsService,
   getValidationService,
   getNotificationService
