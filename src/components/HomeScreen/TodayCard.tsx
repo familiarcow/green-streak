@@ -6,6 +6,7 @@ import { TodayCardProps, Task, TaskStreak } from '../../types';
 import { formatDisplayDate, getTodayString } from '../../utils/dateHelpers';
 import { Icon } from '../common/Icon';
 import { DatePickerModal } from '../common/DatePickerModal';
+import { StreakBadge } from '../common/StreakBadge';
 import { useStreaksStore } from '../../store/streaksStore';
 import logger from '../../utils/logger';
 
@@ -125,29 +126,27 @@ export const TodayCard: React.FC<TodayCardProps> = React.memo(({
           </View>
           
           <View style={styles.taskDetails}>
-            <View style={styles.taskNameRow}>
-              <Text style={styles.taskName} numberOfLines={1}>{task.name}</Text>
-              {hasCompletions && (
-                <View style={styles.progressDots}>
-                  {Array.from({ length: Math.min(completionCount, 5) }).map((_, index) => (
-                    <View key={index} style={styles.progressDot} />
-                  ))}
-                  {completionCount > 5 && (
-                    <Text style={styles.extraCount}>+{completionCount - 5}</Text>
-                  )}
-                </View>
-              )}
-            </View>
+            <Text style={styles.taskName} numberOfLines={1}>{task.name}</Text>
+            {hasCompletions && (
+              <View style={styles.progressDots}>
+                {Array.from({ length: Math.min(completionCount, 5) }).map((_, index) => (
+                  <View key={index} style={styles.progressDot} />
+                ))}
+                {completionCount > 5 && (
+                  <Text style={styles.extraCount}>+{completionCount - 5}</Text>
+                )}
+              </View>
+            )}
           </View>
         </View>
         
         {task.streakEnabled && streakCount > 0 && (
-          <View style={styles.streakContainer}>
-            <Icon name="flame" size={14} color={colors.accent.warm} />
-            <Text style={styles.streakText}>
-              {streakCount}
-            </Text>
-          </View>
+          <StreakBadge
+            count={streakCount}
+            isActive={dateStreak?.isActiveStreak || false}
+            hasCompletedToday={dateStreak?.hasCompletedToday || false}
+            size="small"
+          />
         )}
 
         <TouchableOpacity
@@ -405,40 +404,15 @@ const styles = StyleSheet.create({
     ...textStyles.body,
     color: colors.text.primary,
     fontWeight: '600',
-    flex: 1,
+    marginBottom: spacing[1] / 2,
   },
 
-  taskMetaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing[3],
-  },
-
-  streakContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing[1],
-    marginRight: spacing[2],
-  },
-
-  streakBadge: {
-    backgroundColor: colors.accent.warm,
-    paddingHorizontal: spacing[2],
-    paddingVertical: spacing[1] / 2,
-    borderRadius: spacing[2],
-  },
-
-  streakText: {
-    ...textStyles.caption,
-    color: colors.text.secondary,
-    fontWeight: '500',
-    fontSize: 11,
-  },
 
   progressDots: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: gaps.xxs,
+    marginTop: gaps.xxs,
   },
 
   progressDot: {
