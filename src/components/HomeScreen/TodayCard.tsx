@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { colors, textStyles, spacing, shadows, borderRadius } from '../../theme';
 import { sizes, gaps, radiusValues } from '../../theme/utils';
 import { TodayCardProps, Task, TaskStreak } from '../../types';
-import { formatDisplayDate, getTodayString } from '../../utils/dateHelpers';
+import { formatDisplayDate, getTodayString, parseDateString, formatDateString } from '../../utils/dateHelpers';
 import { Icon } from '../common/Icon';
 import { DatePickerModal } from '../common/DatePickerModal';
 import { StreakBadge } from '../common/StreakBadge';
@@ -49,16 +49,16 @@ export const TodayCard: React.FC<TodayCardProps> = React.memo(({
 
   // Memoized navigation functions
   const handlePreviousDay = useCallback(() => {
-    const currentDate = new Date(selectedDate);
+    const currentDate = parseDateString(selectedDate);
     currentDate.setDate(currentDate.getDate() - 1);
-    const previousDate = currentDate.toISOString().split('T')[0];
+    const previousDate = formatDateString(currentDate);
     onDateChange(previousDate);
   }, [selectedDate, onDateChange]);
 
   const handleNextDay = useCallback(() => {
-    const currentDate = new Date(selectedDate);
+    const currentDate = parseDateString(selectedDate);
     currentDate.setDate(currentDate.getDate() + 1);
-    const nextDate = currentDate.toISOString().split('T')[0];
+    const nextDate = formatDateString(currentDate);
     onDateChange(nextDate);
   }, [selectedDate, onDateChange]);
 
@@ -191,7 +191,7 @@ export const TodayCard: React.FC<TodayCardProps> = React.memo(({
             accessibilityHint="Tap to select any date"
           >
             <Text style={styles.dateTitle}>
-              {isToday ? 'Today' : formatDisplayDate(new Date(selectedDate))}
+              {isToday ? 'Today' : formatDisplayDate(parseDateString(selectedDate))}
             </Text>
           </TouchableOpacity>
           

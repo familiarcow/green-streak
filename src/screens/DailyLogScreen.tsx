@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTasksStore } from '../store/tasksStore';
 import { useLogsStore } from '../store/logsStore';
 import { colors, textStyles, spacing, shadows, typography } from '../theme';
-import { formatDisplayDate, getWeekDayName, formatDateString } from '../utils/dateHelpers';
+import { formatDisplayDate, getWeekDayName, formatDateString, parseDateString } from '../utils/dateHelpers';
 import { DailyLogScreenProps } from '../types';
 import { Icon } from '../components/common/Icon';
 import logger from '../utils/logger';
@@ -75,7 +75,7 @@ export const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ date, onClose, o
   
   const navigateDate = (direction: 'prev' | 'next') => {
     if (onDateChange) {
-      const currentDate = new Date(date);
+      const currentDate = parseDateString(date);
       const newDate = new Date(currentDate);
       newDate.setDate(currentDate.getDate() + (direction === 'next' ? 1 : -1));
       const newDateString = formatDateString(newDate);
@@ -112,8 +112,8 @@ export const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ date, onClose, o
         
         <View style={styles.headerInfo}>
           <View style={styles.dateRow}>
-            <Text style={styles.dayOfWeek}>{date ? getWeekDayName(new Date(date)).toUpperCase() : ''}</Text>
-            <Text style={styles.dateTitle}>{date ? formatDisplayDate(new Date(date)) : 'No date'}</Text>
+            <Text style={styles.dayOfWeek}>{date ? getWeekDayName(parseDateString(date)).toUpperCase() : ''}</Text>
+            <Text style={styles.dateTitle}>{date ? formatDisplayDate(parseDateString(date)) : 'No date'}</Text>
           </View>
           <Text style={styles.summaryText}>
             {completedTasks} tasks, {totalCompletions} completions

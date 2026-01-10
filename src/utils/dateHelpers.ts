@@ -28,6 +28,13 @@ export const formatDateString = (date: Date): string => {
   return format(date, 'yyyy-MM-dd');
 };
 
+export const parseDateString = (dateString: string): Date => {
+  // Parse date string as local date, not UTC
+  // "2026-01-09" becomes Jan 9 midnight local time, not UTC
+  const [year, month, day] = dateString.split('-').map(Number);
+  return new Date(year, month - 1, day);
+};
+
 export const getDateRange = (startDate: Date, endDate: Date): Date[] => {
   return eachDayOfInterval({ start: startDate, end: endDate });
 };
