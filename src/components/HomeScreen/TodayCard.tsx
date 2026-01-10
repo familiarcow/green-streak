@@ -147,17 +147,17 @@ export const TodayCard: React.FC<TodayCardProps> = React.memo(({
               </View>
             )}
           </View>
+          
+          {task.streakEnabled && streakCount > 0 && (
+            <StreakBadge
+              count={streakCount}
+              isActive={dateStreak?.isActiveStreak || false}
+              hasCompletedToday={dateStreak?.hasCompletedToday || false}
+              isToday={isToday}
+              size="small"
+            />
+          )}
         </View>
-
-        {task.streakEnabled && streakCount > 0 && (
-          <StreakBadge
-            count={streakCount}
-            isActive={dateStreak?.isActiveStreak || false}
-            hasCompletedToday={dateStreak?.hasCompletedToday || false}
-            isToday={isToday}
-            size="small"
-          />
-        )}
 
         <TouchableOpacity
           style={[

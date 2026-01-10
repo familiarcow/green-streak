@@ -75,33 +75,32 @@ const styles = StyleSheet.create({
   badge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-    borderRadius: 8,
-    marginLeft: 'auto',
-    marginRight: spacing[2],
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 10,
+    marginLeft: spacing[2],
   },
   badgeMedium: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    gap: 5,
   },
   badgeMilestone: {
     ...shadows.sm,
   },
   text: {
-    ...textStyles.caption,
-    fontSize: 12,
-    fontWeight: '600',
-    letterSpacing: 0.2,
+    ...textStyles.body,
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: 0.3,
   },
   textMedium: {
-    fontSize: 13,
-    fontWeight: '700',
+    fontSize: 15,
+    fontWeight: '800',
   },
   emoji: {
-    fontSize: 11,
+    fontSize: 13,
   },
 });
 
