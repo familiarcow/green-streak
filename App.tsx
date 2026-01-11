@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { View, Text, StyleSheet } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { AnimatedLoader } from './src/components/AnimatedLoader';
 import { initializeDatabase } from './src/database';
 import { runSeed } from './src/utils/devSeed';
@@ -12,6 +13,8 @@ import { useTasksStore } from './src/store/tasksStore';
 import { setupDevEnvironment, getDevConfig } from './src/utils/devConfig';
 import { getStreakService, getDateService } from './src/services';
 import { setSystemDate } from './src/store/systemStore';
+import { ToastProvider } from './src/contexts/ToastContext';
+import { ToastContainer } from './src/components/Toast';
 import HomeScreen from './src/screens/HomeScreen';
 import OnboardingScreen from './src/screens/OnboardingScreen';
 import EditTaskModal from './src/screens/EditTaskModal';
@@ -187,10 +190,15 @@ export default function App() {
   }
 
   return (
-    <SafeAreaProvider>
-      <HomeScreen />
-      <StatusBar style="dark" backgroundColor={colors.background} />
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <ToastProvider>
+          <HomeScreen />
+          <ToastContainer />
+          <StatusBar style="dark" backgroundColor={colors.background} />
+        </ToastProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
 

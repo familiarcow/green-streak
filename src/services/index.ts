@@ -14,6 +14,11 @@ export { default as NotificationService } from './NotificationService';
 export { StreakService, createStreakService } from './StreakService';
 export { StreakRulesEngine, createStreakRulesEngine } from './StreakRulesEngine';
 export { DateService, createDateService } from './DateService';
+export { ToastNotificationService } from './ToastNotificationService';
+export { SoundEffectsService } from './SoundEffectsService';
+export { ConfettiService } from './ConfettiService';
+export { ToastQueue } from './ToastQueue';
+export { NotificationOrchestrator, createNotificationOrchestrator } from './NotificationOrchestrator';
 
 // Service Registry
 export { 
@@ -25,7 +30,11 @@ export {
   getDateService,
   getAnalyticsService,
   getValidationService,
-  getNotificationService
+  getNotificationService,
+  getToastService,
+  getSoundService,
+  getConfettiService,
+  getOrchestrator
 } from './ServiceRegistry';
 
 // Type exports
