@@ -3,7 +3,7 @@ import { useTasksStore } from '../store/tasksStore';
 import { useLogsStore } from '../store/logsStore';
 import { useStreaksStore } from '../store/streaksStore';
 import { useToast } from '../contexts/ToastContext';
-import { getStreakMessage, isStreakMilestone, getCelebrationLevel } from '../utils/toastMessages';
+import { getStreakMessage, isStreakMilestone, getCelebrationLevel, shouldShowStreakToast, getConfettiType } from '../utils/toastMessages';
 import { getTodayString } from '../utils/dateHelpers';
 import { UseTaskActionsReturn } from '../types';
 import { getDataService, getValidationService } from '../services';
@@ -48,28 +48,43 @@ export const useTaskActions = (): UseTaskActionsReturn => {
       // Update streak for the task
       const updatedStreak = await updateStreakOnCompletion(taskId, targetDate, newCount);
       
-      // Show toast notification for streak update (only if today)
+      // Show toast notification for meaningful streak events (only if today)
       if (updatedStreak && targetDate === getTodayString()) {
-        const task = tasks.find(t => t.id === taskId);
-        const taskName = task?.name || 'Task';
         const currentStreak = updatedStreak?.currentStreak || 0;
+        const shouldShowToast = shouldShowStreakToast(currentStreak, previousStreak, newCount);
         
-        // Get appropriate message
-        const message = getStreakMessage(currentStreak, previousStreak);
-        const isMilestone = isStreakMilestone(currentStreak);
-        const celebrationLevel = getCelebrationLevel(currentStreak);
-        
-        // Show toast with effects
-        showToast({
-          message,
-          variant: isMilestone ? 'celebration' : 'success',
-          icon: currentStreak >= 100 ? '💯' : currentStreak >= 30 ? '🌟' : currentStreak >= 7 ? '🔥' : '✨',
-          effects: {
-            sound: isMilestone ? 'milestone' : 'streak',
-            confetti: isMilestone ? (celebrationLevel === 'large' ? 'fireworks' : 'burst') : false,
-            haptic: true,
-          },
-        });
+        if (shouldShowToast) {
+          const task = tasks.find(t => t.id === taskId);
+          const taskName = task?.name || 'Task';
+          
+          // Get appropriate message
+          const message = getStreakMessage(currentStreak, previousStreak);
+          const isMilestone = isStreakMilestone(currentStreak);
+          const confettiType = getConfettiType(currentStreak);
+          
+          // Determine icon based on streak level
+          let icon = '✨';
+          if (currentStreak === 365) icon = '🎊';
+          else if (currentStreak >= 100) icon = '💯';
+          else if (currentStreak >= 50) icon = '🌟';
+          else if (currentStreak >= 30) icon = '🏆';
+          else if (currentStreak >= 7) icon = '🔥';
+          else if (currentStreak === 1 && previousStreak > 1) icon = '💪';
+          else if (currentStreak === 1) icon = '🚀';
+          
+          // Show toast with enhanced effects
+          showToast({
+            message,
+            variant: isMilestone ? 'celebration' : 'success',
+            icon,
+            effects: {
+              sound: isMilestone ? 'milestone' : 'streak',
+              confetti: confettiType,  // Uses the new granular confetti system
+              haptic: true,
+            },
+            duration: isMilestone ? 5000 : 3000,  // Longer duration for milestones
+          });
+        }
       }
       
       // Refresh data to reflect changes - expand date range to include target date if needed

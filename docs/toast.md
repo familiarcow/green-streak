@@ -313,23 +313,50 @@ updateConfig({ maxVisible: 5 });
 
 ## Streak Integration
 
-Toasts automatically appear when users complete tasks and advance streaks:
+Toasts appear for streak progress to keep you motivated:
 
-### Message Categories
+### When Toasts Appear
 
-```typescript
-// 1-6 days: Encouragement
-"Keep it up! 🔥", "You're on fire!", "LFG! 🚀"
+**Every Day You Continue Your Streak:**
+- Shows encouraging messages when you complete a task for the first time that day
+- Different messages based on streak length:
+  - **Days 1-6**: "Keep it up! 🔥", "You're on fire!", "LFG! 🚀"
+  - **Day 7, 14, 21, 28**: "One week strong! 💪" (with confetti)
+  - **Day 30, 60, 90**: "Month milestone! 🏆" (with confetti)
+  - **Day 100+**: "LEGENDARY STREAK! 🏆" (with fireworks)
 
-// 7+ days: Week milestones  
-"One week strong! 💪", "7 days of awesome!"
+**Special Cases:**
+- **Starting Fresh** (Day 1 from 0): "Let's go! Starting fresh!"
+- **Recovering** (Day 1 after break): "Back on track! Let's rebuild!"
+- **Milestones**: Extra celebration with confetti/fireworks
 
-// 30+ days: Month milestones
-"Month milestone! 🏆", "Monthly master! 👑"  
+### When Toasts DON'T Appear
 
-// 100+ days: Legendary
-"LEGENDARY STREAK! 🏆", "100 DAYS! INCREDIBLE! 💯"
-```
+1. **Multiple Completions Same Day**
+   - Only the first completion shows a toast
+   - Additional completions on the same day are silent
+
+2. **Backfilling Previous Days**
+   - Completing tasks for yesterday or earlier dates
+   - No toast shown (only for TODAY's completions)
+
+3. **No Streak Progress**
+   - If the streak count doesn't increase
+   - Prevents duplicate toasts
+
+### Examples
+
+✅ **Shows Toast:**
+- First completion today that continues streak
+- Completing task on current date
+- Starting a new streak
+
+❌ **No Toast:**
+- Second/third completion of same task today
+- Marking yesterday's task as complete
+- Backfilling missed days
+
+This ensures toasts are motivating without being annoying or repetitive.
 
 ### Implementation in useTaskActions
 
