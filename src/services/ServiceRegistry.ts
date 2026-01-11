@@ -5,6 +5,10 @@ import { DateService, createDateService } from './DateService';
 import { TaskAnalyticsService, taskAnalyticsService } from './TaskAnalyticsService';
 import { ValidationService, validationService } from './ValidationService';
 import notificationService from './NotificationService';
+import { ToastNotificationService } from './ToastNotificationService';
+import { SoundEffectsService } from './SoundEffectsService';
+import { ConfettiService } from './ConfettiService';
+import { createNotificationOrchestrator, NotificationOrchestrator } from './NotificationOrchestrator';
 import { repositoryFactory } from '../database/repositories/RepositoryFactory';
 import logger from '../utils/logger';
 
@@ -48,6 +52,16 @@ export class ServiceRegistry {
       // Create DateService (singleton)
       const dateService = createDateService();
       
+      // Create effects services (shared instances)
+      const soundService = new SoundEffectsService();
+      const confettiService = new ConfettiService();
+      
+      // Create ToastNotificationService with injected dependencies
+      const toastService = new ToastNotificationService(soundService, confettiService);
+      
+      // Create NotificationOrchestrator
+      const orchestrator = createNotificationOrchestrator(notificationService, toastService);
+      
       this.register('data', dataService);
       this.register('task', taskService);
       this.register('streak', streakService);
@@ -55,6 +69,10 @@ export class ServiceRegistry {
       this.register('analytics', taskAnalyticsService);
       this.register('validation', validationService);
       this.register('notification', notificationService);
+      this.register('toast', toastService);
+      this.register('sound', soundService);
+      this.register('confetti', confettiService);
+      this.register('orchestrator', orchestrator);
       
       logger.info('SERVICE', 'Default services registered successfully', {
         servicesCount: this.services.size
@@ -129,6 +147,42 @@ export class ServiceRegistry {
     logger.debug('SERVICE', 'Clearing all services');
     this.services.clear();
   }
+  
+  /**
+   * Destroy all services that have destroy methods
+   */
+  destroyAll(): void {
+    logger.debug('SERVICE', 'Destroying all services with cleanup');
+    
+    // Destroy services that have destroy methods
+    this.services.forEach((service, name) => {
+      if (service && typeof service.destroy === 'function') {
+        try {
+          service.destroy();
+          logger.debug('SERVICE', 'Destroyed service', { serviceName: name });
+        } catch (error) {
+          logger.error('SERVICE', 'Failed to destroy service', { 
+            serviceName: name, 
+            error 
+          });
+        }
+      } else if (service && typeof service.cleanup === 'function') {
+        // Fallback to cleanup method if destroy doesn't exist
+        try {
+          service.cleanup();
+          logger.debug('SERVICE', 'Cleaned up service', { serviceName: name });
+        } catch (error) {
+          logger.error('SERVICE', 'Failed to cleanup service', { 
+            serviceName: name, 
+            error 
+          });
+        }
+      }
+    });
+    
+    // Clear the registry after destroying services
+    this.clear();
+  }
 
   /**
    * Get service health status
@@ -191,5 +245,9 @@ export const getDateService = (): DateService => serviceRegistry.get<DateService
 export const getAnalyticsService = (): TaskAnalyticsService => serviceRegistry.get<TaskAnalyticsService>('analytics');
 export const getValidationService = (): ValidationService => serviceRegistry.get<ValidationService>('validation');
 export const getNotificationService = () => serviceRegistry.get('notification');
+export const getToastService = (): ToastNotificationService => serviceRegistry.get<ToastNotificationService>('toast');
+export const getSoundService = (): SoundEffectsService => serviceRegistry.get<SoundEffectsService>('sound');
+export const getConfettiService = (): ConfettiService => serviceRegistry.get<ConfettiService>('confetti');
+export const getOrchestrator = (): NotificationOrchestrator => serviceRegistry.get<NotificationOrchestrator>('orchestrator');
 
 export default ServiceRegistry;

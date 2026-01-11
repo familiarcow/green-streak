@@ -12,7 +12,14 @@ export type LogCategory =
   | 'SERVICE'
   | 'SERVICES'
   | 'STORE'
-  | 'HOOK';
+  | 'HOOK'
+  | 'TOAST'
+  | 'TOAST_CONTEXT'
+  | 'TOAST_ERROR'
+  | 'TOAST_QUEUE'
+  | 'ORCHESTRATOR'
+  | 'CONFETTI'
+  | 'SOUND';
 
 export interface Task {
   id: string;
