@@ -111,15 +111,6 @@ export interface TodayCardProps {
   onDateChange: (date: string) => void;
 }
 
-export interface HistorySectionProps {
-  showHistory: boolean;
-  historyDays: string[];
-  contributionData: ContributionData[];
-  onToggleHistory: () => void;
-  onHistoryDayPress: (date: string) => void;
-  onLoadMore: () => void;
-}
-
 export interface TasksSectionProps {
   tasks: Task[];
   onTaskPress: (task: Task) => void;

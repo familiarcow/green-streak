@@ -5,7 +5,7 @@ import { ContributionGraph } from '../components/ContributionGraph';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { ScreenErrorBoundary } from '../components/ScreenErrorBoundary';
 import { Icon } from '../components/common/Icon';
-import { TodayCard, HistorySection, EmptyStateSection, TasksSection } from '../components/HomeScreen';
+import { TodayCard, EmptyStateSection, TasksSection } from '../components/HomeScreen';
 import { BaseModal } from '../components/modals';
 import { useTasksStore } from '../store/tasksStore';
 import { useLogsStore } from '../store/logsStore';
@@ -13,7 +13,7 @@ import { useSettingsStore } from '../store/settingsStore';
 import { useTaskActions, useModalManager, useDateNavigation } from '../hooks';
 import { useDateRefresh } from '../hooks/useDateRefresh';
 import { colors, textStyles, spacing } from '../theme';
-import { formatDateString, getTodayString } from '../utils/dateHelpers';
+import { getTodayString } from '../utils/dateHelpers';
 import EditTaskModal from './EditTaskModal';
 import DailyLogScreen from './DailyLogScreen';
 import SettingsScreen from './SettingsScreen';
@@ -43,9 +43,6 @@ export const HomeScreen: React.FC = () => {
   const { contributionData, loading: logsLoading } = useLogsStore();
   const { firstDayOfWeek } = useSettingsStore();
 
-  // Local component state
-  const [showHistory, setShowHistory] = useState(false);
-  const [historyDays, setHistoryDays] = useState<string[]>([]);
 
   // Handle date changes (midnight, app resume, etc)
   // Now using centralized DateService through the hook
@@ -73,16 +70,6 @@ export const HomeScreen: React.FC = () => {
     };
 
     initializeData();
-    
-    // Initialize history with past 30 days
-    const days: string[] = [];
-    const today = new Date();
-    for (let i = 1; i <= 30; i++) {
-      const date = new Date(today);
-      date.setDate(date.getDate() - i);
-      days.push(formatDateString(date));
-    }
-    setHistoryDays(days);
   }, [refreshAllData]);
 
   // Memoized computed values
@@ -97,27 +84,6 @@ export const HomeScreen: React.FC = () => {
   );
 
   // Event handlers
-  const loadMoreHistory = useCallback(() => {
-    const lastDate = historyDays[historyDays.length - 1];
-    if (!lastDate) return;
-    
-    const newDays: string[] = [];
-    const startDate = new Date(lastDate);
-    for (let i = 1; i <= 30; i++) {
-      const date = new Date(startDate);
-      date.setDate(date.getDate() - i);
-      newDays.push(formatDateString(date));
-    }
-    setHistoryDays([...historyDays, ...newDays]);
-  }, [historyDays]);
-
-  const handleHistoryDayPress = useCallback((date: string) => {
-    // Update selected date first so modal will show correct date
-    handleDayPress(date);
-    // Small delay to ensure state updates before opening modal
-    setTimeout(() => openDailyLog(), 0);
-  }, [handleDayPress, openDailyLog]);
-
   const handleTaskAdded = useCallback(async () => {
     try {
       await refreshAllData();
@@ -145,10 +111,6 @@ export const HomeScreen: React.FC = () => {
     logger.debug('UI', 'Task analytics requested', { taskId: task.id, taskName: task.name });
     openTaskAnalytics(task);
   }, [openTaskAnalytics]);
-
-  const handleToggleHistory = useCallback(() => {
-    setShowHistory(prev => !prev);
-  }, []);
 
   const handleDailyLogPress = useCallback(() => {
     openDailyLog(selectedDate);
@@ -197,18 +159,6 @@ export const HomeScreen: React.FC = () => {
               onQuickAdd={handleQuickAdd}
               onViewMore={handleDailyLogPress}
               onDateChange={handleDateChange}
-            />
-          </ErrorBoundary>
-          
-          {/* History Section */}
-          <ErrorBoundary>
-            <HistorySection
-              showHistory={showHistory}
-              historyDays={historyDays}
-              contributionData={contributionData}
-              onToggleHistory={handleToggleHistory}
-              onHistoryDayPress={handleHistoryDayPress}
-              onLoadMore={loadMoreHistory}
             />
           </ErrorBoundary>
 
