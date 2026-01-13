@@ -259,13 +259,13 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
 
         {/* Description Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Description (Optional)</Text>
+          <Text style={styles.sectionTitle}>Description</Text>
           <View style={styles.settingItem}>
             <TextInput
               style={[styles.textInput, styles.multilineInput]}
               value={description}
               onChangeText={setDescription}
-              placeholder="Add a description..."
+              placeholder="Add a description (Optional)"
               placeholderTextColor={colors.text.tertiary}
               multiline
               numberOfLines={3}
