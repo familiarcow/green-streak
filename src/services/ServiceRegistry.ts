@@ -9,6 +9,7 @@ import { ToastNotificationService } from './ToastNotificationService';
 import { SoundEffectsService } from './SoundEffectsService';
 import { ConfettiService } from './ConfettiService';
 import { createNotificationOrchestrator, NotificationOrchestrator } from './NotificationOrchestrator';
+import { createNotificationManager, NotificationManager } from './NotificationManager';
 import { repositoryFactory } from '../database/repositories/RepositoryFactory';
 import logger from '../utils/logger';
 
@@ -62,6 +63,13 @@ export class ServiceRegistry {
       // Create NotificationOrchestrator
       const orchestrator = createNotificationOrchestrator(notificationService, toastService);
       
+      // Create NotificationManager with dependencies
+      const notificationManager = createNotificationManager(
+        taskService,
+        streakService,
+        dataService
+      );
+      
       this.register('data', dataService);
       this.register('task', taskService);
       this.register('streak', streakService);
@@ -69,6 +77,7 @@ export class ServiceRegistry {
       this.register('analytics', taskAnalyticsService);
       this.register('validation', validationService);
       this.register('notification', notificationService);
+      this.register('notificationManager', notificationManager);
       this.register('toast', toastService);
       this.register('sound', soundService);
       this.register('confetti', confettiService);
@@ -245,6 +254,7 @@ export const getDateService = (): DateService => serviceRegistry.get<DateService
 export const getAnalyticsService = (): TaskAnalyticsService => serviceRegistry.get<TaskAnalyticsService>('analytics');
 export const getValidationService = (): ValidationService => serviceRegistry.get<ValidationService>('validation');
 export const getNotificationService = () => serviceRegistry.get('notification');
+export const getNotificationManager = (): NotificationManager => serviceRegistry.get<NotificationManager>('notificationManager');
 export const getToastService = (): ToastNotificationService => serviceRegistry.get<ToastNotificationService>('toast');
 export const getSoundService = (): SoundEffectsService => serviceRegistry.get<SoundEffectsService>('sound');
 export const getConfettiService = (): ConfettiService => serviceRegistry.get<ConfettiService>('confetti');

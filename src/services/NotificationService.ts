@@ -8,17 +8,9 @@ export interface NotificationPermissions {
   canAskAgain: boolean;
 }
 
-export interface ScheduledNotification {
-  identifier: string;
-  taskId?: string;
-  type: 'daily_reminder' | 'task_reminder';
-  time: string; // HH:MM format
-  frequency: 'daily' | 'weekly';
-  enabled: boolean;
-}
-
 class NotificationService {
   private static instance: NotificationService;
+  private scheduledNotifications: Map<string, string> = new Map(); // Map custom ID to expo ID
 
   private constructor() {
     this.configureNotifications();
@@ -129,39 +121,112 @@ class NotificationService {
 
       const [hours, minutes] = time.split(':').map(Number);
       
-      const identifier = await Notifications.scheduleNotificationAsync({
-        identifier: 'global-daily-reminder',
-        content: {
-          title: 'Green Streak',
-          body: 'Time to log your daily habits! How did you do today?',
-          data: {
-            type: 'daily_reminder',
-            scheduledTime: time,
-          },
-        },
-        trigger: {
-          hour: hours,
-          minute: minutes,
-          repeats: true,
-        } as Notifications.CalendarTriggerInput,
-      });
-
-      logger.info('NOTIF', 'Global daily reminder scheduled', {
-        identifier,
+      // Validate time values
+      if (isNaN(hours) || isNaN(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+        throw new Error(`Invalid time format: ${time}. Expected HH:MM format with valid hours (0-23) and minutes (0-59)`);
+      }
+      
+      logger.debug('NOTIF', 'Scheduling daily reminder with values', { 
+        hours, 
+        minutes, 
         time,
+        parsedCorrectly: !isNaN(hours) && !isNaN(minutes) 
       });
+      
+      // Try with calendar trigger type
+      try {
+        const expoId = await Notifications.scheduleNotificationAsync({
+          content: {
+            title: 'Green Streak',
+            body: 'Time to log your daily habits! How did you do today?',
+            data: {
+              type: 'daily_reminder',
+              scheduledTime: time,
+              identifier: 'global-daily-reminder',
+            },
+          },
+          trigger: {
+            type: 'calendar',
+            repeats: true,
+            hour: hours,
+            minute: minutes,
+          } as Notifications.CalendarTriggerInput,
+        });
+        
+        // Store mapping
+        this.scheduledNotifications.set('global-daily-reminder', expoId);
 
-      return identifier;
+        logger.info('NOTIF', 'Global daily reminder scheduled', {
+          customId: 'global-daily-reminder',
+          expoId,
+          time,
+        });
+
+        return expoId;
+      } catch (triggerError) {
+        logger.warn('NOTIF', 'Trying alternate trigger format', {
+          error: triggerError instanceof Error ? triggerError.message : String(triggerError),
+        });
+        
+        // Try with daily trigger type (alternative format)
+        const expoId = await Notifications.scheduleNotificationAsync({
+          content: {
+            title: 'Green Streak',
+            body: 'Time to log your daily habits! How did you do today?',
+            data: {
+              type: 'daily_reminder',
+              scheduledTime: time,
+              identifier: 'global-daily-reminder',
+            },
+          },
+          trigger: {
+            type: 'daily',
+            hour: hours,
+            minute: minutes,
+          } as Notifications.DailyTriggerInput,
+        });
+
+        // Store mapping
+        this.scheduledNotifications.set('global-daily-reminder', expoId);
+
+        logger.info('NOTIF', 'Global daily reminder scheduled (alternate format)', {
+          customId: 'global-daily-reminder',
+          expoId,
+          time,
+        });
+
+        return expoId;
+      }
     } catch (error) {
-      logger.error('NOTIF', 'Failed to schedule global daily reminder', { error, time });
+      logger.error('NOTIF', 'Failed to schedule global daily reminder', { 
+        error: error instanceof Error ? error.message : String(error),
+        errorStack: error instanceof Error ? error.stack : undefined,
+        time 
+      });
       throw error;
     }
   }
 
   async cancelGlobalDailyReminder(): Promise<void> {
     try {
-      await Notifications.cancelScheduledNotificationAsync('global-daily-reminder');
-      logger.debug('NOTIF', 'Global daily reminder canceled');
+      const expoId = this.scheduledNotifications.get('global-daily-reminder');
+      if (expoId) {
+        await Notifications.cancelScheduledNotificationAsync(expoId);
+        this.scheduledNotifications.delete('global-daily-reminder');
+        logger.debug('NOTIF', 'Global daily reminder canceled', { expoId });
+      } else {
+        // Try to find and cancel by checking all scheduled notifications
+        const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+        for (const notif of scheduled) {
+          if (notif.content.data?.identifier === 'global-daily-reminder') {
+            await Notifications.cancelScheduledNotificationAsync(notif.identifier);
+            logger.debug('NOTIF', 'Global daily reminder canceled (found by search)', { 
+              expoId: notif.identifier 
+            });
+            break;
+          }
+        }
+      }
     } catch (error) {
       logger.error('NOTIF', 'Failed to cancel global daily reminder', { error });
     }
@@ -191,18 +256,18 @@ class NotificationService {
       const identifier = `task-reminder-${task.id}`;
 
       const trigger: Notifications.NotificationTriggerInput = frequency === 'weekly' ? {
+        type: 'calendar',
         weekday: 1, // Monday
         hour: hours,
         minute: minutes,
         repeats: true,
       } as Notifications.CalendarTriggerInput : {
+        type: 'daily',
         hour: hours,
         minute: minutes,
-        repeats: true,
-      } as Notifications.CalendarTriggerInput;
+      } as Notifications.DailyTriggerInput;
 
-      const notificationId = await Notifications.scheduleNotificationAsync({
-        identifier,
+      const expoId = await Notifications.scheduleNotificationAsync({
         content: {
           title: `${task.icon} ${task.name}`,
           body: task.description 
@@ -214,20 +279,25 @@ class NotificationService {
             taskName: task.name,
             scheduledTime: time,
             frequency,
+            identifier,
           },
         },
         trigger,
       });
 
+      // Store mapping
+      this.scheduledNotifications.set(identifier, expoId);
+
       logger.info('NOTIF', 'Task reminder scheduled', {
         taskId: task.id,
         taskName: task.name,
-        identifier: notificationId,
+        customId: identifier,
+        expoId,
         time,
         frequency,
       });
 
-      return notificationId;
+      return expoId;
     } catch (error) {
       logger.error('NOTIF', 'Failed to schedule task reminder', {
         error,
@@ -242,8 +312,26 @@ class NotificationService {
   async cancelTaskReminder(taskId: string): Promise<void> {
     try {
       const identifier = `task-reminder-${taskId}`;
-      await Notifications.cancelScheduledNotificationAsync(identifier);
-      logger.debug('NOTIF', 'Task reminder canceled', { taskId, identifier });
+      const expoId = this.scheduledNotifications.get(identifier);
+      
+      if (expoId) {
+        await Notifications.cancelScheduledNotificationAsync(expoId);
+        this.scheduledNotifications.delete(identifier);
+        logger.debug('NOTIF', 'Task reminder canceled', { taskId, identifier, expoId });
+      } else {
+        // Try to find and cancel by checking all scheduled notifications
+        const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+        for (const notif of scheduled) {
+          if (notif.content.data?.identifier === identifier) {
+            await Notifications.cancelScheduledNotificationAsync(notif.identifier);
+            logger.debug('NOTIF', 'Task reminder canceled (found by search)', { 
+              taskId, 
+              expoId: notif.identifier 
+            });
+            break;
+          }
+        }
+      }
     } catch (error) {
       logger.error('NOTIF', 'Failed to cancel task reminder', { error, taskId });
     }
@@ -276,6 +364,65 @@ class NotificationService {
     } catch (error) {
       logger.error('NOTIF', 'Failed to check notification status', { error, identifier });
       return false;
+    }
+  }
+
+  async cancelScheduledNotificationAsync(identifier: string): Promise<void> {
+    try {
+      // Check if this is a custom ID we've mapped
+      const expoId = this.scheduledNotifications.get(identifier);
+      
+      if (expoId) {
+        await Notifications.cancelScheduledNotificationAsync(expoId);
+        this.scheduledNotifications.delete(identifier);
+        logger.debug('NOTIF', 'Notification cancelled', { customId: identifier, expoId });
+      } else {
+        // Assume it's an expo ID and try to cancel directly
+        await Notifications.cancelScheduledNotificationAsync(identifier);
+        
+        // Also remove from map if it exists as a value
+        for (const [key, value] of this.scheduledNotifications.entries()) {
+          if (value === identifier) {
+            this.scheduledNotifications.delete(key);
+            break;
+          }
+        }
+        
+        logger.debug('NOTIF', 'Notification cancelled', { expoId: identifier });
+      }
+    } catch (error) {
+      logger.error('NOTIF', 'Failed to cancel notification', { error, identifier });
+    }
+  }
+
+  async scheduleNotificationAsync(request: any): Promise<string> {
+    try {
+      // Extract identifier if provided and move it to data
+      const { identifier, ...notificationRequest } = request;
+      
+      if (identifier && notificationRequest.content) {
+        notificationRequest.content.data = {
+          ...notificationRequest.content.data,
+          identifier,
+        };
+      }
+      
+      const expoId = await Notifications.scheduleNotificationAsync(notificationRequest);
+      
+      // Store mapping if we have a custom identifier
+      if (identifier) {
+        this.scheduledNotifications.set(identifier, expoId);
+      }
+      
+      logger.debug('NOTIF', 'Notification scheduled', { 
+        customId: identifier,
+        expoId,
+        trigger: notificationRequest.trigger 
+      });
+      return expoId;
+    } catch (error) {
+      logger.error('NOTIF', 'Failed to schedule notification', { error, request });
+      throw error;
     }
   }
 

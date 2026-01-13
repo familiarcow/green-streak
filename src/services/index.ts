@@ -19,6 +19,7 @@ export { SoundEffectsService } from './SoundEffectsService';
 export { ConfettiService } from './ConfettiService';
 export { ToastQueue } from './ToastQueue';
 export { NotificationOrchestrator, createNotificationOrchestrator } from './NotificationOrchestrator';
+export { NotificationManager, createNotificationManager } from './NotificationManager';
 
 // Service Registry
 export { 
@@ -31,6 +32,7 @@ export {
   getAnalyticsService,
   getValidationService,
   getNotificationService,
+  getNotificationManager,
   getToastService,
   getSoundService,
   getConfettiService,
@@ -44,5 +46,4 @@ export type { ValidationResult, BulkValidationResult } from './ValidationService
 export type { ServiceHealthStatus } from './ServiceRegistry';
 
 // Utility imports for services that aren't part of the main business logic layer
-export { default as dataExportService } from './DataExportService';
 export { default as encryptionService } from './EncryptionService';

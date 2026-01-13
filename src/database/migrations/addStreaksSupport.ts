@@ -7,12 +7,11 @@
  * 3. Initializes streak data for existing tasks
  */
 
-import { getDatabase } from '../index';
+import * as SQLite from 'expo-sqlite';
 import logger from '../../utils/logger';
 import uuid from 'react-native-uuid';
 
-export const addStreaksSupport = async (): Promise<void> => {
-  const db = getDatabase();
+export const addStreaksSupport = async (db: SQLite.SQLiteDatabase): Promise<void> => {
   
   try {
     logger.info('DATA', 'Running streaks migration');
@@ -54,7 +53,7 @@ export const addStreaksSupport = async (): Promise<void> => {
     logger.info('DATA', 'Streaks table created/verified');
     
     // Initialize streak records for existing tasks
-    const tasks = await db.getAllAsync("SELECT id FROM tasks WHERE archived_at IS NULL");
+    const tasks = await db.getAllAsync<{ id: string }>("SELECT id FROM tasks WHERE archived_at IS NULL");
     
     for (const task of tasks) {
       // Check if streak record already exists

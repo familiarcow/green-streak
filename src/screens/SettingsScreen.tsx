@@ -8,6 +8,14 @@ import {
   Switch,
   Alert
 } from 'react-native';
+import Animated, { 
+  useAnimatedStyle, 
+  useSharedValue, 
+  withSpring, 
+  withTiming,
+  interpolateColor,
+  Easing
+} from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AnimatedButton } from '../components/AnimatedButton';
 import { Icon } from '../components/common/Icon';
@@ -17,7 +25,7 @@ import { useDataStore } from '../store/dataStore';
 import { useTasksStore } from '../store/tasksStore';
 import { useLogsStore } from '../store/logsStore';
 import notificationService from '../services/NotificationService';
-import { colors, textStyles, spacing, shadows } from '../theme';
+import { colors, textStyles, spacing, shadows, glassStyles } from '../theme';
 import logger from '../utils/logger';
 
 import { SettingsScreenProps } from '../types';
@@ -29,12 +37,16 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
     debugLoggingEnabled,
     currentLogLevel,
     firstDayOfWeek,
+    notificationSettings,
     updateGlobalReminder,
     setDebugLogging,
     setLogLevel,
     setFirstDayOfWeek,
     exportSettings,
     resetSettings,
+    updateNotificationSettings,
+    updateDailyNotification,
+    updateStreakProtection,
   } = useSettingsStore();
 
   const { hasCompletedOnboarding, resetOnboarding } = useOnboardingStore();
@@ -45,6 +57,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
   const [reminderTime, setReminderTime] = useState(globalReminderTime);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [notificationPermissions, setNotificationPermissions] = useState<'unknown' | 'granted' | 'denied' | 'undetermined'>('unknown');
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     checkNotificationPermissions();
@@ -263,38 +276,391 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
             </View>
           )}
           
-          <View style={styles.settingItem}>
+          {/* Master Notifications Toggle */}
+          <View style={[styles.settingItem, glassStyles.card]}>
             <View style={styles.settingInfo}>
-              <Text style={styles.settingTitle}>Daily Reminder</Text>
+              <Text style={styles.settingTitle}>Enable Notifications</Text>
               <Text style={styles.settingDescription}>
-                Get reminded to log your habits every day
+                Master toggle for all notifications
               </Text>
             </View>
             <Switch
-              value={globalReminderEnabled}
-              onValueChange={handleGlobalReminderToggle}
+              value={notificationSettings?.global?.enabled ?? false}
+              onValueChange={(enabled) => {
+                updateNotificationSettings({
+                  global: { ...notificationSettings?.global, enabled }
+                });
+              }}
               trackColor={{ false: colors.interactive.default, true: colors.primary }}
               thumbColor={colors.surface}
               disabled={notificationPermissions === 'denied'}
-              accessibilityLabel="Daily reminder toggle"
-              accessibilityHint={globalReminderEnabled ? "Double tap to disable daily reminders" : "Double tap to enable daily reminders"}
+              accessibilityLabel="Master notifications toggle"
+              accessibilityHint={notificationSettings?.global?.enabled ? "Double tap to disable all notifications" : "Double tap to enable notifications"}
             />
           </View>
 
-          {globalReminderEnabled && (
-            <View style={styles.settingItem}>
-              <View style={styles.settingInfo}>
-                <Text style={styles.settingTitle}>Reminder Time</Text>
-                <TouchableOpacity 
-                  onPress={() => setShowTimePicker(!showTimePicker)}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Reminder time: ${reminderTime}`}
-                  accessibilityHint="Double tap to change reminder time"
-                >
-                  <Text style={styles.timeDisplay}>{reminderTime}</Text>
-                </TouchableOpacity>
+          {notificationSettings?.global?.enabled && (
+            <>
+              {/* Daily Smart Notifications */}
+              <View style={[styles.subSection, styles.fadeIn]}>
+                <View style={[styles.settingItem, glassStyles.card]}>
+                  <View style={styles.settingInfo}>
+                    <Text style={styles.settingTitle}>Daily Summary</Text>
+                    <Text style={styles.settingDescription}>
+                      Smart daily reminders based on your activity
+                    </Text>
+                  </View>
+                  <Switch
+                    value={notificationSettings?.daily?.enabled ?? false}
+                    onValueChange={(enabled) => {
+                      updateDailyNotification({ enabled });
+                    }}
+                    trackColor={{ false: colors.interactive.default, true: colors.primary }}
+                    thumbColor={colors.surface}
+                  />
+                </View>
+
+                {notificationSettings?.daily?.enabled && (
+                  <>
+                    <View style={styles.settingItem}>
+                      <View style={styles.settingInfo}>
+                        <Text style={styles.settingSubtitle}>Time</Text>
+                        <TouchableOpacity onPress={() => setShowTimePicker(!showTimePicker)}>
+                          <Text style={styles.timeDisplay}>
+                            {notificationSettings?.daily?.time || '20:00'}
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+
+                    <View style={[styles.settingItem, glassStyles.cardSubtle]}>
+                      <View style={styles.settingInfo}>
+                        <Text style={styles.settingSubtitle}>Smart Mode</Text>
+                        <Text style={styles.settingDescription}>
+                          Contextual messages based on your progress
+                        </Text>
+                      </View>
+                      <Switch
+                        value={notificationSettings?.daily?.smartMode ?? true}
+                        onValueChange={(smartMode) => {
+                          updateDailyNotification({ smartMode });
+                        }}
+                        trackColor={{ false: colors.interactive.default, true: colors.primary }}
+                        thumbColor={colors.surface}
+                      />
+                    </View>
+
+                    <View style={styles.settingItem}>
+                      <View style={styles.settingInfo}>
+                        <Text style={styles.settingSubtitle}>Include Motivation</Text>
+                        <Text style={styles.settingDescription}>
+                          Add motivational quotes to notifications
+                        </Text>
+                      </View>
+                      <Switch
+                        value={notificationSettings?.daily?.includeMotivation ?? false}
+                        onValueChange={(includeMotivation) => {
+                          updateDailyNotification({ includeMotivation });
+                        }}
+                        trackColor={{ false: colors.interactive.default, true: colors.primary }}
+                        thumbColor={colors.surface}
+                      />
+                    </View>
+                  </>
+                )}
               </View>
-            </View>
+
+              {/* Streak Protection */}
+              <View style={styles.subSection}>
+                <View style={styles.settingItem}>
+                  <View style={styles.settingInfo}>
+                    <Text style={styles.settingTitle}>Streak Protection</Text>
+                    <Text style={styles.settingDescription}>
+                      Get notified when streaks are at risk
+                    </Text>
+                  </View>
+                  <Switch
+                    value={notificationSettings?.streaks?.protectionEnabled ?? false}
+                    onValueChange={(protectionEnabled) => {
+                      updateStreakProtection({ protectionEnabled });
+                    }}
+                    trackColor={{ false: colors.interactive.default, true: colors.primary }}
+                    thumbColor={colors.surface}
+                  />
+                </View>
+
+                {notificationSettings?.streaks?.protectionEnabled && (
+                  <>
+                    <View style={styles.settingItem}>
+                      <View style={styles.settingInfo}>
+                        <Text style={styles.settingSubtitle}>Protection Time</Text>
+                        <TouchableOpacity onPress={() => setExpandedSections({...expandedSections, streakTime: true})}>
+                          <Text style={styles.timeDisplay}>
+                            {notificationSettings?.streaks?.protectionTime || '21:00'}
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+
+                    <View style={[styles.settingItem, glassStyles.cardSubtle]}>
+                      <View style={styles.settingInfo}>
+                        <Text style={styles.settingSubtitle}>Minimum Streak Days</Text>
+                        <Text style={styles.settingDescription}>
+                          Only protect streaks longer than {notificationSettings?.streaks?.protectionThreshold || 3} days
+                        </Text>
+                      </View>
+                      <View style={styles.buttonGroup}>
+                        {[1, 3, 7, 14].map(days => (
+                          <TouchableOpacity
+                            key={days}
+                            style={[
+                              styles.optionButton,
+                              notificationSettings?.streaks?.protectionThreshold === days && glassStyles.buttonActive
+                            ]}
+                            onPress={() => updateStreakProtection({ protectionThreshold: days })}
+                          >
+                            <Text style={[
+                              styles.optionButtonText,
+                              notificationSettings?.streaks?.protectionThreshold === days && styles.optionButtonTextActive
+                            ]}>
+                              {days}d
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    </View>
+
+                    <View style={styles.settingItem}>
+                      <View style={styles.settingInfo}>
+                        <Text style={styles.settingSubtitle}>Priority Alerts</Text>
+                        <Text style={styles.settingDescription}>
+                          Higher priority for longer streaks
+                        </Text>
+                      </View>
+                      <Switch
+                        value={notificationSettings?.streaks?.priorityBasedAlerts ?? true}
+                        onValueChange={(priorityBasedAlerts) => {
+                          updateStreakProtection({ priorityBasedAlerts });
+                        }}
+                        trackColor={{ false: colors.interactive.default, true: colors.primary }}
+                        thumbColor={colors.surface}
+                      />
+                    </View>
+                  </>
+                )}
+              </View>
+
+              {/* Achievement Notifications */}
+              <View style={styles.subSection}>
+                <View style={styles.settingItem}>
+                  <View style={styles.settingInfo}>
+                    <Text style={styles.settingTitle}>Achievements</Text>
+                    <Text style={styles.settingDescription}>
+                      Celebrate milestones and victories
+                    </Text>
+                  </View>
+                  <Switch
+                    value={notificationSettings?.achievements?.enabled ?? true}
+                    onValueChange={(enabled) => {
+                      updateNotificationSettings({
+                        achievements: { ...notificationSettings?.achievements, enabled }
+                      });
+                    }}
+                    trackColor={{ false: colors.interactive.default, true: colors.primary }}
+                    thumbColor={colors.surface}
+                  />
+                </View>
+
+                {notificationSettings?.achievements?.enabled && (
+                  <>
+                    <View style={styles.settingItem}>
+                      <View style={styles.settingInfo}>
+                        <Text style={styles.settingSubtitle}>Weekly Recap</Text>
+                        <Text style={styles.settingDescription}>
+                          Get a summary of your week
+                        </Text>
+                      </View>
+                      <Switch
+                        value={notificationSettings?.achievements?.weeklyRecapEnabled ?? false}
+                        onValueChange={(weeklyRecapEnabled) => {
+                          updateNotificationSettings({
+                            achievements: { ...notificationSettings?.achievements, weeklyRecapEnabled }
+                          });
+                        }}
+                        trackColor={{ false: colors.interactive.default, true: colors.primary }}
+                        thumbColor={colors.surface}
+                      />
+                    </View>
+
+                    {notificationSettings?.achievements?.weeklyRecapEnabled && (
+                      <View style={styles.settingItem}>
+                        <View style={styles.settingInfo}>
+                          <Text style={styles.settingSubtitle}>Recap Day</Text>
+                        </View>
+                        <View style={styles.buttonGroup}>
+                          <TouchableOpacity
+                            style={[
+                              styles.optionButton,
+                              notificationSettings?.achievements?.weeklyRecapDay === 'sunday' && glassStyles.buttonActive
+                            ]}
+                            onPress={() => updateNotificationSettings({
+                              achievements: { ...notificationSettings?.achievements, weeklyRecapDay: 'sunday' }
+                            })}
+                          >
+                            <Text style={[
+                              styles.optionButtonText,
+                              notificationSettings?.achievements?.weeklyRecapDay === 'sunday' && styles.optionButtonTextActive
+                            ]}>
+                              Sun
+                            </Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={[
+                              styles.optionButton,
+                              notificationSettings?.achievements?.weeklyRecapDay === 'monday' && glassStyles.buttonActive
+                            ]}
+                            onPress={() => updateNotificationSettings({
+                              achievements: { ...notificationSettings?.achievements, weeklyRecapDay: 'monday' }
+                            })}
+                          >
+                            <Text style={[
+                              styles.optionButtonText,
+                              notificationSettings?.achievements?.weeklyRecapDay === 'monday' && styles.optionButtonTextActive
+                            ]}>
+                              Mon
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    )}
+                  </>
+                )}
+              </View>
+
+              {/* Advanced Settings */}
+              <View style={styles.subSection}>
+                <TouchableOpacity 
+                  style={styles.settingItem}
+                  onPress={() => setExpandedSections({...expandedSections, advanced: !expandedSections.advanced})}
+                >
+                  <View style={styles.settingInfo}>
+                    <Text style={styles.settingTitle}>Advanced Settings</Text>
+                    <Text style={styles.settingDescription}>
+                      Quiet hours, weekend mode, and more
+                    </Text>
+                  </View>
+                  <Icon 
+                    name={expandedSections.advanced ? 'chevronUp' : 'chevronDown'} 
+                    size={20} 
+                    color={colors.text.secondary}
+                  />
+                </TouchableOpacity>
+
+                {expandedSections.advanced && (
+                  <>
+                    <View style={styles.settingItem}>
+                      <View style={styles.settingInfo}>
+                        <Text style={styles.settingSubtitle}>Weekend Mode</Text>
+                        <Text style={styles.settingDescription}>
+                          Notification behavior on weekends
+                        </Text>
+                      </View>
+                      <View style={styles.buttonGroup}>
+                        {(['off', 'reduced', 'normal'] as const).map(mode => (
+                          <TouchableOpacity
+                            key={mode}
+                            style={[
+                              styles.optionButton,
+                              notificationSettings?.global?.weekendMode === mode && glassStyles.buttonActive
+                            ]}
+                            onPress={() => updateNotificationSettings({
+                              global: { ...notificationSettings?.global, weekendMode: mode }
+                            })}
+                          >
+                            <Text style={[
+                              styles.optionButtonText,
+                              notificationSettings?.global?.weekendMode === mode && styles.optionButtonTextActive
+                            ]}>
+                              {mode}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    </View>
+
+                    <View style={styles.settingItem}>
+                      <View style={styles.settingInfo}>
+                        <Text style={styles.settingSubtitle}>Quiet Hours</Text>
+                        <Text style={styles.settingDescription}>
+                          No notifications during these hours
+                        </Text>
+                      </View>
+                      <Switch
+                        value={notificationSettings?.global?.quietHours?.enabled ?? false}
+                        onValueChange={(enabled) => {
+                          updateNotificationSettings({
+                            global: {
+                              ...notificationSettings?.global,
+                              quietHours: { ...notificationSettings?.global?.quietHours, enabled }
+                            }
+                          });
+                        }}
+                        trackColor={{ false: colors.interactive.default, true: colors.primary }}
+                        thumbColor={colors.surface}
+                      />
+                    </View>
+
+                    {notificationSettings?.global?.quietHours?.enabled && (
+                      <View style={styles.settingItem}>
+                        <View style={styles.settingInfo}>
+                          <Text style={styles.settingDescription}>
+                            From {notificationSettings?.global?.quietHours?.start || '22:00'} to {notificationSettings?.global?.quietHours?.end || '08:00'}
+                          </Text>
+                        </View>
+                      </View>
+                    )}
+
+                    <View style={styles.settingItem}>
+                      <View style={styles.settingInfo}>
+                        <Text style={styles.settingSubtitle}>Sound</Text>
+                        <Text style={styles.settingDescription}>
+                          Play sounds with notifications
+                        </Text>
+                      </View>
+                      <Switch
+                        value={notificationSettings?.global?.soundEnabled ?? true}
+                        onValueChange={(soundEnabled) => {
+                          updateNotificationSettings({
+                            global: { ...notificationSettings?.global, soundEnabled }
+                          });
+                        }}
+                        trackColor={{ false: colors.interactive.default, true: colors.primary }}
+                        thumbColor={colors.surface}
+                      />
+                    </View>
+
+                    <View style={styles.settingItem}>
+                      <View style={styles.settingInfo}>
+                        <Text style={styles.settingSubtitle}>Vibration</Text>
+                        <Text style={styles.settingDescription}>
+                          Vibrate with notifications
+                        </Text>
+                      </View>
+                      <Switch
+                        value={notificationSettings?.global?.vibrationEnabled ?? true}
+                        onValueChange={(vibrationEnabled) => {
+                          updateNotificationSettings({
+                            global: { ...notificationSettings?.global, vibrationEnabled }
+                          });
+                        }}
+                        trackColor={{ false: colors.interactive.default, true: colors.primary }}
+                        thumbColor={colors.surface}
+                      />
+                    </View>
+                  </>
+                )}
+              </View>
+            </>
           )}
 
           {showTimePicker && (
@@ -668,6 +1034,70 @@ const styles = StyleSheet.create({
     ...textStyles.bodySmall,
     color: colors.text.secondary,
     textAlign: 'center',
+  },
+  
+  subSection: {
+    paddingLeft: spacing[3],
+    marginTop: spacing[2],
+  },
+  
+  settingSubtitle: {
+    ...textStyles.bodySmall,
+    color: colors.text.primary,
+    fontWeight: '500',
+  },
+  
+  buttonGroup: {
+    flexDirection: 'row',
+    gap: spacing[2],
+    marginTop: spacing[2],
+  },
+  
+  optionButton: {
+    paddingVertical: spacing[2],
+    paddingHorizontal: spacing[3],
+    borderRadius: spacing[2],
+    backgroundColor: colors.interactive.default,
+  },
+  
+  optionButtonActive: {
+    backgroundColor: colors.primary,
+  },
+  
+  optionButtonText: {
+    ...textStyles.bodySmall,
+    color: colors.text.primary,
+  },
+  
+  optionButtonTextActive: {
+    color: colors.text.inverse,
+    fontWeight: '600',
+  },
+  
+  glassCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
+    backdropFilter: 'blur(10px)',
+    ...shadows.md,
+  },
+  
+  glassCardSubtle: {
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    backdropFilter: 'blur(8px)',
+  },
+  
+  glassButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    backdropFilter: 'blur(5px)',
+  },
+  
+  fadeIn: {
+    opacity: 1,
   },
 });
 

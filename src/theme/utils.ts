@@ -1,4 +1,5 @@
-import { spacing, borderRadius, typography } from './index';
+import spacing, { borderRadius } from './spacing';
+import typography from './typography';
 
 /**
  * Theme Utilities

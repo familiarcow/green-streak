@@ -18,7 +18,7 @@ export const initializeDatabase = async (): Promise<SQLite.SQLiteDatabase> => {
     await initializeDefaultSettings();
     
     // Run migrations
-    await addStreaksSupport();
+    await addStreaksSupport(database);
     
     logger.info('DATA', 'Database initialized successfully');
     

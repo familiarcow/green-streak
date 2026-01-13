@@ -1,3 +1,6 @@
+// Import notification types for use in this file
+import { NotificationSettings } from './notifications';
+
 export type LogLevel = 'DEBUG' | 'INFO' | 'WARN' | 'ERROR' | 'FATAL';
 
 export type LogCategory = 
@@ -73,7 +76,11 @@ export interface AppSettings {
   debugLoggingEnabled: boolean;
   currentLogLevel: LogLevel;
   firstDayOfWeek: 'sunday' | 'monday';
+  notificationSettings?: NotificationSettings; // Smart notification settings
 }
+
+// Re-export notification types
+export * from './notifications';
 
 export interface SeedConfig {
   tasks: number;
