@@ -550,7 +550,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
                     </Text>
                   </View>
                   <Icon 
-                    name={expandedSections.advanced ? 'chevronUp' : 'chevronDown'} 
+                    name={expandedSections.advanced ? 'chevron-up' : 'chevron-down'} 
                     size={20} 
                     color={colors.text.secondary}
                   />
