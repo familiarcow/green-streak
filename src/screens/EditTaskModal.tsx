@@ -1,27 +1,30 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ScrollView, 
-  TouchableOpacity, 
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
   TextInput,
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AnimatedButton } from '../components/AnimatedButton';
 import { Icon, IconName } from '../components/common/Icon';
+import { TemplateCatalogModal } from '../components/TemplateCatalog';
 import { useTasksStore } from '../store/tasksStore';
 import { colors, textStyles, spacing, shadows } from '../theme';
 import { COLOR_PALETTE } from '../database/schema';
 import { EditTaskModalProps } from '../types';
+import { HabitTemplate } from '../types/templates';
 import { StreakRulesEngine } from '../services/StreakRulesEngine';
 import logger from '../utils/logger';
 
-export const EditTaskModal: React.FC<EditTaskModalProps> = ({ 
-  onClose, 
-  onTaskAdded, 
-  existingTask 
+export const EditTaskModal: React.FC<EditTaskModalProps> = ({
+  onClose,
+  onTaskAdded,
+  existingTask,
+  initialTemplate
 }) => {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -37,9 +40,39 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
   const [streakEnabled, setStreakEnabled] = useState(true);
   const [streakSkipWeekends, setStreakSkipWeekends] = useState(false);
   const [streakMinimumCount, setStreakMinimumCount] = useState(1);
-  
+  const [showTemplateCatalog, setShowTemplateCatalog] = useState(false);
+
   const { createTask, updateTask, deleteTask } = useTasksStore();
   const isEditing = !!existingTask;
+
+  // Handle template selection - populate form with template data
+  const handleSelectTemplate = useCallback((template: HabitTemplate) => {
+    logger.debug('UI', 'Template selected', { templateId: template.id, name: template.name });
+
+    // Populate form with template data
+    setName(template.name);
+    setDescription(template.description);
+    setSelectedIcon(template.icon);
+    setSelectedColor(template.color);
+
+    // Apply suggested settings
+    const { suggestedSettings } = template;
+    if (suggestedSettings.reminderTime) {
+      setReminderEnabled(true);
+      setReminderTime(suggestedSettings.reminderTime);
+      setReminderFrequency(suggestedSettings.reminderFrequency || 'daily');
+    }
+    setStreakEnabled(suggestedSettings.streakEnabled);
+    if (suggestedSettings.streakSkipWeekends !== undefined) {
+      setStreakSkipWeekends(suggestedSettings.streakSkipWeekends);
+    }
+    if (suggestedSettings.streakMinimumCount !== undefined) {
+      setStreakMinimumCount(suggestedSettings.streakMinimumCount);
+    }
+
+    // Close the template catalog
+    setShowTemplateCatalog(false);
+  }, []);
 
   // Initialize form with existing task data when editing
   useEffect(() => {
@@ -69,6 +102,14 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
       setStreakMinimumCount(existingTask.streakMinimumCount || 1);
     }
   }, [existingTask]);
+
+  // Initialize form with template data if provided
+  useEffect(() => {
+    if (initialTemplate && !existingTask) {
+      handleSelectTemplate(initialTemplate);
+      logger.info('UI', 'Form initialized with template', { templateId: initialTemplate.id });
+    }
+  }, [initialTemplate, existingTask, handleSelectTemplate]);
 
   const ICON_OPTIONS: IconName[] = [
     'checkCircle', 'dumbbell', 'book', 'brain', 'fileText', 'droplet',
@@ -184,7 +225,23 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
       </View>
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        
+
+        {/* Browse Templates Button - Only show for new tasks */}
+        {!isEditing && (
+          <TouchableOpacity
+            style={styles.templateButton}
+            onPress={() => setShowTemplateCatalog(true)}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="Browse habit templates"
+            accessibilityHint="Open the template catalog to quickly create a habit from pre-defined templates"
+          >
+            <Icon name="target" size={20} color={colors.primary} />
+            <Text style={styles.templateButtonText}>Browse Templates</Text>
+            <Icon name="chevron-right" size={18} color={colors.text.tertiary} />
+          </TouchableOpacity>
+        )}
+
         {/* Name Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Name *</Text>
@@ -541,6 +598,13 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
           </View>
         )}
       </ScrollView>
+
+      {/* Template Catalog Modal */}
+      <TemplateCatalogModal
+        visible={showTemplateCatalog}
+        onClose={() => setShowTemplateCatalog(false)}
+        onSelectTemplate={handleSelectTemplate}
+      />
     </SafeAreaView>
   );
 };
@@ -581,7 +645,27 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: spacing[4],
   },
-  
+
+  templateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.accent.light,
+    borderRadius: spacing[3],
+    padding: spacing[4],
+    marginBottom: spacing[4],
+    borderWidth: 1,
+    borderColor: colors.primary,
+    borderStyle: 'dashed',
+  },
+
+  templateButtonText: {
+    ...textStyles.body,
+    color: colors.primary,
+    fontWeight: '600',
+    flex: 1,
+    marginLeft: spacing[2],
+  },
+
   section: {
     marginBottom: spacing[6],
   },

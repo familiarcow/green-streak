@@ -6,13 +6,14 @@ import logger from '../utils/logger';
 /**
  * Modal types supported by the modal manager
  */
-export type ModalType = 
+export type ModalType =
   | 'addTask'
   | 'editTask'
   | 'dailyLog'
   | 'settings'
   | 'taskAnalytics'
   | 'confirmation'
+  | 'templateCatalog'
   | null;
 
 /**

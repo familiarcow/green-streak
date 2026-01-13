@@ -19,6 +19,7 @@ import HomeScreen from './src/screens/HomeScreen';
 import OnboardingScreen from './src/screens/OnboardingScreen';
 import EditTaskModal from './src/screens/EditTaskModal';
 import { colors, textStyles, spacing } from './src/theme';
+import { HabitTemplate } from './src/types/templates';
 import logger from './src/utils/logger';
 
 export default function App() {
@@ -26,6 +27,7 @@ export default function App() {
   const [initError, setInitError] = useState<string | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showAddTask, setShowAddTask] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<HabitTemplate | undefined>(undefined);
   
   const { hasCompletedOnboarding, completeOnboarding } = useOnboardingStore();
   const { tasks, loadTasks } = useTasksStore();
@@ -122,13 +124,17 @@ export default function App() {
     }
   }, [isInitialized, hasCompletedOnboarding, tasks.length]);
 
-  const handleOnboardingComplete = (shouldSetupTask: boolean) => {
+  const handleOnboardingComplete = (shouldSetupTask: boolean, template?: HabitTemplate) => {
     completeOnboarding();
     setShowOnboarding(false);
-    
+
     if (shouldSetupTask) {
+      setSelectedTemplate(template);
       setShowAddTask(true);
-      logger.info('UI', 'User chose to set up first task after onboarding');
+      logger.info('UI', 'User chose to set up first task after onboarding', {
+        hasTemplate: !!template,
+        templateId: template?.id
+      });
     } else {
       logger.info('UI', 'User chose to explore app after onboarding');
     }
@@ -136,6 +142,7 @@ export default function App() {
 
   const handleTaskAdded = () => {
     setShowAddTask(false);
+    setSelectedTemplate(undefined);
     // Refresh tasks will happen automatically through the store
   };
 
@@ -181,8 +188,12 @@ export default function App() {
     return (
       <SafeAreaProvider>
         <EditTaskModal
-          onClose={() => setShowAddTask(false)}
+          onClose={() => {
+            setShowAddTask(false);
+            setSelectedTemplate(undefined);
+          }}
           onTaskAdded={handleTaskAdded}
+          initialTemplate={selectedTemplate}
         />
         <StatusBar style="dark" backgroundColor={colors.background} />
       </SafeAreaProvider>

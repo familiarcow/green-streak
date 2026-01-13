@@ -1,5 +1,6 @@
 // Import notification types for use in this file
 import { NotificationSettings } from './notifications';
+import { HabitTemplate } from './templates';
 
 export type LogLevel = 'DEBUG' | 'INFO' | 'WARN' | 'ERROR' | 'FATAL';
 
@@ -165,6 +166,7 @@ export interface EditTaskModalProps {
   onClose: () => void;
   onTaskAdded: () => void;
   existingTask?: Task;
+  initialTemplate?: HabitTemplate;
 }
 
 export interface DailyLogScreenProps {

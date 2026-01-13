@@ -1,33 +1,33 @@
-import React, { useState, useRef } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ScrollView, 
-  Dimensions, 
+import React, { useState, useRef, useCallback } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Dimensions,
   TouchableOpacity,
   NativeScrollEvent,
-  NativeSyntheticEvent
+  NativeSyntheticEvent,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Animated, { 
-  useAnimatedStyle, 
-  useSharedValue, 
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
   withSpring,
   FadeInUp,
-  FadeOutDown,
   SlideInRight,
-  SlideOutLeft
 } from 'react-native-reanimated';
 import { AnimatedButton } from '../components/AnimatedButton';
 import { ContributionGraph } from '../components/ContributionGraph';
 import { Icon, IconName } from '../components/common/Icon';
+import { TemplateCatalogModal } from '../components/TemplateCatalog';
 import { colors, textStyles, spacing, shadows } from '../theme';
 import { ContributionData } from '../types';
+import { HabitTemplate } from '../types/templates';
 import logger from '../utils/logger';
 
 interface OnboardingScreenProps {
-  onComplete: (shouldSetupTask: boolean) => void;
+  onComplete: (shouldSetupTask: boolean, selectedTemplate?: HabitTemplate) => void;
 }
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -79,6 +79,7 @@ const onboardingSteps = [
 
 export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
   const [currentStep, setCurrentStep] = useState(0);
+  const [showTemplateCatalog, setShowTemplateCatalog] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
   const slideAnimation = useSharedValue(0);
 
@@ -117,6 +118,17 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
     logger.info('UI', 'User chose to set up first task during onboarding');
     onComplete(true);
   };
+
+  const handleBrowseTemplates = useCallback(() => {
+    logger.info('UI', 'User chose to browse templates during onboarding');
+    setShowTemplateCatalog(true);
+  }, []);
+
+  const handleSelectTemplate = useCallback((template: HabitTemplate) => {
+    logger.info('UI', 'User selected template during onboarding', { templateId: template.id });
+    setShowTemplateCatalog(false);
+    onComplete(true, template);
+  }, [onComplete]);
 
   const handleSkipSetup = () => {
     logger.info('UI', 'User chose to explore app without setting up task');
@@ -204,13 +216,22 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
               ) : (
                 <View style={styles.finalButtons}>
                   <AnimatedButton
-                    title="Set Up My First Habit"
-                    onPress={handleSetupTask}
+                    title="Choose from Templates"
+                    onPress={handleBrowseTemplates}
                     variant="primary"
                     size="large"
                     style={styles.primaryAction}
                   />
-                  <TouchableOpacity 
+                  <TouchableOpacity
+                    onPress={handleSetupTask}
+                    style={styles.secondaryActionButton}
+                  >
+                    <Icon name="plus" size={18} color={colors.primary} />
+                    <Text style={styles.secondaryActionButtonText}>
+                      Create Custom Habit
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
                     onPress={handleSkipSetup}
                     style={styles.secondaryAction}
                   >
@@ -239,6 +260,13 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
           <Animated.View style={[styles.progressIndicatorActive, animatedIndicatorStyle]} />
         </View>
       </View>
+
+      {/* Template Catalog Modal */}
+      <TemplateCatalogModal
+        visible={showTemplateCatalog}
+        onClose={() => setShowTemplateCatalog(false)}
+        onSelectTemplate={handleSelectTemplate}
+      />
     </SafeAreaView>
   );
 };
@@ -348,6 +376,24 @@ const styles = StyleSheet.create({
 
   primaryAction: {
     width: '100%',
+  },
+
+  secondaryActionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing[3],
+    paddingHorizontal: spacing[4],
+    backgroundColor: colors.surface,
+    borderRadius: spacing[3],
+    borderWidth: 1,
+    borderColor: colors.primary,
+    gap: spacing[2],
+  },
+
+  secondaryActionButtonText: {
+    ...textStyles.button,
+    color: colors.primary,
   },
 
   secondaryAction: {
