@@ -221,7 +221,7 @@ export class NotificationManager {
     try {
       const today = getTodayString();
       const tasks = await this.taskService.getAllTasks();
-      const logs = await this.dataService.getLogsForDate(today);
+      const logs = await this.dataService.getLogsInDateRange(today, today);
       
       const completedTaskIds = new Set(
         logs.filter(log => log.count > 0).map(log => log.taskId)
@@ -282,7 +282,7 @@ export class NotificationManager {
       const today = getTodayString();
       const tasks = await this.taskService.getAllTasks();
       const streaks = await this.streakService.getAllStreaks();
-      const logs = await this.dataService.getLogsForDate(today);
+      const logs = await this.dataService.getLogsInDateRange(today, today);
       
       const completedToday = new Set(
         logs.filter(log => log.count > 0).map(log => log.taskId)

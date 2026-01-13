@@ -76,7 +76,7 @@ const createMockStreakService = (): jest.Mocked<StreakService> => ({
 } as any);
 
 const createMockDataService = (): jest.Mocked<DataService> => ({
-  getLogsForDate: jest.fn(),
+  getLogsInDateRange: jest.fn(),
   createLog: jest.fn(),
   updateLog: jest.fn(),
 } as any);
@@ -168,7 +168,7 @@ describe('NotificationManager', () => {
     // Default mock implementations
     mockTaskService.getAllTasks.mockResolvedValue(mockTasks);
     mockStreakService.getAllStreaks.mockResolvedValue(mockStreaks);
-    mockDataService.getLogsForDate.mockResolvedValue(mockLogs);
+    mockDataService.getLogsInDateRange.mockResolvedValue(mockLogs);
     mockGetScheduledNotifications.mockResolvedValue([]);
     mockScheduleNotificationAsync.mockResolvedValue('expo-notification-id');
 
@@ -239,7 +239,7 @@ describe('NotificationManager', () => {
 
     it('should use strategy priority for at-risk streaks', async () => {
       // Set up scenario with at-risk streak (not completed today)
-      mockDataService.getLogsForDate.mockResolvedValue([]); // No completions today
+      mockDataService.getLogsInDateRange.mockResolvedValue([]); // No completions today
 
       await notificationManager.scheduleSmartDailyNotification(defaultSettings);
 
@@ -266,7 +266,7 @@ describe('NotificationManager', () => {
 
     it('should schedule notifications for at-risk streaks', async () => {
       // No logs today means streaks are at risk
-      mockDataService.getLogsForDate.mockResolvedValue([]);
+      mockDataService.getLogsInDateRange.mockResolvedValue([]);
 
       await notificationManager.scheduleStreakProtection(defaultSettings);
 
@@ -281,7 +281,7 @@ describe('NotificationManager', () => {
       mockStreakService.getAllStreaks.mockResolvedValue([
         { taskId: 'task-1', currentStreak: 1, bestStreak: 2, lastCompletionDate: '2024-01-14' },
       ]);
-      mockDataService.getLogsForDate.mockResolvedValue([]);
+      mockDataService.getLogsInDateRange.mockResolvedValue([]);
 
       await notificationManager.scheduleStreakProtection(defaultSettings);
 
@@ -295,7 +295,7 @@ describe('NotificationManager', () => {
 
     it('should skip streaks already completed today', async () => {
       // task-1 completed today
-      mockDataService.getLogsForDate.mockResolvedValue([
+      mockDataService.getLogsInDateRange.mockResolvedValue([
         { taskId: 'task-1', count: 1, date: '2024-01-15' },
       ]);
 
@@ -373,7 +373,7 @@ describe('NotificationManager', () => {
 
     it('should detect perfect day', async () => {
       // All tasks completed
-      mockDataService.getLogsForDate.mockResolvedValue([
+      mockDataService.getLogsInDateRange.mockResolvedValue([
         { taskId: 'task-1', count: 1, date: '2024-01-15' },
         { taskId: 'task-2', count: 1, date: '2024-01-15' },
       ]);
@@ -416,7 +416,7 @@ describe('NotificationManager', () => {
       });
       (global.Date as any).now = () => mockNow.getTime();
 
-      mockDataService.getLogsForDate.mockResolvedValue([]); // Nothing completed today
+      mockDataService.getLogsInDateRange.mockResolvedValue([]); // Nothing completed today
 
       const atRisk = await notificationManager.getStreaksAtRisk(defaultSettings);
 
@@ -433,7 +433,7 @@ describe('NotificationManager', () => {
 
     it('should exclude completed streaks', async () => {
       // task-1 is completed
-      mockDataService.getLogsForDate.mockResolvedValue([
+      mockDataService.getLogsInDateRange.mockResolvedValue([
         { taskId: 'task-1', count: 1, date: '2024-01-15' },
       ]);
 
@@ -446,7 +446,7 @@ describe('NotificationManager', () => {
       mockStreakService.getAllStreaks.mockResolvedValue([
         { taskId: 'task-1', currentStreak: 2, bestStreak: 5, lastCompletionDate: '2024-01-14' },
       ]);
-      mockDataService.getLogsForDate.mockResolvedValue([]);
+      mockDataService.getLogsInDateRange.mockResolvedValue([]);
 
       const atRisk = await notificationManager.getStreaksAtRisk(defaultSettings);
 
