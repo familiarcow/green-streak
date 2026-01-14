@@ -14,6 +14,7 @@ import { AnimatedButton } from '../components/AnimatedButton';
 import { Icon, IconName } from '../components/common/Icon';
 import { TemplateCatalogModal } from '../components/TemplateCatalog';
 import { IconPickerModal } from '../components/IconPicker';
+import { ColorPickerModal } from '../components/ColorPicker';
 import { useTasksStore } from '../store/tasksStore';
 import { colors, textStyles, spacing, shadows } from '../theme';
 import { COLOR_PALETTE } from '../database/schema';
@@ -36,8 +37,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
   const [reminderTime, setReminderTime] = useState('20:00');
   const [customTime, setCustomTime] = useState('');
   const [showCustomTimeInput, setShowCustomTimeInput] = useState(false);
-  const [customColor, setCustomColor] = useState('');
-  const [showCustomColorInput, setShowCustomColorInput] = useState(false);
+  const [showColorPicker, setShowColorPicker] = useState(false);
   const [reminderFrequency, setReminderFrequency] = useState<'daily' | 'weekly'>('daily');
   const [streakEnabled, setStreakEnabled] = useState(true);
   const [streakSkipWeekends, setStreakSkipWeekends] = useState(false);
@@ -82,13 +82,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
     if (existingTask) {
       setName(existingTask.name);
       setDescription(existingTask.description || '');
-      const color = existingTask.color;
-      setSelectedColor(color);
-      // Check if color is a preset or custom
-      if (!COLOR_PALETTE.includes(color)) {
-        setCustomColor(color.startsWith('#') ? color.slice(1) : color);
-        setShowCustomColorInput(true);
-      }
+      setSelectedColor(existingTask.color);
       setSelectedIcon(existingTask.icon as IconName);
       setReminderEnabled(existingTask.reminderEnabled || false);
       const time = existingTask.reminderTime || '20:00';
@@ -337,82 +331,42 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                   style={[
                     styles.colorOption,
                     { backgroundColor: color },
-                    selectedColor === color && styles.selectedColorOption,
+                    selectedColor.toUpperCase() === color.toUpperCase() && styles.selectedColorOption,
                   ]}
-                  onPress={() => {
-                    setSelectedColor(color);
-                    setShowCustomColorInput(false);
-                    setCustomColor('');
-                  }}
+                  onPress={() => setSelectedColor(color)}
                   accessibilityRole="button"
                   accessibilityLabel={`Select color ${index + 1}`}
                   accessibilityHint="Double tap to select this color for your habit"
-                  accessibilityState={{ selected: selectedColor === color }}
+                  accessibilityState={{ selected: selectedColor.toUpperCase() === color.toUpperCase() }}
                 />
               ))}
 
-              {/* Custom color button - shows selected custom color or "+" */}
+              {/* Custom color button - opens color picker modal */}
               {(() => {
-                const isCustomColorSelected = !COLOR_PALETTE.slice(0, 11).includes(selectedColor);
-                const hasValidCustomColor = isCustomColorSelected && selectedColor && selectedColor.startsWith('#');
+                const isCustomColorSelected = !COLOR_PALETTE.slice(0, 11).some(
+                  c => c.toUpperCase() === selectedColor.toUpperCase()
+                );
                 return (
                   <TouchableOpacity
                     style={[
                       styles.colorOption,
                       styles.customColorOption,
-                      hasValidCustomColor && { backgroundColor: selectedColor, borderStyle: 'solid' },
+                      isCustomColorSelected && { backgroundColor: selectedColor, borderStyle: 'solid' },
                       isCustomColorSelected && styles.selectedColorOption,
                     ]}
-                    onPress={() => setShowCustomColorInput(!showCustomColorInput)}
+                    onPress={() => setShowColorPicker(true)}
                     accessibilityRole="button"
-                    accessibilityLabel={hasValidCustomColor ? `Custom color ${selectedColor}, tap to change` : "Select custom color"}
-                    accessibilityHint="Double tap to enter a custom hex color"
+                    accessibilityLabel={isCustomColorSelected ? `Custom color ${selectedColor}, tap to change` : "Select custom color"}
+                    accessibilityHint="Double tap to open the color picker"
                     accessibilityState={{ selected: isCustomColorSelected }}
                   >
-                    {!hasValidCustomColor && (
+                    {!isCustomColorSelected && (
                       <Text style={styles.customColorText}>+</Text>
                     )}
                   </TouchableOpacity>
                 );
               })()}
             </View>
-
-            {showCustomColorInput && (
-              <View style={styles.customColorContainer}>
-                <Text style={styles.customColorLabel}>Enter hex color (e.g., #FF5733):</Text>
-                <TextInput
-                  style={styles.customColorInput}
-                  value={customColor}
-                  onChangeText={(text) => {
-                    // Remove # if user types it
-                    const cleanText = text.replace('#', '');
-                    setCustomColor(cleanText);
-                    
-                    // Validate and set color if valid hex format
-                    if (/^[0-9A-Fa-f]{6}$/.test(cleanText)) {
-                      setSelectedColor(`#${cleanText}`);
-                    }
-                  }}
-                  placeholder="FF5733"
-                  placeholderTextColor={colors.text.tertiary}
-                  autoCapitalize="characters"
-                  maxLength={6}
-                />
-                <View style={styles.colorPreview}>
-                  <Text style={styles.colorPreviewLabel}>Preview:</Text>
-                  <View 
-                    style={[
-                      styles.colorPreviewSwatch, 
-                      { 
-                        backgroundColor: /^[0-9A-Fa-f]{6}$/.test(customColor) 
-                          ? `#${customColor}` 
-                          : colors.surface 
-                      }
-                    ]} 
-                  />
-                </View>
-              </View>
-            )}
           </View>
         </View>
 
@@ -638,6 +592,14 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
         onSelectIcon={setSelectedIcon}
         selectedColor={selectedColor}
       />
+
+      {/* Color Picker Modal */}
+      <ColorPickerModal
+        visible={showColorPicker}
+        onClose={() => setShowColorPicker(false)}
+        selectedColor={selectedColor}
+        onSelectColor={setSelectedColor}
+      />
     </SafeAreaView>
   );
 };
@@ -825,54 +787,6 @@ const styles = StyleSheet.create({
     ...textStyles.h3,
     color: colors.text.secondary,
     fontWeight: '700',
-  },
-
-  customColorContainer: {
-    marginTop: spacing[3],
-    padding: spacing[3],
-    backgroundColor: colors.accent.light,
-    borderRadius: spacing[2],
-  },
-
-  customColorLabel: {
-    ...textStyles.bodySmall,
-    color: colors.text.primary,
-    marginBottom: spacing[2],
-  },
-
-  customColorInput: {
-    ...textStyles.body,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: spacing[2],
-    padding: spacing[3],
-    color: colors.text.primary,
-    textAlign: 'center',
-    fontFamily: 'monospace',
-    fontSize: 16,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-  },
-
-  colorPreview: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: spacing[3],
-    gap: spacing[2],
-  },
-
-  colorPreviewLabel: {
-    ...textStyles.bodySmall,
-    color: colors.text.secondary,
-  },
-
-  colorPreviewSwatch: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
   },
   
   reminderSettings: {
