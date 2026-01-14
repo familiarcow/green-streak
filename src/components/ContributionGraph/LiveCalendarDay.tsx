@@ -11,6 +11,7 @@ import Animated, {
 import { ContributionData } from '../../types';
 import { colors } from '../../theme';
 import { formatDisplayDate } from '../../utils/dateHelpers';
+import { getContributionColor, ContributionColorPalette } from '../../utils/colorUtils';
 
 interface LiveCalendarDayProps {
   data: ContributionData;
@@ -21,19 +22,8 @@ interface LiveCalendarDayProps {
   isToday?: boolean;
   animationDelay?: number;
   todayGlowValue: SharedValue<number>;
+  palette?: ContributionColorPalette;
 }
-
-// GitHub-style color palette for habit completion levels
-const getHabitColor = (count: number, maxCount: number): string => {
-  if (count === 0) return '#ebedf0'; // GitHub empty gray
-  
-  const intensity = Math.min(count / Math.max(maxCount, 1), 1);
-  
-  if (intensity <= 0.25) return '#9be9a8';  // Light green
-  if (intensity <= 0.5) return '#40c463';   // Medium green
-  if (intensity <= 0.75) return '#30a14e';  // Dark green
-  return '#216e39'; // Darkest green
-};
 
 // Special colors for today - more subtle like GitHub
 const todayColors = {
@@ -52,6 +42,7 @@ export const LiveCalendarDay: React.FC<LiveCalendarDayProps> = ({
   isToday = false,
   animationDelay = 0,
   todayGlowValue,
+  palette,
 }) => {
   const fadeInValue = useSharedValue(0);
   const scaleValue = useSharedValue(0.8);
@@ -70,7 +61,7 @@ export const LiveCalendarDay: React.FC<LiveCalendarDayProps> = ({
   }, [animationDelay]);
 
   // Get the appropriate background color - GitHub style
-  const backgroundColor = getHabitColor(data.count, maxCount);
+  const backgroundColor = getContributionColor(data.count, maxCount, palette);
 
   // Animation styles
   const animatedStyle = useAnimatedStyle(() => {

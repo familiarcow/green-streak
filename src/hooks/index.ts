@@ -10,3 +10,4 @@ export { useDateNavigation } from './useDateNavigation';
 export { useContributionData } from './useContributionData';
 export { useDateRefresh, useDynamicToday } from './useDateRefresh';
 export { useIconSearch } from './useIconSearch';
+export { useCalendarColors } from './useCalendarColors';

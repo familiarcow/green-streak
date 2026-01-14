@@ -19,7 +19,10 @@ import Animated, {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AnimatedButton } from '../components/AnimatedButton';
 import { Icon } from '../components/common/Icon';
-import { useSettingsStore } from '../store/settingsStore';
+import { ColorPickerModal } from '../components/ColorPicker/ColorPickerModal';
+import { CalendarColorPreview } from '../components/CalendarColorPreview';
+import { useSettingsStore, DEFAULT_CALENDAR_COLOR } from '../store/settingsStore';
+import { generateContributionPalette, DEFAULT_CONTRIBUTION_PALETTE } from '../utils/colorUtils';
 import { useOnboardingStore } from '../store/onboardingStore';
 import { useDataStore } from '../store/dataStore';
 import { useTasksStore } from '../store/tasksStore';
@@ -37,11 +40,13 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
     debugLoggingEnabled,
     currentLogLevel,
     firstDayOfWeek,
+    calendarColor,
     notificationSettings,
     updateGlobalReminder,
     setDebugLogging,
     setLogLevel,
     setFirstDayOfWeek,
+    setCalendarColor,
     exportSettings,
     resetSettings,
     updateNotificationSettings,
@@ -58,6 +63,13 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [notificationPermissions, setNotificationPermissions] = useState<'unknown' | 'granted' | 'denied' | 'undetermined'>('unknown');
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
+  const [showCalendarColorPicker, setShowCalendarColorPicker] = useState(false);
+
+  // Get the current calendar color palette for preview
+  const currentCalendarColor = calendarColor || DEFAULT_CALENDAR_COLOR;
+  const calendarPalette = currentCalendarColor === DEFAULT_CALENDAR_COLOR
+    ? DEFAULT_CONTRIBUTION_PALETTE
+    : generateContributionPalette(currentCalendarColor);
 
   useEffect(() => {
     checkNotificationPermissions();
@@ -745,6 +757,29 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
               </TouchableOpacity>
             </View>
           </View>
+
+          {/* Calendar Color Setting */}
+          <View style={styles.settingItem}>
+            <View style={styles.settingInfo}>
+              <Text style={styles.settingTitle}>Calendar Color</Text>
+              <Text style={styles.settingDescription}>
+                Customize the contribution graph colors
+              </Text>
+              <View style={styles.calendarColorPreview}>
+                <CalendarColorPreview palette={calendarPalette} size={20} />
+              </View>
+            </View>
+            <TouchableOpacity
+              style={styles.changeColorButton}
+              onPress={() => setShowCalendarColorPicker(true)}
+              accessibilityRole="button"
+              accessibilityLabel="Change calendar color"
+              accessibilityHint="Double tap to open color picker"
+            >
+              <View style={[styles.colorSwatch, { backgroundColor: currentCalendarColor }]} />
+              <Icon name="chevron-right" size={16} color={colors.text.secondary} />
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Developer Section */}
@@ -849,6 +884,14 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
           </Text>
         </View>
       </ScrollView>
+
+      {/* Calendar Color Picker Modal */}
+      <ColorPickerModal
+        visible={showCalendarColorPicker}
+        onClose={() => setShowCalendarColorPicker(false)}
+        selectedColor={currentCalendarColor}
+        onSelectColor={setCalendarColor}
+      />
     </SafeAreaView>
   );
 };
@@ -1024,7 +1067,25 @@ const styles = StyleSheet.create({
     color: colors.text.inverse,
     fontWeight: '600',
   },
-  
+
+  calendarColorPreview: {
+    marginTop: spacing[2],
+  },
+
+  changeColorButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
+    paddingLeft: spacing[2],
+  },
+
+  colorSwatch: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    ...shadows.sm,
+  },
+
   footer: {
     alignItems: 'center',
     paddingVertical: spacing[6],

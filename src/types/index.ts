@@ -78,6 +78,7 @@ export interface AppSettings {
   currentLogLevel: LogLevel;
   firstDayOfWeek: 'sunday' | 'monday';
   notificationSettings?: NotificationSettings; // Smart notification settings
+  calendarColor?: string; // Custom calendar/contribution graph color (default: #22c55e)
 }
 
 // Re-export notification types

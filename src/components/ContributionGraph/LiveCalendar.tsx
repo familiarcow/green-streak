@@ -13,7 +13,8 @@ import { ContributionData, Task } from '../../types';
 import { colors, textStyles, spacing, shadows } from '../../theme';
 import { radiusValues, fontSizes } from '../../theme/utils';
 import { getTodayString, formatDateString } from '../../utils/dateHelpers';
-import { useDynamicToday } from '../../hooks/useDateRefresh';
+import { getContributionColor } from '../../utils/colorUtils';
+import { useDynamicToday, useCalendarColors } from '../../hooks';
 import { TimePeriodSelector, ViewType } from './TimePeriodSelector';
 import { MonthMarker } from './MonthMarker';
 import Icon, { IconName, ICON_MAP } from '../common/Icon';
@@ -37,17 +38,6 @@ const DAYS_PER_WEEK = 7;
 const WEEKS_TO_SHOW = 5;
 const TOTAL_DAYS = DAYS_PER_WEEK * WEEKS_TO_SHOW;
 const GAP = 4; // Gap between boxes
-
-// GitHub-style color palette
-const getHabitColor = (count: number, maxCount: number): string => {
-  if (count === 0) return '#ebedf0'; // Empty gray
-  const intensity = Math.min(count / Math.max(maxCount, 1), 1);
-  
-  if (intensity <= 0.25) return '#9be9a8';  // Light green
-  if (intensity <= 0.5) return '#40c463';   // Medium green
-  if (intensity <= 0.75) return '#30a14e';  // Dark green
-  return '#216e39'; // Darkest green
-};
 
 // Use consistent box sizing for all view types (like Live view)
 const getBoxSizeMultiplier = (viewType: ViewType): number => {
@@ -84,6 +74,9 @@ export const LiveCalendar: React.FC<LiveCalendarProps> = ({
   const todayString = useDynamicToday();
   const [containerWidth, setContainerWidth] = useState(0);
   const [isFilterExpanded, setIsFilterExpanded] = useState(false);
+
+  // Get calendar color palette from settings
+  const calendarPalette = useCalendarColors();
   
 
   // Calculate box size based on container width and view type
@@ -315,7 +308,7 @@ export const LiveCalendar: React.FC<LiveCalendarProps> = ({
               {weekData.map((dayData, dayIndex) => {
                 const isToday = dayData.date === todayString;
                 const isSelected = dayData.date === selectedDate;
-                const backgroundColor = getHabitColor(dayData.count, maxCount);
+                const backgroundColor = getContributionColor(dayData.count, maxCount, calendarPalette);
                 const showMonthMarker = shouldShowMonthMarkers && isFirstDayOfMonth(dayData.date, weekIndex, dayIndex);
                 
                 // Calculate margins - no right margin for last column

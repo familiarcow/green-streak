@@ -73,16 +73,8 @@ export const colors = {
   overlay: 'rgba(0, 0, 0, 0.5)',
 };
 
-export const getContributionColor = (count: number, maxCount: number): string => {
-  if (count === 0) return colors.contribution.empty;
-  
-  const ratio = count / Math.max(maxCount, 1);
-  
-  if (ratio <= 0.25) return colors.contribution.level1;
-  if (ratio <= 0.5) return colors.contribution.level2;
-  if (ratio <= 0.75) return colors.contribution.level3;
-  return colors.contribution.level4;
-};
+// Note: getContributionColor is now centralized in src/utils/colorUtils.ts
+// Use: import { getContributionColor } from '../utils/colorUtils';
 
 export const getTaskColorWithOpacity = (color: string, opacity: number): string => {
   // Convert hex to rgba with opacity

@@ -30,6 +30,9 @@ const normalizeTime = (time: string): string => {
   return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
 };
 
+// Default signature green for calendar
+export const DEFAULT_CALENDAR_COLOR = '#22c55e';
+
 interface SettingsState extends AppSettings {
   // Actions
   loadSettings: () => Promise<void>;
@@ -37,9 +40,10 @@ interface SettingsState extends AppSettings {
   setDebugLogging: (enabled: boolean) => void;
   setLogLevel: (level: AppSettings['currentLogLevel']) => void;
   setFirstDayOfWeek: (day: AppSettings['firstDayOfWeek']) => void;
+  setCalendarColor: (color: string) => void;
   exportSettings: () => string;
   resetSettings: () => Promise<void>;
-  
+
   // New notification settings actions
   updateNotificationSettings: (settings: Partial<NotificationSettings>) => Promise<void>;
   updateDailyNotification: (settings: Partial<NotificationSettings['daily']>) => Promise<void>;
@@ -89,6 +93,7 @@ const defaultSettings: AppSettings = {
   currentLogLevel: 'WARN',
   firstDayOfWeek: 'sunday',
   notificationSettings: defaultNotificationSettings,
+  calendarColor: DEFAULT_CALENDAR_COLOR,
 };
 
 export const useSettingsStore = create<SettingsState>()(
@@ -236,6 +241,15 @@ export const useSettingsStore = create<SettingsState>()(
           logger.info('STATE', 'First day of week updated', { day });
         } catch (error) {
           logger.error('STATE', 'Failed to set first day of week', { error, day });
+        }
+      },
+
+      setCalendarColor: (color: string) => {
+        try {
+          set({ calendarColor: color });
+          logger.info('STATE', 'Calendar color updated', { color });
+        } catch (error) {
+          logger.error('STATE', 'Failed to set calendar color', { error, color });
         }
       },
 
@@ -411,6 +425,7 @@ export const useSettingsStore = create<SettingsState>()(
         currentLogLevel: state.currentLogLevel,
         firstDayOfWeek: state.firstDayOfWeek,
         notificationSettings: state.notificationSettings,
+        calendarColor: state.calendarColor,
       }),
     }
   )

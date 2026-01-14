@@ -7,8 +7,9 @@ import Animated, {
   withDelay 
 } from 'react-native-reanimated';
 import { ContributionData } from '../../types';
-import { getContributionColor, colors } from '../../theme/colors';
+import { colors } from '../../theme/colors';
 import { spacing, borderRadius } from '../../theme';
+import { getContributionColor, ContributionColorPalette } from '../../utils/colorUtils';
 import { radiusValues } from '../../theme/utils';
 import { isDateToday, formatDisplayDate } from '../../utils/dateHelpers';
 
@@ -22,6 +23,7 @@ interface ContributionDayProps {
   disabled?: boolean;
   compact?: boolean;
   isTransitioning?: boolean;
+  palette?: ContributionColorPalette;
 }
 
 const AnimatedTouchableOpacity = Animated.createAnimatedComponent(TouchableOpacity);
@@ -36,9 +38,10 @@ export const ContributionDay: React.FC<ContributionDayProps> = ({
   disabled = false,
   compact = false,
   isTransitioning = false,
+  palette,
 }) => {
   const isToday = isDateToday(new Date(data.date));
-  const color = getContributionColor(data.count, maxCount);
+  const color = getContributionColor(data.count, maxCount, palette);
   const fadeInValue = useSharedValue(0);
   const scaleValue = useSharedValue(0.8);
   const sizeValue = useSharedValue(compact ? size * 0.8 : size);
