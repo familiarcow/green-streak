@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   TextInput,
   Alert,
+  Switch,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AnimatedButton } from '../components/AnimatedButton';
@@ -426,16 +427,14 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                 Get notified to complete this habit
               </Text>
             </View>
-            <TouchableOpacity
-              style={[styles.toggle, reminderEnabled && styles.toggleActive]}
-              onPress={() => setReminderEnabled(!reminderEnabled)}
-              accessibilityRole="button"
+            <Switch
+              value={reminderEnabled}
+              onValueChange={setReminderEnabled}
+              trackColor={{ false: colors.interactive.default, true: colors.primary }}
+              thumbColor={colors.surface}
               accessibilityLabel="Reminder setting"
               accessibilityHint={`${reminderEnabled ? 'Disable' : 'Enable'} reminders for this habit`}
-              accessibilityState={{ checked: reminderEnabled }}
-            >
-              {reminderEnabled && <View style={styles.toggleIndicator} />}
-            </TouchableOpacity>
+            />
           </View>
 
           {reminderEnabled && (
@@ -548,16 +547,14 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                 Track consecutive days of completion
               </Text>
             </View>
-            <TouchableOpacity
-              style={[styles.toggle, streakEnabled && styles.toggleActive]}
-              onPress={() => setStreakEnabled(!streakEnabled)}
-              accessibilityRole="button"
+            <Switch
+              value={streakEnabled}
+              onValueChange={setStreakEnabled}
+              trackColor={{ false: colors.interactive.default, true: colors.primary }}
+              thumbColor={colors.surface}
               accessibilityLabel="Streak tracking"
               accessibilityHint={`${streakEnabled ? 'Disable' : 'Enable'} streak tracking for this habit`}
-              accessibilityState={{ checked: streakEnabled }}
-            >
-              {streakEnabled && <View style={styles.toggleIndicator} />}
-            </TouchableOpacity>
+            />
           </View>
 
           {streakEnabled && (
@@ -569,16 +566,14 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                     Don't break streak on weekends
                   </Text>
                 </View>
-                <TouchableOpacity
-                  style={[styles.toggle, streakSkipWeekends && styles.toggleActive]}
-                  onPress={() => setStreakSkipWeekends(!streakSkipWeekends)}
-                  accessibilityRole="button"
+                <Switch
+                  value={streakSkipWeekends}
+                  onValueChange={setStreakSkipWeekends}
+                  trackColor={{ false: colors.interactive.default, true: colors.primary }}
+                  thumbColor={colors.surface}
                   accessibilityLabel="Skip weekends"
                   accessibilityHint={`${streakSkipWeekends ? 'Disable' : 'Enable'} weekend skipping`}
-                  accessibilityState={{ checked: streakSkipWeekends }}
-                >
-                  {streakSkipWeekends && <View style={styles.toggleIndicator} />}
-                </TouchableOpacity>
+                />
               </View>
 
               <View style={styles.settingItem}>
@@ -880,26 +875,6 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   
-  toggle: {
-    width: 44,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: colors.interactive.default,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  
-  toggleActive: {
-    backgroundColor: colors.primary,
-  },
-  
-  toggleIndicator: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: colors.text.inverse,
-  },
-
   reminderSettings: {
     marginTop: spacing[3],
     padding: spacing[3],
