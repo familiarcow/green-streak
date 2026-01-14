@@ -22,7 +22,7 @@ import { Icon } from '../components/common/Icon';
 import { ColorPickerModal } from '../components/ColorPicker/ColorPickerModal';
 import { CalendarColorPreview } from '../components/CalendarColorPreview';
 import { useSettingsStore, DEFAULT_CALENDAR_COLOR } from '../store/settingsStore';
-import { generateContributionPalette, DEFAULT_CONTRIBUTION_PALETTE } from '../utils/colorUtils';
+import { generateContributionPalette, DEFAULT_CONTRIBUTION_PALETTE, CALENDAR_COLOR_PRESETS } from '../utils/colorUtils';
 import { useOnboardingStore } from '../store/onboardingStore';
 import { useDataStore } from '../store/dataStore';
 import { useTasksStore } from '../store/tasksStore';
@@ -891,6 +891,8 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
         onClose={() => setShowCalendarColorPicker(false)}
         selectedColor={currentCalendarColor}
         onSelectColor={setCalendarColor}
+        presets={CALENDAR_COLOR_PRESETS}
+        showGradientPreview={true}
       />
     </SafeAreaView>
   );

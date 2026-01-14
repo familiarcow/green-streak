@@ -160,6 +160,26 @@ export const normalizeHex = (hex: string): string => {
 // ============================================
 
 /**
+ * Curated color presets optimized for calendar/contribution graph use.
+ * Selected for:
+ * - Good contrast on light backgrounds at all 4 intensity levels
+ * - Clear visual distinction between gradient levels
+ * - Avoiding muddy/washed out results
+ *
+ * Excluded: gray (muddy), amber/orange (poor light contrast),
+ * lime/cyan (too light at level 1)
+ */
+export const CALENDAR_COLOR_PRESETS = [
+  '#22c55e', // green (signature)
+  '#3b82f6', // blue
+  '#8b5cf6', // violet
+  '#14b8a6', // teal
+  '#ec4899', // pink
+  '#6366f1', // indigo
+  '#f43f5e', // rose
+];
+
+/**
  * Color palette for contribution graph intensity levels
  */
 export interface ContributionColorPalette {

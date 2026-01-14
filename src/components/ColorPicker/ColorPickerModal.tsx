@@ -24,7 +24,8 @@ import { SaturationValuePicker } from './SaturationValuePicker';
 import { HexInput } from './HexInput';
 import { colors, textStyles, spacing, shadows } from '../../theme';
 import { COLOR_PALETTE } from '../../database/schema';
-import { hexToHsv, hsvToHex, isValidHex } from '../../utils/colorUtils';
+import { hexToHsv, hsvToHex, isValidHex, generateContributionPalette } from '../../utils/colorUtils';
+import { CalendarColorPreview } from '../CalendarColorPreview';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const PICKER_SIZE = Math.min(SCREEN_WIDTH - spacing[8] * 2, 280);
@@ -35,6 +36,10 @@ interface ColorPickerModalProps {
   onClose: () => void;
   selectedColor: string;
   onSelectColor: (color: string) => void;
+  /** Custom preset colors to display (defaults to COLOR_PALETTE) */
+  presets?: string[];
+  /** Show a live gradient preview for contribution graph use */
+  showGradientPreview?: boolean;
 }
 
 export const ColorPickerModal: React.FC<ColorPickerModalProps> = ({
@@ -42,6 +47,8 @@ export const ColorPickerModal: React.FC<ColorPickerModalProps> = ({
   onClose,
   selectedColor,
   onSelectColor,
+  presets = COLOR_PALETTE,
+  showGradientPreview = false,
 }) => {
   // Parse initial color to HSV
   const initialHsv = hexToHsv(selectedColor) || { h: 120, s: 1, v: 0.76 };
@@ -146,7 +153,7 @@ export const ColorPickerModal: React.FC<ColorPickerModalProps> = ({
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Presets</Text>
             <View style={styles.presetGrid}>
-              {COLOR_PALETTE.map((color, index) => (
+              {presets.map((color, index) => (
                 <TouchableOpacity
                   key={index}
                   style={[
@@ -162,6 +169,19 @@ export const ColorPickerModal: React.FC<ColorPickerModalProps> = ({
               ))}
             </View>
           </View>
+
+          {/* Live Gradient Preview for Calendar Colors */}
+          {showGradientPreview && (
+            <View style={styles.gradientPreviewSection}>
+              <Text style={styles.gradientPreviewLabel}>Calendar Preview</Text>
+              <View style={styles.gradientPreviewContainer}>
+                <CalendarColorPreview
+                  palette={generateContributionPalette(currentColor)}
+                  size={36}
+                />
+              </View>
+            </View>
+          )}
 
           {/* Divider */}
           <View style={styles.divider}>
@@ -325,6 +345,30 @@ const styles = StyleSheet.create({
     height: 56,
     borderRadius: 12,
     ...shadows.md,
+  },
+  gradientPreviewSection: {
+    alignItems: 'center',
+    paddingVertical: spacing[4],
+    paddingHorizontal: spacing[4],
+    backgroundColor: colors.background,
+    borderRadius: 12,
+    marginTop: spacing[2],
+  },
+  gradientPreviewLabel: {
+    ...textStyles.bodySmall,
+    color: colors.text.secondary,
+    fontWeight: '600',
+    marginBottom: spacing[3],
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  gradientPreviewContainer: {
+    marginBottom: spacing[2],
+  },
+  gradientPreviewHint: {
+    ...textStyles.caption,
+    color: colors.text.tertiary,
+    textAlign: 'center',
   },
   footer: {
     paddingHorizontal: spacing[4],
