@@ -158,6 +158,27 @@ export const LiveCalendar: React.FC<LiveCalendarProps> = ({
     return Math.max(...allCounts, 1);
   }, [calendarData]);
 
+  // Calculate day labels based on the first day shown in the calendar
+  const dayLabels = useMemo(() => {
+    const dayNames = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+
+    if (calendarData.length === 0 || calendarData[0].length === 0) {
+      return dayNames; // Default fallback
+    }
+
+    // Get the first day in the calendar and find its day of week
+    const firstDayDate = new Date(calendarData[0][0].date);
+    const firstDayOfWeek = firstDayDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
+
+    // Rotate the day names array to start with the correct day
+    const rotatedLabels = [];
+    for (let i = 0; i < 7; i++) {
+      rotatedLabels.push(dayNames[(firstDayOfWeek + i) % 7]);
+    }
+
+    return rotatedLabels;
+  }, [calendarData]);
+
   // Check if a date is the first day of a new month
   const isFirstDayOfMonth = useCallback((dateString: string, weekIndex: number, dayIndex: number): boolean => {
     if (weekIndex === 0 && dayIndex === 0) return true; // First day in data set
@@ -283,7 +304,7 @@ export const LiveCalendar: React.FC<LiveCalendarProps> = ({
     <View style={styles.container}>
       {/* Week day labels */}
       <View style={styles.weekDayLabels}>
-        {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((label, index) => (
+        {dayLabels.map((label, index) => (
           <View key={index} style={[styles.weekDayLabel, { width: boxSize }]}>
             <Text style={styles.weekDayText}>{label}</Text>
           </View>
