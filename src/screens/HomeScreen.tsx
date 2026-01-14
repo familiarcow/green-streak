@@ -132,10 +132,11 @@ export const HomeScreen: React.FC = () => {
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
           {/* Header */}
           <View style={styles.header}>
-            <View style={styles.headerContent}>
+            <View style={styles.titleContainer}>
+              <View style={styles.greenBox} />
               <Text style={styles.title}>Green Streak</Text>
             </View>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.settingsButton}
               onPress={openSettings}
               accessible={true}
@@ -297,33 +298,37 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     padding: spacing[4],
+    position: 'relative',
   },
-  
-  headerContent: {
+
+  titleContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
-    flex: 1,
+    gap: spacing[2],
   },
-  
+
+  greenBox: {
+    width: 22,
+    height: 22,
+    backgroundColor: colors.primary,
+    borderRadius: radiusValues.box,
+  },
+
   title: {
     ...textStyles.h1,
     color: colors.text.primary,
-    marginBottom: spacing[1],
   },
-  
-  subtitle: {
-    ...textStyles.bodySmall,
-    color: colors.text.secondary,
-  },
-  
+
   settingsButton: {
+    position: 'absolute',
+    right: spacing[4],
     width: 44,
     height: 44,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radiusValues.box,
-    backgroundColor: colors.accent.warm,
   },
   
   graphSection: {
