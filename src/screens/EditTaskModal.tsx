@@ -12,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { AnimatedButton } from '../components/AnimatedButton';
 import { Icon, IconName } from '../components/common/Icon';
 import { TemplateCatalogModal } from '../components/TemplateCatalog';
+import { IconPickerModal } from '../components/IconPicker';
 import { useTasksStore } from '../store/tasksStore';
 import { colors, textStyles, spacing, shadows } from '../theme';
 import { COLOR_PALETTE } from '../database/schema';
@@ -41,6 +42,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
   const [streakSkipWeekends, setStreakSkipWeekends] = useState(false);
   const [streakMinimumCount, setStreakMinimumCount] = useState(1);
   const [showTemplateCatalog, setShowTemplateCatalog] = useState(false);
+  const [showIconPicker, setShowIconPicker] = useState(false);
 
   const { createTask, updateTask, deleteTask } = useTasksStore();
   const isEditing = !!existingTask;
@@ -111,11 +113,11 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
     }
   }, [initialTemplate, existingTask, handleSelectTemplate]);
 
+  // Quick-access icons (17 most common + "More" button as 18th)
   const ICON_OPTIONS: IconName[] = [
-    'checkCircle', 'dumbbell', 'book', 'brain', 'fileText', 'droplet',
-    'graduation', 'phone', 'broom', 'music', 'activity', 'calendar', 
-    'heart', 'pill', 'footprints', 'apple', 'coffee', 'sun', 'moon',
-    'target', 'zap'
+    'checkCircle', 'dumbbell', 'book', 'brain', 'heart', 'droplet',
+    'graduation', 'music', 'activity', 'calendar', 'pill', 'footprints',
+    'apple', 'coffee', 'sun', 'moon', 'target'
   ];
 
   const handleSave = async () => {
@@ -295,6 +297,16 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                   <Icon name={icon} size={20} color={colors.text.primary} />
                 </TouchableOpacity>
               ))}
+              {/* More button to open full icon picker */}
+              <TouchableOpacity
+                style={styles.moreIconsButton}
+                onPress={() => setShowIconPicker(true)}
+                accessibilityRole="button"
+                accessibilityLabel="Browse more icons"
+                accessibilityHint="Double tap to open the full icon library"
+              >
+                <Icon name="moreHorizontal" size={20} color={colors.text.secondary} />
+              </TouchableOpacity>
             </View>
           </View>
         </View>
@@ -605,6 +617,15 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
         onClose={() => setShowTemplateCatalog(false)}
         onSelectTemplate={handleSelectTemplate}
       />
+
+      {/* Icon Picker Modal */}
+      <IconPickerModal
+        visible={showIconPicker}
+        onClose={() => setShowIconPicker(false)}
+        selectedIcon={selectedIcon}
+        onSelectIcon={setSelectedIcon}
+        selectedColor={selectedColor}
+      />
     </SafeAreaView>
   );
 };
@@ -739,7 +760,19 @@ const styles = StyleSheet.create({
     borderColor: colors.primary,
     borderWidth: 2,
   },
-  
+
+  moreIconsButton: {
+    width: 44,
+    height: 44,
+    backgroundColor: colors.surface,
+    borderRadius: spacing[2],
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderStyle: 'dashed',
+    borderColor: colors.border,
+  },
+
   colorGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
