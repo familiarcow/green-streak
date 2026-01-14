@@ -329,7 +329,8 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
           <Text style={styles.sectionTitle}>Color</Text>
           <View style={styles.settingItem}>
             <View style={styles.colorGrid}>
-              {COLOR_PALETTE.map((color, index) => (
+              {/* Show first 11 colors from palette */}
+              {COLOR_PALETTE.slice(0, 11).map((color, index) => (
                 <TouchableOpacity
                   key={index}
                   style={[
@@ -345,31 +346,34 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                   accessibilityRole="button"
                   accessibilityLabel={`Select color ${index + 1}`}
                   accessibilityHint="Double tap to select this color for your habit"
-                  accessibilityState={{ selected: selectedColor === color && !showCustomColorInput }}
+                  accessibilityState={{ selected: selectedColor === color }}
                 />
               ))}
-              
-              <TouchableOpacity
-                style={[
-                  styles.colorOption,
-                  styles.customColorOption,
-                  { backgroundColor: showCustomColorInput && customColor ? `#${customColor}` : colors.surface },
-                  showCustomColorInput && styles.selectedColorOption,
-                ]}
-                onPress={() => {
-                  setShowCustomColorInput(true);
-                  if (customColor) {
-                    setSelectedColor(customColor);
-                  }
-                }}
-                accessibilityRole="button"
-                accessibilityLabel="Select custom color"
-                accessibilityHint="Double tap to enter a custom hex color"
-              >
-                <Text style={styles.customColorText}>
-                  {showCustomColorInput ? '#' : '+'}
-                </Text>
-              </TouchableOpacity>
+
+              {/* Custom color button - shows selected custom color or "+" */}
+              {(() => {
+                const isCustomColorSelected = !COLOR_PALETTE.slice(0, 11).includes(selectedColor);
+                const hasValidCustomColor = isCustomColorSelected && selectedColor && selectedColor.startsWith('#');
+                return (
+                  <TouchableOpacity
+                    style={[
+                      styles.colorOption,
+                      styles.customColorOption,
+                      hasValidCustomColor && { backgroundColor: selectedColor, borderStyle: 'solid' },
+                      isCustomColorSelected && styles.selectedColorOption,
+                    ]}
+                    onPress={() => setShowCustomColorInput(!showCustomColorInput)}
+                    accessibilityRole="button"
+                    accessibilityLabel={hasValidCustomColor ? `Custom color ${selectedColor}, tap to change` : "Select custom color"}
+                    accessibilityHint="Double tap to enter a custom hex color"
+                    accessibilityState={{ selected: isCustomColorSelected }}
+                  >
+                    {!hasValidCustomColor && (
+                      <Text style={styles.customColorText}>+</Text>
+                    )}
+                  </TouchableOpacity>
+                );
+              })()}
             </View>
 
             {showCustomColorInput && (
@@ -819,6 +823,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: colors.surface,
   },
 
   customColorText: {
