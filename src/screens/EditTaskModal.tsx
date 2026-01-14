@@ -297,16 +297,29 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                   <Icon name={icon} size={20} color={colors.text.primary} />
                 </TouchableOpacity>
               ))}
-              {/* More button to open full icon picker */}
-              <TouchableOpacity
-                style={styles.moreIconsButton}
-                onPress={() => setShowIconPicker(true)}
-                accessibilityRole="button"
-                accessibilityLabel="Browse more icons"
-                accessibilityHint="Double tap to open the full icon library"
-              >
-                <Icon name="moreHorizontal" size={20} color={colors.text.secondary} />
-              </TouchableOpacity>
+              {/* More button to open full icon picker - shows selected icon if from expanded list */}
+              {(() => {
+                const isExtraIconSelected = !ICON_OPTIONS.includes(selectedIcon);
+                return (
+                  <TouchableOpacity
+                    style={[
+                      styles.moreIconsButton,
+                      isExtraIconSelected && styles.moreIconsButtonSelected,
+                    ]}
+                    onPress={() => setShowIconPicker(true)}
+                    accessibilityRole="button"
+                    accessibilityLabel={isExtraIconSelected ? `Selected ${selectedIcon} icon, tap to change` : "Browse more icons"}
+                    accessibilityHint="Double tap to open the full icon library"
+                    accessibilityState={{ selected: isExtraIconSelected }}
+                  >
+                    <Icon
+                      name={isExtraIconSelected ? selectedIcon : "moreHorizontal"}
+                      size={20}
+                      color={isExtraIconSelected ? colors.primary : colors.text.secondary}
+                    />
+                  </TouchableOpacity>
+                );
+              })()}
             </View>
           </View>
         </View>
@@ -771,6 +784,12 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderStyle: 'dashed',
     borderColor: colors.border,
+  },
+
+  moreIconsButtonSelected: {
+    borderStyle: 'solid',
+    borderColor: colors.primary,
+    backgroundColor: colors.accent.light,
   },
 
   colorGrid: {
