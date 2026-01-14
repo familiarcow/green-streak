@@ -23,28 +23,33 @@ export interface ITaskRepository {
   /**
    * Create a new task
    */
-  create(taskData: Omit<Task, 'id' | 'createdAt'>): Promise<Task>;
-  
+  create(taskData: Omit<Task, 'id' | 'createdAt' | 'sortOrder'>): Promise<Task>;
+
   /**
    * Update an existing task
    */
   update(id: string, updates: Partial<Omit<Task, 'id' | 'createdAt'>>): Promise<Task>;
-  
+
   /**
    * Archive a task (soft delete)
    */
   archive(id: string): Promise<void>;
-  
+
   /**
    * Permanently delete a task
    */
   delete(id: string): Promise<void>;
-  
+
+  /**
+   * Update sort order for multiple tasks (for drag-and-drop reordering)
+   */
+  updateSortOrders(updates: Array<{ id: string; sortOrder: number }>): Promise<void>;
+
   /**
    * Find all tasks (including archived)
    */
   findAll(): Promise<Task[]>;
-  
+
   /**
    * Find a task by ID (including archived)
    */

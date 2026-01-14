@@ -7,13 +7,14 @@ interface TasksState {
   tasks: Task[];
   loading: boolean;
   error: string | null;
-  
+
   // Actions
   loadTasks: () => Promise<void>;
-  createTask: (taskData: Omit<Task, 'id' | 'createdAt'>) => Promise<Task>;
+  createTask: (taskData: Omit<Task, 'id' | 'createdAt' | 'sortOrder'>) => Promise<Task>;
   updateTask: (id: string, updates: Partial<Omit<Task, 'id' | 'createdAt'>>) => Promise<Task>;
   archiveTask: (id: string) => Promise<void>;
   deleteTask: (id: string) => Promise<void>;
+  reorderTasks: (taskIds: string[]) => Promise<void>;
   getTaskById: (id: string) => Task | undefined;
   syncNotifications: () => Promise<void>;
 }
@@ -51,9 +52,9 @@ export const useTasksStore = create<TasksState>((set, get) => ({
       const taskService = getTaskService();
       const task = await taskService.createTask(taskData);
       
-      set(state => ({ 
-        tasks: [task, ...state.tasks],
-        loading: false 
+      set(state => ({
+        tasks: [...state.tasks, task],
+        loading: false
       }));
       
       logger.info('STATE', 'Task created via TaskService', { taskId: task.id, name: task.name });
@@ -137,6 +138,33 @@ export const useTasksStore = create<TasksState>((set, get) => ({
   
   getTaskById: (id: string) => {
     return get().tasks.find(task => task.id === id);
+  },
+
+  reorderTasks: async (taskIds) => {
+    try {
+      logger.debug('STATE', 'Reordering tasks', { count: taskIds.length });
+
+      // Optimistically update local state
+      const currentTasks = get().tasks;
+      const reorderedTasks = taskIds
+        .map(id => currentTasks.find(t => t.id === id))
+        .filter((t): t is Task => t !== undefined)
+        .map((task, index) => ({ ...task, sortOrder: index }));
+
+      set({ tasks: reorderedTasks });
+
+      // Persist to database
+      const taskService = getTaskService();
+      await taskService.reorderTasks(taskIds);
+
+      logger.info('STATE', 'Tasks reordered successfully', { count: taskIds.length });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('STATE', 'Failed to reorder tasks', { error: errorMessage });
+
+      // Reload tasks to restore correct order on failure
+      await get().loadTasks();
+    }
   },
 
   syncNotifications: async () => {

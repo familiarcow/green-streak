@@ -108,6 +108,7 @@ import {
   Bell,
   Trash,
   Search,
+  GripVertical,
   type LucideIcon
 } from 'lucide-react-native';
 import { colors } from '../../theme';
@@ -221,6 +222,7 @@ export const ICON_MAP = {
   key: Key,
   bell: Bell,
   trash: Trash,
+  'grip-vertical': GripVertical,
 } as const;
 
 export type IconName = keyof typeof ICON_MAP;

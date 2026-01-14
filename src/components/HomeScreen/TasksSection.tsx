@@ -1,17 +1,22 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { colors, textStyles, spacing } from '../../theme';
 import { TasksSectionProps } from '../../types';
 import { AnimatedButton } from '../AnimatedButton';
-import { AnimatedTaskList } from '../AnimatedTaskList';
+import { DraggableTaskList } from '../DraggableTaskList';
 
 export const TasksSection: React.FC<TasksSectionProps> = React.memo(({
   tasks,
   onTaskPress,
   onAddTask,
+  onReorder,
 }) => {
   // Memoize the early return check
   const shouldRender = useMemo(() => tasks.length > 0, [tasks.length]);
+
+  const handleReorder = useCallback((taskIds: string[]) => {
+    onReorder?.(taskIds);
+  }, [onReorder]);
 
   if (!shouldRender) {
     return null;
@@ -29,12 +34,11 @@ export const TasksSection: React.FC<TasksSectionProps> = React.memo(({
           accessibilityLabel="Add new task"
         />
       </View>
-      
-      <AnimatedTaskList
+
+      <DraggableTaskList
         tasks={tasks}
-        maxItems={5}
-        showMoreText={true}
         onTaskPress={onTaskPress}
+        onReorder={handleReorder}
       />
     </View>
   );

@@ -24,15 +24,33 @@ export class MockTaskRepository implements ITaskRepository {
     return (task && !task.archivedAt) ? task : null;
   }
 
-  async create(taskData: Omit<Task, 'id' | 'createdAt'>): Promise<Task> {
+  async getByIds(ids: string[]): Promise<Task[]> {
+    return ids
+      .map(id => this.tasks.get(id))
+      .filter((task): task is Task => task !== undefined && !task.archivedAt);
+  }
+
+  async create(taskData: Omit<Task, 'id' | 'createdAt' | 'sortOrder'>): Promise<Task> {
+    const allTasks = Array.from(this.tasks.values());
+    const maxSortOrder = allTasks.reduce((max, t) => Math.max(max, t.sortOrder ?? 0), -1);
     const task: Task = {
       id: this.generateId(),
       createdAt: new Date().toISOString(),
+      sortOrder: maxSortOrder + 1,
       ...taskData,
     };
-    
+
     this.tasks.set(task.id, task);
     return task;
+  }
+
+  async updateSortOrders(updates: Array<{ id: string; sortOrder: number }>): Promise<void> {
+    for (const { id, sortOrder } of updates) {
+      const task = this.tasks.get(id);
+      if (task) {
+        this.tasks.set(id, { ...task, sortOrder });
+      }
+    }
   }
 
   async update(id: string, updates: Partial<Omit<Task, 'id' | 'createdAt'>>): Promise<Task> {

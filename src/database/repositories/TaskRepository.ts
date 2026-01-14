@@ -29,10 +29,10 @@ export class TaskRepository implements ITaskRepository {
     try {
       const placeholders = ids.map(() => '?').join(',');
       const sql = `
-        SELECT * FROM tasks 
-        WHERE id IN (${placeholders}) 
+        SELECT * FROM tasks
+        WHERE id IN (${placeholders})
         AND archived_at IS NULL
-        ORDER BY created_at DESC
+        ORDER BY sort_order ASC
       `;
       
       const results = await db.getAllAsync(sql, ...ids);
@@ -46,14 +46,21 @@ export class TaskRepository implements ITaskRepository {
     }
   }
 
-  async create(taskData: Omit<Task, 'id' | 'createdAt'>): Promise<Task> {
+  async create(taskData: Omit<Task, 'id' | 'createdAt' | 'sortOrder'>): Promise<Task> {
     const db = getDatabase();
     const id = this.generateId();
     const createdAt = new Date().toISOString();
 
+    // Get max sort_order to place new task at the end
+    const maxResult = await db.getFirstAsync<{ max_order: number | null }>(
+      'SELECT MAX(sort_order) as max_order FROM tasks WHERE archived_at IS NULL'
+    );
+    const sortOrder = (maxResult?.max_order ?? -1) + 1;
+
     const task: Task = {
       id,
       createdAt,
+      sortOrder,
       ...taskData,
     };
 
@@ -62,8 +69,9 @@ export class TaskRepository implements ITaskRepository {
         INSERT INTO tasks (
           id, name, description, icon, color, is_multi_completion,
           created_at, reminder_enabled, reminder_time, reminder_frequency,
-          streak_enabled, streak_skip_weekends, streak_skip_days, streak_minimum_count
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          streak_enabled, streak_skip_weekends, streak_skip_days, streak_minimum_count,
+          sort_order
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
 
       await db.runAsync(
@@ -81,10 +89,11 @@ export class TaskRepository implements ITaskRepository {
         task.streakEnabled !== false ? 1 : 0,
         task.streakSkipWeekends ? 1 : 0,
         task.streakSkipDays ? JSON.stringify(task.streakSkipDays) : null,
-        task.streakMinimumCount || 1
+        task.streakMinimumCount || 1,
+        task.sortOrder
       );
 
-      logger.info('DATA', 'Task created', { taskId: task.id, name: task.name });
+      logger.info('DATA', 'Task created', { taskId: task.id, name: task.name, sortOrder: task.sortOrder });
       return task;
     } catch (error: any) {
       logger.error('DATA', 'Failed to create task', { error: error.message, taskName: task.name });
@@ -117,7 +126,7 @@ export class TaskRepository implements ITaskRepository {
 
     try {
       const results = await db.getAllAsync(
-        'SELECT * FROM tasks WHERE archived_at IS NULL ORDER BY created_at DESC'
+        'SELECT * FROM tasks WHERE archived_at IS NULL ORDER BY sort_order ASC'
       );
 
       const tasks = results.map(row => this.mapRowToTask(row));
@@ -204,6 +213,26 @@ export class TaskRepository implements ITaskRepository {
     }
   }
 
+  async updateSortOrders(updates: Array<{ id: string; sortOrder: number }>): Promise<void> {
+    const db = getDatabase();
+
+    try {
+      // Use a transaction for atomic updates
+      for (const { id, sortOrder } of updates) {
+        await db.runAsync(
+          'UPDATE tasks SET sort_order = ? WHERE id = ?',
+          sortOrder,
+          id
+        );
+      }
+
+      logger.info('DATA', 'Task sort orders updated', { count: updates.length });
+    } catch (error: any) {
+      logger.error('DATA', 'Failed to update task sort orders', { error: error.message });
+      throw error;
+    }
+  }
+
   private mapRowToTask(row: any): Task {
     return {
       id: row.id,
@@ -221,6 +250,7 @@ export class TaskRepository implements ITaskRepository {
       streakSkipWeekends: Boolean(row.streak_skip_weekends),
       streakSkipDays: row.streak_skip_days ? JSON.parse(row.streak_skip_days) : [],
       streakMinimumCount: row.streak_minimum_count || 1,
+      sortOrder: row.sort_order ?? 0,
     };
   }
 }

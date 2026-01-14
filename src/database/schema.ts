@@ -15,7 +15,8 @@ export const CREATE_TABLES = `
     streak_enabled BOOLEAN DEFAULT TRUE,
     streak_skip_weekends BOOLEAN DEFAULT FALSE,
     streak_skip_days TEXT,
-    streak_minimum_count INTEGER DEFAULT 1
+    streak_minimum_count INTEGER DEFAULT 1,
+    sort_order INTEGER DEFAULT 0
   );
 
   -- Daily logs table
@@ -51,6 +52,7 @@ export const CREATE_TABLES = `
   CREATE INDEX IF NOT EXISTS idx_logs_date ON logs(date);
   CREATE INDEX IF NOT EXISTS idx_logs_task_date ON logs(task_id, date);
   CREATE INDEX IF NOT EXISTS idx_tasks_created ON tasks(created_at);
+  -- Note: idx_tasks_sort_order is created by the addSortOrder migration
   CREATE INDEX IF NOT EXISTS idx_streaks_task ON streaks(task_id);
   CREATE INDEX IF NOT EXISTS idx_streaks_last_completion ON streaks(last_completion_date);
   CREATE INDEX IF NOT EXISTS idx_streaks_current ON streaks(current_streak) WHERE current_streak > 0;

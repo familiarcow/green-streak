@@ -40,7 +40,7 @@ export const HomeScreen: React.FC = () => {
   } = useModalManager();
 
   // Store hooks
-  const { tasks, loading: tasksLoading } = useTasksStore();
+  const { tasks, loading: tasksLoading, reorderTasks } = useTasksStore();
   const { contributionData, loading: logsLoading } = useLogsStore();
   const { firstDayOfWeek } = useSettingsStore();
 
@@ -117,6 +117,14 @@ export const HomeScreen: React.FC = () => {
     openDailyLog(selectedDate);
   }, [openDailyLog, selectedDate]);
 
+  const handleReorderTasks = useCallback(async (taskIds: string[]) => {
+    try {
+      logger.debug('UI', 'Reordering tasks', { count: taskIds.length });
+      await reorderTasks(taskIds);
+    } catch (error) {
+      logger.error('UI', 'Failed to reorder tasks', { error });
+    }
+  }, [reorderTasks]);
 
   return (
     <ErrorBoundary>
@@ -176,6 +184,7 @@ export const HomeScreen: React.FC = () => {
               tasks={tasks}
               onTaskPress={handleTaskPress}
               onAddTask={openAddTask}
+              onReorder={handleReorderTasks}
             />
           </ErrorBoundary>
         </ScrollView>

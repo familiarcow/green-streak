@@ -16,7 +16,7 @@ import logger from '../utils/logger';
 /**
  * Interface for task creation data
  */
-export type CreateTaskData = Omit<Task, 'id' | 'createdAt'>;
+export type CreateTaskData = Omit<Task, 'id' | 'createdAt' | 'sortOrder'>;
 
 /**
  * Interface for task update data
@@ -249,6 +249,29 @@ export class TaskService {
       return restoredTask;
     } catch (error) {
       logger.error('SERVICES', 'Failed to restore task', { error, taskId: id });
+      throw error;
+    }
+  }
+
+  /**
+   * Reorder tasks based on new order (for drag-and-drop)
+   * @param taskIds Array of task IDs in the new desired order
+   */
+  async reorderTasks(taskIds: string[]): Promise<void> {
+    try {
+      logger.debug('SERVICES', 'Reordering tasks', { count: taskIds.length });
+
+      // Create sort order updates based on array position
+      const updates = taskIds.map((id, index) => ({
+        id,
+        sortOrder: index,
+      }));
+
+      await this.taskRepository.updateSortOrders(updates);
+
+      logger.info('SERVICES', 'Tasks reordered successfully', { count: taskIds.length });
+    } catch (error) {
+      logger.error('SERVICES', 'Failed to reorder tasks', { error });
       throw error;
     }
   }

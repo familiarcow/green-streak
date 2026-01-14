@@ -41,6 +41,7 @@ export interface Task {
   streakSkipWeekends?: boolean;
   streakSkipDays?: string[]; // Array of days to skip (e.g., ['2024-01-01', '2024-12-25'])
   streakMinimumCount?: number;
+  sortOrder: number; // For drag-and-drop ordering (lower = higher in list)
 }
 
 export interface TaskLog {
@@ -117,6 +118,7 @@ export interface TasksSectionProps {
   tasks: Task[];
   onTaskPress: (task: Task) => void;
   onAddTask: () => void;
+  onReorder?: (taskIds: string[]) => void;
 }
 
 export interface EmptyStateSectionProps {
