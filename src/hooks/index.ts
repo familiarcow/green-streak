@@ -11,3 +11,4 @@ export { useContributionData } from './useContributionData';
 export { useDateRefresh, useDynamicToday } from './useDateRefresh';
 export { useIconSearch } from './useIconSearch';
 export { useCalendarColors } from './useCalendarColors';
+export { useAccentColor } from './useAccentColor';

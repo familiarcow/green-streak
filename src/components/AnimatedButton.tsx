@@ -11,6 +11,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { colors, textStyles, spacing } from '../theme';
 import { Icon, IconName } from './common/Icon';
+import { useAccentColor } from '../hooks';
 
 interface AnimatedButtonProps {
   title: string;
@@ -45,6 +46,7 @@ export const AnimatedButton: React.FC<AnimatedButtonProps> = ({
   icon,
   iconPosition = 'left',
 }) => {
+  const accentColor = useAccentColor();
   const scale = useSharedValue(1);
   const opacity = useSharedValue(1);
   const rotation = useSharedValue(0);
@@ -122,7 +124,7 @@ export const AnimatedButton: React.FC<AnimatedButtonProps> = ({
     // Variant styles
     const variantStyles: Record<string, ViewStyle> = {
       primary: {
-        backgroundColor: disabled ? colors.interactive.disabled : colors.primary,
+        backgroundColor: disabled ? colors.interactive.disabled : accentColor,
       },
       secondary: {
         backgroundColor: disabled ? colors.interactive.disabled : colors.interactive.default,

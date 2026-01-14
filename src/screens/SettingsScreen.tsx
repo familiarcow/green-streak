@@ -23,6 +23,7 @@ import { ColorPickerModal } from '../components/ColorPicker/ColorPickerModal';
 import { CalendarColorPreview } from '../components/CalendarColorPreview';
 import { useSettingsStore, DEFAULT_CALENDAR_COLOR } from '../store/settingsStore';
 import { generateContributionPalette, DEFAULT_CONTRIBUTION_PALETTE, CALENDAR_COLOR_PRESETS } from '../utils/colorUtils';
+import { useAccentColor } from '../hooks';
 import { useOnboardingStore } from '../store/onboardingStore';
 import { useDataStore } from '../store/dataStore';
 import { useTasksStore } from '../store/tasksStore';
@@ -64,6 +65,9 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
   const [notificationPermissions, setNotificationPermissions] = useState<'unknown' | 'granted' | 'denied' | 'undetermined'>('unknown');
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
   const [showCalendarColorPicker, setShowCalendarColorPicker] = useState(false);
+
+  // Get accent color for UI elements
+  const accentColor = useAccentColor();
 
   // Get the current calendar color palette for preview
   const currentCalendarColor = calendarColor || DEFAULT_CALENDAR_COLOR;
@@ -270,7 +274,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
           accessibilityLabel="Close settings"
           accessibilityHint="Double tap to close the settings screen"
         >
-          <Text style={styles.closeButtonText}>Done</Text>
+          <Text style={[styles.closeButtonText, { color: accentColor }]}>Done</Text>
         </TouchableOpacity>
       </View>
 
@@ -303,7 +307,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
                   global: { ...notificationSettings?.global, enabled }
                 });
               }}
-              trackColor={{ false: colors.interactive.default, true: colors.primary }}
+              trackColor={{ false: colors.interactive.default, true: accentColor }}
               thumbColor={colors.surface}
               disabled={notificationPermissions === 'denied'}
               accessibilityLabel="Master notifications toggle"
@@ -327,7 +331,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
                     onValueChange={(enabled) => {
                       updateDailyNotification({ enabled });
                     }}
-                    trackColor={{ false: colors.interactive.default, true: colors.primary }}
+                    trackColor={{ false: colors.interactive.default, true: accentColor }}
                     thumbColor={colors.surface}
                   />
                 </View>
@@ -338,7 +342,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
                       <View style={styles.settingInfo}>
                         <Text style={styles.settingSubtitle}>Time</Text>
                         <TouchableOpacity onPress={() => setShowTimePicker(!showTimePicker)}>
-                          <Text style={styles.timeDisplay}>
+                          <Text style={[styles.timeDisplay, { color: accentColor }]}>
                             {notificationSettings?.daily?.time || '20:00'}
                           </Text>
                         </TouchableOpacity>
@@ -357,7 +361,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
                         onValueChange={(smartMode) => {
                           updateDailyNotification({ smartMode });
                         }}
-                        trackColor={{ false: colors.interactive.default, true: colors.primary }}
+                        trackColor={{ false: colors.interactive.default, true: accentColor }}
                         thumbColor={colors.surface}
                       />
                     </View>
@@ -374,7 +378,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
                         onValueChange={(includeMotivation) => {
                           updateDailyNotification({ includeMotivation });
                         }}
-                        trackColor={{ false: colors.interactive.default, true: colors.primary }}
+                        trackColor={{ false: colors.interactive.default, true: accentColor }}
                         thumbColor={colors.surface}
                       />
                     </View>
@@ -396,7 +400,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
                     onValueChange={(protectionEnabled) => {
                       updateStreakProtection({ protectionEnabled });
                     }}
-                    trackColor={{ false: colors.interactive.default, true: colors.primary }}
+                    trackColor={{ false: colors.interactive.default, true: accentColor }}
                     thumbColor={colors.surface}
                   />
                 </View>
@@ -407,7 +411,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
                       <View style={styles.settingInfo}>
                         <Text style={styles.settingSubtitle}>Protection Time</Text>
                         <TouchableOpacity onPress={() => setExpandedSections({...expandedSections, streakTime: true})}>
-                          <Text style={styles.timeDisplay}>
+                          <Text style={[styles.timeDisplay, { color: accentColor }]}>
                             {notificationSettings?.streaks?.protectionTime || '21:00'}
                           </Text>
                         </TouchableOpacity>
@@ -427,7 +431,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
                             key={days}
                             style={[
                               styles.optionButton,
-                              notificationSettings?.streaks?.protectionThreshold === days && glassStyles.buttonActive
+                              notificationSettings?.streaks?.protectionThreshold === days && [glassStyles.buttonActive, { backgroundColor: accentColor, borderColor: accentColor }]
                             ]}
                             onPress={() => updateStreakProtection({ protectionThreshold: days })}
                           >
@@ -454,7 +458,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
                         onValueChange={(priorityBasedAlerts) => {
                           updateStreakProtection({ priorityBasedAlerts });
                         }}
-                        trackColor={{ false: colors.interactive.default, true: colors.primary }}
+                        trackColor={{ false: colors.interactive.default, true: accentColor }}
                         thumbColor={colors.surface}
                       />
                     </View>
@@ -478,7 +482,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
                         achievements: { ...notificationSettings?.achievements, enabled }
                       });
                     }}
-                    trackColor={{ false: colors.interactive.default, true: colors.primary }}
+                    trackColor={{ false: colors.interactive.default, true: accentColor }}
                     thumbColor={colors.surface}
                   />
                 </View>
@@ -499,7 +503,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
                             achievements: { ...notificationSettings?.achievements, weeklyRecapEnabled }
                           });
                         }}
-                        trackColor={{ false: colors.interactive.default, true: colors.primary }}
+                        trackColor={{ false: colors.interactive.default, true: accentColor }}
                         thumbColor={colors.surface}
                       />
                     </View>
@@ -513,7 +517,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
                           <TouchableOpacity
                             style={[
                               styles.optionButton,
-                              notificationSettings?.achievements?.weeklyRecapDay === 'sunday' && glassStyles.buttonActive
+                              notificationSettings?.achievements?.weeklyRecapDay === 'sunday' && [glassStyles.buttonActive, { backgroundColor: accentColor, borderColor: accentColor }]
                             ]}
                             onPress={() => updateNotificationSettings({
                               achievements: { ...notificationSettings?.achievements, weeklyRecapDay: 'sunday' }
@@ -529,7 +533,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
                           <TouchableOpacity
                             style={[
                               styles.optionButton,
-                              notificationSettings?.achievements?.weeklyRecapDay === 'monday' && glassStyles.buttonActive
+                              notificationSettings?.achievements?.weeklyRecapDay === 'monday' && [glassStyles.buttonActive, { backgroundColor: accentColor, borderColor: accentColor }]
                             ]}
                             onPress={() => updateNotificationSettings({
                               achievements: { ...notificationSettings?.achievements, weeklyRecapDay: 'monday' }
@@ -583,7 +587,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
                             key={mode}
                             style={[
                               styles.optionButton,
-                              notificationSettings?.global?.weekendMode === mode && glassStyles.buttonActive
+                              notificationSettings?.global?.weekendMode === mode && [glassStyles.buttonActive, { backgroundColor: accentColor, borderColor: accentColor }]
                             ]}
                             onPress={() => updateNotificationSettings({
                               global: { ...notificationSettings?.global, weekendMode: mode }
@@ -617,7 +621,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
                             }
                           });
                         }}
-                        trackColor={{ false: colors.interactive.default, true: colors.primary }}
+                        trackColor={{ false: colors.interactive.default, true: accentColor }}
                         thumbColor={colors.surface}
                       />
                     </View>
@@ -646,7 +650,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
                             global: { ...notificationSettings?.global, soundEnabled }
                           });
                         }}
-                        trackColor={{ false: colors.interactive.default, true: colors.primary }}
+                        trackColor={{ false: colors.interactive.default, true: accentColor }}
                         thumbColor={colors.surface}
                       />
                     </View>
@@ -665,7 +669,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
                             global: { ...notificationSettings?.global, vibrationEnabled }
                           });
                         }}
-                        trackColor={{ false: colors.interactive.default, true: colors.primary }}
+                        trackColor={{ false: colors.interactive.default, true: accentColor }}
                         thumbColor={colors.surface}
                       />
                     </View>
@@ -683,7 +687,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
                     key={time}
                     style={[
                       styles.timeOption,
-                      reminderTime === time && styles.timeOptionSelected,
+                      reminderTime === time && [styles.timeOptionSelected, { backgroundColor: accentColor }],
                     ]}
                     onPress={() => {
                       handleTimeChange(time);
@@ -722,7 +726,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
               <TouchableOpacity
                 style={[
                   styles.dayOption,
-                  firstDayOfWeek === 'sunday' && styles.dayOptionSelected,
+                  firstDayOfWeek === 'sunday' && [styles.dayOptionSelected, { backgroundColor: accentColor }],
                 ]}
                 onPress={() => setFirstDayOfWeek('sunday')}
                 accessibilityRole="button"
@@ -740,7 +744,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
               <TouchableOpacity
                 style={[
                   styles.dayOption,
-                  firstDayOfWeek === 'monday' && styles.dayOptionSelected,
+                  firstDayOfWeek === 'monday' && [styles.dayOptionSelected, { backgroundColor: accentColor }],
                 ]}
                 onPress={() => setFirstDayOfWeek('monday')}
                 accessibilityRole="button"
@@ -796,7 +800,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
             <Switch
               value={debugLoggingEnabled}
               onValueChange={setDebugLogging}
-              trackColor={{ false: colors.interactive.default, true: colors.primary }}
+              trackColor={{ false: colors.interactive.default, true: accentColor }}
               thumbColor={colors.surface}
               accessibilityLabel="Debug logging toggle"
               accessibilityHint={debugLoggingEnabled ? "Double tap to disable debug logging" : "Double tap to enable debug logging"}
@@ -816,7 +820,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
                   key={option.value}
                   style={[
                     styles.logLevelOption,
-                    currentLogLevel === option.value && styles.logLevelOptionSelected,
+                    currentLogLevel === option.value && [styles.logLevelOptionSelected, { backgroundColor: accentColor }],
                   ]}
                   onPress={() => setLogLevel(option.value)}
                 >

@@ -4,7 +4,7 @@ import { colors, textStyles, spacing, shadows, borderRadius } from '../../theme'
 import { sizes, gaps, radiusValues } from '../../theme/utils';
 import { TodayCardProps, Task, TaskStreak } from '../../types';
 import { formatDisplayDate, getTodayString, parseDateString, formatDateString } from '../../utils/dateHelpers';
-import { useDynamicToday } from '../../hooks/useDateRefresh';
+import { useDynamicToday, useAccentColor } from '../../hooks';
 import { Icon } from '../common/Icon';
 import { DatePickerModal } from '../common/DatePickerModal';
 import { StreakBadge } from '../common/StreakBadge';
@@ -21,9 +21,12 @@ export const TodayCard: React.FC<TodayCardProps> = React.memo(({
 }) => {
   // State for date picker
   const [showDatePicker, setShowDatePicker] = useState(false);
-  
+
   // Dynamic today string that updates at midnight
   const dynamicToday = useDynamicToday();
+
+  // Get accent color from settings
+  const accentColor = useAccentColor();
   
   // Streaks store
   const { streaks, loadStreaks, loadStreaksForDate, getStreakForTaskOnDate } = useStreaksStore();
@@ -128,7 +131,7 @@ export const TodayCard: React.FC<TodayCardProps> = React.memo(({
               </Text>
             )}
             {hasCompletions && (
-              <View style={styles.completionOverlay}>
+              <View style={[styles.completionOverlay, { backgroundColor: accentColor }]}>
                 <Icon name="check" size={10} color={colors.text.inverse} />
               </View>
             )}
@@ -139,10 +142,10 @@ export const TodayCard: React.FC<TodayCardProps> = React.memo(({
             {hasCompletions && (
               <View style={styles.progressDots}>
                 {Array.from({ length: Math.min(completionCount, 5) }).map((_, index) => (
-                  <View key={index} style={styles.progressDot} />
+                  <View key={index} style={[styles.progressDot, { backgroundColor: accentColor }]} />
                 ))}
                 {completionCount > 5 && (
-                  <Text style={styles.extraCount}>+{completionCount - 5}</Text>
+                  <Text style={[styles.extraCount, { color: accentColor }]}>+{completionCount - 5}</Text>
                 )}
               </View>
             )}
@@ -162,7 +165,7 @@ export const TodayCard: React.FC<TodayCardProps> = React.memo(({
         <TouchableOpacity
           style={[
             styles.quickAddButton,
-            hasCompletions && styles.quickAddButtonCompleted
+            hasCompletions && [styles.quickAddButtonCompleted, { backgroundColor: accentColor, borderColor: accentColor }]
           ]}
           onPress={handleQuickAddPress}
           accessibilityRole="button"
@@ -177,7 +180,7 @@ export const TodayCard: React.FC<TodayCardProps> = React.memo(({
         </TouchableOpacity>
       </View>
     );
-  }, [getTaskCompletionCount, onQuickAdd, selectedDate, getStreakForTaskOnDate]);
+  }, [getTaskCompletionCount, onQuickAdd, selectedDate, getStreakForTaskOnDate, accentColor, isToday]);
 
   return (
     <View style={styles.container}>
@@ -227,7 +230,7 @@ export const TodayCard: React.FC<TodayCardProps> = React.memo(({
             <Icon name="edit" size={16} color={colors.text.secondary} />
           </TouchableOpacity>
           
-          <View style={styles.totalBadge}>
+          <View style={[styles.totalBadge, { backgroundColor: accentColor }]}>
             <Text style={styles.totalText}>{totalCompletions}</Text>
           </View>
         </View>

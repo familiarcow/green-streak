@@ -16,6 +16,7 @@ import { TemplateCatalogModal } from '../components/TemplateCatalog';
 import { IconPickerModal } from '../components/IconPicker';
 import { ColorPickerModal } from '../components/ColorPicker';
 import { useTasksStore } from '../store/tasksStore';
+import { useAccentColor } from '../hooks';
 import { colors, textStyles, spacing, shadows } from '../theme';
 import { COLOR_PALETTE } from '../database/schema';
 import { EditTaskModalProps } from '../types';
@@ -46,6 +47,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
   const [showIconPicker, setShowIconPicker] = useState(false);
 
   const { createTask, updateTask, deleteTask } = useTasksStore();
+  const accentColor = useAccentColor();
   const isEditing = !!existingTask;
 
   // Handle template selection - populate form with template data
@@ -226,15 +228,15 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
         {/* Browse Templates Button - Only show for new tasks */}
         {!isEditing && (
           <TouchableOpacity
-            style={styles.templateButton}
+            style={[styles.templateButton, { borderColor: accentColor }]}
             onPress={() => setShowTemplateCatalog(true)}
             activeOpacity={0.7}
             accessibilityRole="button"
             accessibilityLabel="Browse habit templates"
             accessibilityHint="Open the template catalog to quickly create a habit from pre-defined templates"
           >
-            <Icon name="target" size={20} color={colors.primary} />
-            <Text style={styles.templateButtonText}>Browse Templates</Text>
+            <Icon name="target" size={20} color={accentColor} />
+            <Text style={[styles.templateButtonText, { color: accentColor }]}>Browse Templates</Text>
             <Icon name="chevron-right" size={18} color={colors.text.tertiary} />
           </TouchableOpacity>
         )}
@@ -281,7 +283,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                   key={index}
                   style={[
                     styles.iconOption,
-                    selectedIcon === icon && styles.selectedIconOption,
+                    selectedIcon === icon && [styles.selectedIconOption, { borderColor: accentColor }],
                   ]}
                   onPress={() => setSelectedIcon(icon)}
                   accessibilityRole="button"
@@ -299,7 +301,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                   <TouchableOpacity
                     style={[
                       styles.moreIconsButton,
-                      isExtraIconSelected && styles.moreIconsButtonSelected,
+                      isExtraIconSelected && [styles.moreIconsButtonSelected, { borderColor: accentColor }],
                     ]}
                     onPress={() => setShowIconPicker(true)}
                     accessibilityRole="button"
@@ -310,7 +312,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                     <Icon
                       name={isExtraIconSelected ? selectedIcon : "moreHorizontal"}
                       size={20}
-                      color={isExtraIconSelected ? colors.primary : colors.text.secondary}
+                      color={isExtraIconSelected ? accentColor : colors.text.secondary}
                     />
                   </TouchableOpacity>
                 );
@@ -384,7 +386,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
             <Switch
               value={reminderEnabled}
               onValueChange={setReminderEnabled}
-              trackColor={{ false: colors.interactive.default, true: colors.primary }}
+              trackColor={{ false: colors.interactive.default, true: accentColor }}
               thumbColor={colors.surface}
               accessibilityLabel="Reminder setting"
               accessibilityHint={`${reminderEnabled ? 'Disable' : 'Enable'} reminders for this habit`}
@@ -401,7 +403,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                       key={time}
                       style={[
                         styles.timeOption,
-                        reminderTime === time && !showCustomTimeInput && styles.timeOptionSelected,
+                        reminderTime === time && !showCustomTimeInput && [styles.timeOptionSelected, { backgroundColor: accentColor, borderColor: accentColor }],
                       ]}
                       onPress={() => {
                         setReminderTime(time);
@@ -421,7 +423,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                     style={[
                       styles.timeOption,
                       styles.customTimeOption,
-                      showCustomTimeInput && styles.timeOptionSelected,
+                      showCustomTimeInput && [styles.timeOptionSelected, { backgroundColor: accentColor, borderColor: accentColor }],
                     ]}
                     onPress={() => {
                       setShowCustomTimeInput(true);
@@ -472,7 +474,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                       key={freq.value}
                       style={[
                         styles.frequencyOption,
-                        reminderFrequency === freq.value && styles.frequencyOptionSelected,
+                        reminderFrequency === freq.value && [styles.frequencyOptionSelected, { backgroundColor: accentColor, borderColor: accentColor }],
                       ]}
                       onPress={() => setReminderFrequency(freq.value as 'daily' | 'weekly')}
                     >
@@ -504,7 +506,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
             <Switch
               value={streakEnabled}
               onValueChange={setStreakEnabled}
-              trackColor={{ false: colors.interactive.default, true: colors.primary }}
+              trackColor={{ false: colors.interactive.default, true: accentColor }}
               thumbColor={colors.surface}
               accessibilityLabel="Streak tracking"
               accessibilityHint={`${streakEnabled ? 'Disable' : 'Enable'} streak tracking for this habit`}
@@ -523,7 +525,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                 <Switch
                   value={streakSkipWeekends}
                   onValueChange={setStreakSkipWeekends}
-                  trackColor={{ false: colors.interactive.default, true: colors.primary }}
+                  trackColor={{ false: colors.interactive.default, true: accentColor }}
                   thumbColor={colors.surface}
                   accessibilityLabel="Skip weekends"
                   accessibilityHint={`${streakSkipWeekends ? 'Disable' : 'Enable'} weekend skipping`}
@@ -539,7 +541,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                 </View>
                 <View style={styles.countSelector}>
                   <TouchableOpacity
-                    style={styles.countButton}
+                    style={[styles.countButton, { backgroundColor: accentColor }]}
                     onPress={() => setStreakMinimumCount(Math.max(1, streakMinimumCount - 1))}
                     accessibilityRole="button"
                     accessibilityLabel="Decrease minimum count"
@@ -548,7 +550,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                   </TouchableOpacity>
                   <Text style={styles.countValue}>{streakMinimumCount}</Text>
                   <TouchableOpacity
-                    style={styles.countButton}
+                    style={[styles.countButton, { backgroundColor: accentColor }]}
                     onPress={() => setStreakMinimumCount(Math.min(10, streakMinimumCount + 1))}
                     accessibilityRole="button"
                     accessibilityLabel="Increase minimum count"
