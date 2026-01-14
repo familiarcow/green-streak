@@ -13,6 +13,7 @@ import { useSettingsStore } from '../store/settingsStore';
 import { useTaskActions, useModalManager, useDateNavigation } from '../hooks';
 import { useDateRefresh } from '../hooks/useDateRefresh';
 import { colors, textStyles, spacing } from '../theme';
+import { radiusValues } from '../theme/utils';
 import { getTodayString } from '../utils/dateHelpers';
 import EditTaskModal from './EditTaskModal';
 import DailyLogScreen from './DailyLogScreen';
@@ -312,7 +313,7 @@ const styles = StyleSheet.create({
     height: 44,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: spacing[2],
+    borderRadius: radiusValues.box,
     backgroundColor: colors.accent.warm,
   },
   

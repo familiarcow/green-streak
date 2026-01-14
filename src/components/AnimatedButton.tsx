@@ -10,6 +10,7 @@ import Animated, {
   Easing
 } from 'react-native-reanimated';
 import { colors, textStyles, spacing } from '../theme';
+import { radiusValues } from '../theme/utils';
 import { Icon, IconName } from './common/Icon';
 import { useAccentColor } from '../hooks';
 
@@ -100,7 +101,7 @@ export const AnimatedButton: React.FC<AnimatedButtonProps> = ({
 
   const getButtonStyle = (): ViewStyle => {
     const baseStyle: ViewStyle = {
-      borderRadius: spacing[2],
+      borderRadius: radiusValues.box,
       alignItems: 'center',
       justifyContent: 'center',
     };

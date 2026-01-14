@@ -269,7 +269,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing[6],
     padding: spacing[4],
     backgroundColor: colors.surface,
-    borderRadius: spacing[3],
+    borderRadius: radiusValues.box,
     ...shadows.sm,
   },
 
@@ -290,7 +290,7 @@ const styles = StyleSheet.create({
   navButton: {
     width: sizes.touchTarget.small,
     height: sizes.touchTarget.small,
-    borderRadius: radiusValues.md,
+    borderRadius: radiusValues.box,
     backgroundColor: colors.interactive.default,
     alignItems: 'center',
     justifyContent: 'center',
@@ -305,7 +305,7 @@ const styles = StyleSheet.create({
   editButton: {
     width: sizes.touchTarget.small,
     height: sizes.touchTarget.small,
-    borderRadius: radiusValues.md,
+    borderRadius: radiusValues.box,
     backgroundColor: colors.interactive.default,
     alignItems: 'center',
     justifyContent: 'center',
@@ -316,7 +316,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: spacing[2],
     paddingVertical: spacing[1],
-    borderRadius: radiusValues.md,
+    borderRadius: radiusValues.box,
   },
 
   dateTitle: {
@@ -327,7 +327,7 @@ const styles = StyleSheet.create({
 
   totalBadge: {
     backgroundColor: colors.primary,
-    borderRadius: radiusValues.md,
+    borderRadius: radiusValues.box,
     paddingHorizontal: spacing[3],
     paddingVertical: spacing[1],
     minWidth: sizes.touchTarget.small,
@@ -343,7 +343,7 @@ const styles = StyleSheet.create({
 
   emptyBadge: {
     backgroundColor: colors.interactive.default,
-    borderRadius: radiusValues.md,
+    borderRadius: radiusValues.box,
     padding: spacing[2],
     alignItems: 'center',
     justifyContent: 'center',
@@ -374,7 +374,7 @@ const styles = StyleSheet.create({
   taskIconContainer: {
     width: sizes.iconContainer.medium,
     height: sizes.iconContainer.medium,
-    borderRadius: radiusValues.md,
+    borderRadius: radiusValues.box,
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',

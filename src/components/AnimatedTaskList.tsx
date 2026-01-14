@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing[3],
     paddingHorizontal: spacing[4],
     backgroundColor: colors.surface,
-    borderRadius: spacing[2],
+    borderRadius: radiusValues.box,
     marginBottom: spacing[2],
     ...shadows.sm,
   },

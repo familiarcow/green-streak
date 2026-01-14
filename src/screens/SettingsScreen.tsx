@@ -30,6 +30,7 @@ import { useTasksStore } from '../store/tasksStore';
 import { useLogsStore } from '../store/logsStore';
 import notificationService from '../services/NotificationService';
 import { colors, textStyles, spacing, shadows, glassStyles } from '../theme';
+import { radiusValues } from '../theme/utils';
 import logger from '../utils/logger';
 
 import { SettingsScreenProps } from '../types';
@@ -949,7 +950,7 @@ const styles = StyleSheet.create({
   warningCard: {
     backgroundColor: colors.warning,
     padding: spacing[3],
-    borderRadius: spacing[2],
+    borderRadius: radiusValues.box,
     marginBottom: spacing[3],
   },
   
@@ -965,7 +966,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: spacing[4],
     backgroundColor: colors.surface,
-    borderRadius: spacing[2],
+    borderRadius: radiusValues.box,
     marginBottom: spacing[2],
     ...shadows.sm,
   },
@@ -994,7 +995,7 @@ const styles = StyleSheet.create({
   
   timePicker: {
     backgroundColor: colors.surface,
-    borderRadius: spacing[2],
+    borderRadius: radiusValues.box,
     padding: spacing[3],
     marginBottom: spacing[2],
     ...shadows.sm,
@@ -1003,7 +1004,7 @@ const styles = StyleSheet.create({
   timeOption: {
     paddingVertical: spacing[2],
     paddingHorizontal: spacing[3],
-    borderRadius: spacing[2],
+    borderRadius: radiusValues.box,
     marginRight: spacing[2],
     backgroundColor: colors.interactive.default,
   },
@@ -1029,7 +1030,7 @@ const styles = StyleSheet.create({
   logLevelOption: {
     paddingVertical: spacing[2],
     paddingHorizontal: spacing[3],
-    borderRadius: spacing[2],
+    borderRadius: radiusValues.box,
     marginBottom: spacing[1],
     backgroundColor: colors.interactive.default,
   },
@@ -1056,7 +1057,7 @@ const styles = StyleSheet.create({
   dayOption: {
     paddingVertical: spacing[2],
     paddingHorizontal: spacing[3],
-    borderRadius: spacing[2],
+    borderRadius: radiusValues.box,
     backgroundColor: colors.interactive.default,
   },
 
@@ -1088,7 +1089,7 @@ const styles = StyleSheet.create({
   colorSwatch: {
     width: 32,
     height: 32,
-    borderRadius: 8,
+    borderRadius: radiusValues.box,
     ...shadows.sm,
   },
 
@@ -1123,7 +1124,7 @@ const styles = StyleSheet.create({
   optionButton: {
     paddingVertical: spacing[2],
     paddingHorizontal: spacing[3],
-    borderRadius: spacing[2],
+    borderRadius: radiusValues.box,
     backgroundColor: colors.interactive.default,
   },
   

@@ -21,6 +21,7 @@ import Animated, { FadeIn, FadeOut, SlideInRight, SlideOutRight } from 'react-na
 import { Icon } from '../common/Icon';
 import { BaseModal } from '../modals/BaseModal';
 import { colors, textStyles, spacing } from '../../theme';
+import { radiusValues } from '../../theme/utils';
 import { TemplateCatalogModalProps, HabitTemplate } from '../../types/templates';
 import { CATEGORIES } from '../../data/habitTemplates';
 import { useTemplateSearch } from '../../hooks/useTemplateSearch';
@@ -266,7 +267,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.surface,
-    borderRadius: spacing[3],
+    borderRadius: radiusValues.box,
     paddingHorizontal: spacing[3],
     paddingVertical: spacing[2],
     borderWidth: 1,
@@ -312,7 +313,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[2],
     backgroundColor: colors.primary,
-    borderRadius: spacing[3],
+    borderRadius: radiusValues.box,
   },
   clearButtonText: {
     ...textStyles.body,

@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: colors.surface,
     padding: spacing[4],
-    borderRadius: spacing[3],
+    borderRadius: radiusValues.box,
     position: 'relative',
   },
 

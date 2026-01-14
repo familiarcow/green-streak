@@ -8,6 +8,7 @@ import { AnimatedButton } from '../components/AnimatedButton';
 import { AnimatedLoader } from '../components/AnimatedLoader';
 import { useLogsStore } from '../store/logsStore';
 import { colors, textStyles, spacing, shadows } from '../theme';
+import { radiusValues } from '../theme/utils';
 import { formatDisplayDate, getTodayString } from '../utils/dateHelpers';
 import logger from '../utils/logger';
 
@@ -390,7 +391,7 @@ const styles = StyleSheet.create({
     minWidth: '45%',
     backgroundColor: colors.surface,
     padding: spacing[4],
-    borderRadius: spacing[3],
+    borderRadius: radiusValues.box,
     borderLeftWidth: 4,
     borderLeftColor: colors.primary,
     ...shadows.sm,
@@ -420,7 +421,7 @@ const styles = StyleSheet.create({
   
   recentStats: {
     backgroundColor: colors.surface,
-    borderRadius: spacing[3],
+    borderRadius: radiusValues.box,
     padding: spacing[4],
     ...shadows.sm,
   },
@@ -452,7 +453,7 @@ const styles = StyleSheet.create({
   
   detailsGrid: {
     backgroundColor: colors.surface,
-    borderRadius: spacing[3],
+    borderRadius: radiusValues.box,
     padding: spacing[4],
     ...shadows.sm,
   },

@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { ErrorBoundary } from './ErrorBoundary';
 import { colors, textStyles, spacing, shadows } from '../theme';
+import { radiusValues } from '../theme/utils';
 import { Icon } from './common/Icon';
 
 interface ScreenErrorBoundaryProps {
@@ -79,7 +80,7 @@ const styles = StyleSheet.create({
 
   errorCard: {
     backgroundColor: colors.surface,
-    borderRadius: spacing[3],
+    borderRadius: radiusValues.box,
     padding: spacing[5],
     maxWidth: 320,
     width: '100%',
@@ -118,7 +119,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.primary,
-    borderRadius: spacing[2],
+    borderRadius: radiusValues.box,
     paddingVertical: spacing[3],
     gap: spacing[2],
   },
@@ -135,7 +136,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.interactive.default,
-    borderRadius: spacing[2],
+    borderRadius: radiusValues.box,
     paddingVertical: spacing[3],
     gap: spacing[2],
     borderWidth: 1,

@@ -23,6 +23,7 @@ import { HueBar } from './HueBar';
 import { SaturationValuePicker } from './SaturationValuePicker';
 import { HexInput } from './HexInput';
 import { colors, textStyles, spacing, shadows } from '../../theme';
+import { radiusValues } from '../../theme/utils';
 import { COLOR_PALETTE } from '../../database/schema';
 import { hexToHsv, hsvToHex, isValidHex, generateContributionPalette } from '../../utils/colorUtils';
 import { CalendarColorPreview } from '../CalendarColorPreview';
@@ -265,7 +266,7 @@ const styles = StyleSheet.create({
   previewSwatch: {
     width: 28,
     height: 28,
-    borderRadius: 8,
+    borderRadius: radiusValues.box,
     ...shadows.sm,
   },
   headerTitle: {

@@ -7,6 +7,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, TextInput, Text, StyleSheet } from 'react-native';
 import { colors, textStyles, spacing } from '../../theme';
+import { radiusValues } from '../../theme/utils';
 import { isValidHex, normalizeHex } from '../../utils/colorUtils';
 
 interface HexInputProps {
@@ -105,7 +106,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: spacing[2],
+    borderRadius: radiusValues.box,
     paddingHorizontal: spacing[3],
     height: 44,
     minWidth: 120,

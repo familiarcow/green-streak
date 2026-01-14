@@ -8,6 +8,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { Icon } from '../common/Icon';
 import { colors, textStyles, spacing } from '../../theme';
+import { radiusValues } from '../../theme/utils';
 import { TemplatePreviewProps } from '../../types/templates';
 import { getCategoryInfo } from '../../data/habitTemplates';
 
@@ -194,7 +195,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: spacing[3],
     paddingVertical: spacing[1],
-    borderRadius: spacing[3],
+    borderRadius: radiusValues.box,
     gap: spacing[1],
   },
   categoryText: {
@@ -219,7 +220,7 @@ const styles = StyleSheet.create({
   },
   settingsContainer: {
     backgroundColor: colors.surface,
-    borderRadius: spacing[3],
+    borderRadius: radiusValues.box,
     padding: spacing[3],
   },
   settingRow: {
@@ -242,7 +243,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.interactive.default,
     paddingHorizontal: spacing[3],
     paddingVertical: spacing[1],
-    borderRadius: spacing[3],
+    borderRadius: radiusValues.box,
   },
   tagText: {
     ...textStyles.bodySmall,
@@ -262,7 +263,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: spacing[3],
-    borderRadius: spacing[3],
+    borderRadius: radiusValues.box,
     borderWidth: 1,
     borderColor: colors.primary,
     backgroundColor: colors.surface,
@@ -278,7 +279,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: spacing[3],
-    borderRadius: spacing[3],
+    borderRadius: radiusValues.box,
   },
   addButtonText: {
     ...textStyles.body,

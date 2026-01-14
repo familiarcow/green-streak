@@ -67,6 +67,7 @@ export const gaps = {
  */
 export const radiusValues = {
   xs: borderRadius.sm,    // 2px
+  box: borderRadius.box,  // 3px - Standard for small UI elements
   sm: borderRadius.base,  // 4px
   md: borderRadius.md,    // 6px
   lg: borderRadius.lg,    // 8px

@@ -11,6 +11,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { colors, textStyles, spacing, shadows } from '../../theme';
+import { radiusValues } from '../../theme/utils';
 import { Toast as ToastType } from '../../services/ToastNotificationService';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -236,7 +237,7 @@ const styles = StyleSheet.create({
     marginLeft: spacing[3],
     paddingHorizontal: spacing[3],
     paddingVertical: spacing[2],
-    borderRadius: 8,
+    borderRadius: radiusValues.box,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
   },
 

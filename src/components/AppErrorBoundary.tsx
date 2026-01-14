@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { ErrorBoundary } from './ErrorBoundary';
 import { colors, textStyles, spacing, shadows } from '../theme';
+import { radiusValues } from '../theme/utils';
 import { Icon } from './common/Icon';
 import logger from '../utils/logger';
 
@@ -119,7 +120,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.primary,
-    borderRadius: spacing[3],
+    borderRadius: radiusValues.box,
     paddingHorizontal: spacing[5],
     paddingVertical: spacing[4],
     gap: spacing[2],

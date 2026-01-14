@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { colors, textStyles, spacing, shadows } from '../../theme';
+import { radiusValues } from '../../theme/utils';
 import { EmptyStateSectionProps } from '../../types';
 import { AnimatedButton } from '../AnimatedButton';
 
@@ -30,7 +31,7 @@ const styles = StyleSheet.create({
     padding: spacing[6],
     marginHorizontal: spacing[4],
     backgroundColor: colors.surface,
-    borderRadius: spacing[3],
+    borderRadius: radiusValues.box,
     ...shadows.sm,
   },
   

@@ -18,6 +18,7 @@ import { ColorPickerModal } from '../components/ColorPicker';
 import { useTasksStore } from '../store/tasksStore';
 import { useAccentColor } from '../hooks';
 import { colors, textStyles, spacing, shadows } from '../theme';
+import { radiusValues } from '../theme/utils';
 import { COLOR_PALETTE } from '../database/schema';
 import { EditTaskModalProps } from '../types';
 import { HabitTemplate } from '../types/templates';
@@ -647,7 +648,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.accent.light,
-    borderRadius: spacing[3],
+    borderRadius: radiusValues.box,
     padding: spacing[4],
     marginBottom: spacing[4],
     borderWidth: 1,
@@ -675,7 +676,7 @@ const styles = StyleSheet.create({
   
   settingItem: {
     backgroundColor: colors.surface,
-    borderRadius: spacing[2],
+    borderRadius: radiusValues.box,
     padding: spacing[4],
     marginBottom: spacing[2],
     ...shadows.sm,
@@ -702,7 +703,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: spacing[2],
+    borderRadius: radiusValues.box,
     padding: spacing[3],
     color: colors.text.primary,
     ...shadows.sm,
@@ -724,7 +725,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     backgroundColor: colors.surface,
-    borderRadius: spacing[2],
+    borderRadius: radiusValues.box,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
@@ -741,7 +742,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     backgroundColor: colors.surface,
-    borderRadius: spacing[2],
+    borderRadius: radiusValues.box,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
@@ -795,7 +796,7 @@ const styles = StyleSheet.create({
     marginTop: spacing[3],
     padding: spacing[3],
     backgroundColor: colors.accent.light,
-    borderRadius: spacing[2],
+    borderRadius: radiusValues.box,
   },
 
   reminderRow: {
@@ -818,7 +819,7 @@ const styles = StyleSheet.create({
   timeOption: {
     paddingVertical: spacing[2],
     paddingHorizontal: spacing[3],
-    borderRadius: spacing[2],
+    borderRadius: radiusValues.box,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
@@ -849,7 +850,7 @@ const styles = StyleSheet.create({
     marginTop: spacing[3],
     padding: spacing[3],
     backgroundColor: colors.accent.light,
-    borderRadius: spacing[2],
+    borderRadius: radiusValues.box,
   },
 
   customTimeLabel: {
@@ -863,7 +864,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: spacing[2],
+    borderRadius: radiusValues.box,
     padding: spacing[3],
     color: colors.text.primary,
     textAlign: 'center',
@@ -881,7 +882,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: spacing[2],
     paddingHorizontal: spacing[3],
-    borderRadius: spacing[2],
+    borderRadius: radiusValues.box,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
@@ -945,7 +946,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: spacing[4],
     backgroundColor: colors.error || '#ef4444',
-    borderRadius: spacing[2],
+    borderRadius: radiusValues.box,
     gap: spacing[2],
     ...shadows.sm,
   },

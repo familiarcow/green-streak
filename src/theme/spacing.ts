@@ -25,6 +25,7 @@ export const spacing = {
 export const borderRadius = {
   none: 0,
   sm: 2,
+  box: 3,     // Standard for small UI elements (calendar boxes, buttons, inputs)
   base: 4,
   md: 6,
   lg: 8,

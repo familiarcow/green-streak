@@ -8,6 +8,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Icon } from '../common/Icon';
 import { colors, textStyles, spacing } from '../../theme';
+import { radiusValues } from '../../theme/utils';
 import { TemplateCardProps } from '../../types/templates';
 import { getCategoryInfo } from '../../data/habitTemplates';
 
@@ -61,7 +62,7 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     backgroundColor: colors.surface,
-    borderRadius: spacing[3],
+    borderRadius: radiusValues.box,
     padding: spacing[3],
     marginBottom: spacing[3],
     borderLeftWidth: 4,
@@ -79,7 +80,7 @@ const styles = StyleSheet.create({
   iconContainer: {
     width: 48,
     height: 48,
-    borderRadius: spacing[2],
+    borderRadius: radiusValues.box,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: spacing[3],

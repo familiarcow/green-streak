@@ -11,6 +11,7 @@ import { ContributionData, Task } from '../../types';
 import { TaskContributionDay } from './TaskContributionDay';
 import { Icon, IconName } from '../common/Icon';
 import { colors, textStyles, spacing, shadows } from '../../theme';
+import { radiusValues } from '../../theme/utils';
 import { getMonthName, formatDisplayDate } from '../../utils/dateHelpers';
 import { getTaskColorWithOpacity } from '../../theme/colors';
 
@@ -257,7 +258,7 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: colors.surface,
     padding: spacing[4],
-    borderRadius: spacing[3],
+    borderRadius: radiusValues.box,
     ...shadows.sm,
   },
   
@@ -284,7 +285,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing[4],
     padding: spacing[3],
     borderWidth: 1,
-    borderRadius: spacing[2],
+    borderRadius: radiusValues.box,
     backgroundColor: colors.interactive.default,
   },
   
@@ -367,7 +368,7 @@ const styles = StyleSheet.create({
     marginTop: spacing[4],
     padding: spacing[3],
     borderWidth: 1,
-    borderRadius: spacing[2],
+    borderRadius: radiusValues.box,
     backgroundColor: colors.background,
   },
   

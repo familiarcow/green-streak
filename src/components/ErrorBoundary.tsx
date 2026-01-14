@@ -1,6 +1,7 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { colors, textStyles, spacing, shadows } from '../theme';
+import { radiusValues } from '../theme/utils';
 import { Icon } from './common/Icon';
 import logger from '../utils/logger';
 
@@ -127,7 +128,7 @@ const styles = StyleSheet.create({
 
   errorCard: {
     backgroundColor: colors.surface,
-    borderRadius: spacing[3],
+    borderRadius: radiusValues.box,
     padding: spacing[6],
     maxWidth: 350,
     width: '100%',
@@ -156,7 +157,7 @@ const styles = StyleSheet.create({
 
   debugSection: {
     backgroundColor: colors.background,
-    borderRadius: spacing[2],
+    borderRadius: radiusValues.box,
     padding: spacing[3],
     marginBottom: spacing[4],
     width: '100%',
@@ -180,7 +181,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.primary,
-    borderRadius: spacing[2],
+    borderRadius: radiusValues.box,
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[3],
     gap: spacing[2],

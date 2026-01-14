@@ -20,6 +20,7 @@ import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { Icon, IconName } from '../common/Icon';
 import { BaseModal } from '../modals/BaseModal';
 import { colors, textStyles, spacing } from '../../theme';
+import { radiusValues } from '../../theme/utils';
 import { ICON_CATEGORIES } from '../../data/iconCategories';
 import { useIconSearch } from '../../hooks/useIconSearch';
 import { IconCategoryTabs } from './IconCategoryTabs';
@@ -184,7 +185,7 @@ const styles = StyleSheet.create({
   previewIcon: {
     width: 36,
     height: 36,
-    borderRadius: 8,
+    borderRadius: radiusValues.box,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -203,7 +204,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.surface,
-    borderRadius: spacing[3],
+    borderRadius: radiusValues.box,
     paddingHorizontal: spacing[3],
     paddingVertical: spacing[2],
     borderWidth: 1,

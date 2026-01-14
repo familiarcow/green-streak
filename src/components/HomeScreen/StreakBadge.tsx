@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { colors, textStyles, spacing } from '../../theme';
+import { radiusValues } from '../../theme/utils';
 
 interface StreakBadgeProps {
   currentStreak: number;
@@ -67,7 +68,7 @@ const styles = StyleSheet.create({
   badge: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: spacing[3],
+    borderRadius: radiusValues.box,
     paddingHorizontal: spacing[2],
     paddingVertical: spacing[1],
   },

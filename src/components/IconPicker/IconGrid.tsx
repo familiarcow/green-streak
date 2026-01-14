@@ -16,6 +16,7 @@ import {
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { Icon, IconName } from '../common/Icon';
 import { colors, spacing, textStyles } from '../../theme';
+import { radiusValues } from '../../theme/utils';
 
 interface IconGridProps {
   icons: IconName[];
@@ -107,7 +108,7 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     backgroundColor: colors.surface,
-    borderRadius: spacing[2],
+    borderRadius: radiusValues.box,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,

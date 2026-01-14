@@ -22,6 +22,7 @@ import { ContributionGraph } from '../components/ContributionGraph';
 import { Icon, IconName } from '../components/common/Icon';
 import { TemplateCatalogModal } from '../components/TemplateCatalog';
 import { colors, textStyles, spacing, shadows } from '../theme';
+import { radiusValues } from '../theme/utils';
 import { ContributionData } from '../types';
 import { HabitTemplate } from '../types/templates';
 import logger from '../utils/logger';
@@ -359,7 +360,7 @@ const styles = StyleSheet.create({
   graphContainer: {
     width: '100%',
     backgroundColor: colors.surface,
-    borderRadius: spacing[3],
+    borderRadius: radiusValues.box,
     padding: spacing[4],
     ...shadows.sm,
   },
@@ -385,7 +386,7 @@ const styles = StyleSheet.create({
     padding: spacing[3],
     paddingHorizontal: spacing[4],
     backgroundColor: colors.surface,
-    borderRadius: spacing[3],
+    borderRadius: radiusValues.box,
     borderWidth: 1,
     borderColor: colors.primary,
     gap: spacing[2],

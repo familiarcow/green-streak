@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTasksStore } from '../store/tasksStore';
 import { useLogsStore } from '../store/logsStore';
 import { colors, textStyles, spacing, shadows, typography } from '../theme';
+import { radiusValues } from '../theme/utils';
 import { formatDisplayDate, getWeekDayName, formatDateString, parseDateString } from '../utils/dateHelpers';
 import { DailyLogScreenProps } from '../types';
 import { Icon } from '../components/common/Icon';
@@ -335,7 +336,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: spacing[4],
     backgroundColor: colors.surface,
-    borderRadius: spacing[3],
+    borderRadius: radiusValues.box,
     ...shadows.sm,
   },
   

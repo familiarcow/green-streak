@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-nati
 import { useStreaksStore } from '../../store/streaksStore';
 import { StreakBadge } from './StreakBadge';
 import { colors, textStyles, spacing } from '../../theme';
+import { radiusValues } from '../../theme/utils';
 import { Task, TaskStreak } from '../../types';
 
 interface StreaksSectionProps {
@@ -75,7 +76,7 @@ const styles = StyleSheet.create({
   },
   streakCard: {
     backgroundColor: colors.surface,
-    borderRadius: spacing[3],
+    borderRadius: radiusValues.box,
     padding: spacing[3],
     marginHorizontal: spacing[1],
     minWidth: 120,
