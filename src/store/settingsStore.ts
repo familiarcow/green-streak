@@ -39,7 +39,6 @@ interface SettingsState extends AppSettings {
   updateGlobalReminder: (enabled: boolean, time?: string) => Promise<void>;
   setDebugLogging: (enabled: boolean) => void;
   setLogLevel: (level: AppSettings['currentLogLevel']) => void;
-  setFirstDayOfWeek: (day: AppSettings['firstDayOfWeek']) => void;
   setCalendarColor: (color: string) => void;
   exportSettings: () => string;
   resetSettings: () => Promise<void>;
@@ -91,7 +90,6 @@ const defaultSettings: AppSettings = {
   globalReminderTime: '20:00',
   debugLoggingEnabled: false,
   currentLogLevel: 'WARN',
-  firstDayOfWeek: 'sunday',
   notificationSettings: defaultNotificationSettings,
   calendarColor: DEFAULT_CALENDAR_COLOR,
 };
@@ -232,15 +230,6 @@ export const useSettingsStore = create<SettingsState>()(
           logger.info('STATE', 'Log level updated', { level });
         } catch (error) {
           logger.error('STATE', 'Failed to set log level', { error, level });
-        }
-      },
-
-      setFirstDayOfWeek: (day: AppSettings['firstDayOfWeek']) => {
-        try {
-          set({ firstDayOfWeek: day });
-          logger.info('STATE', 'First day of week updated', { day });
-        } catch (error) {
-          logger.error('STATE', 'Failed to set first day of week', { error, day });
         }
       },
 
@@ -423,7 +412,6 @@ export const useSettingsStore = create<SettingsState>()(
         globalReminderTime: state.globalReminderTime,
         debugLoggingEnabled: state.debugLoggingEnabled,
         currentLogLevel: state.currentLogLevel,
-        firstDayOfWeek: state.firstDayOfWeek,
         notificationSettings: state.notificationSettings,
         calendarColor: state.calendarColor,
       }),

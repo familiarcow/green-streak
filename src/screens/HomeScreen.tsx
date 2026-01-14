@@ -9,7 +9,6 @@ import { TodayCard, EmptyStateSection, TasksSection } from '../components/HomeSc
 import { BaseModal } from '../components/modals';
 import { useTasksStore } from '../store/tasksStore';
 import { useLogsStore } from '../store/logsStore';
-import { useSettingsStore } from '../store/settingsStore';
 import { useTaskActions, useModalManager, useDateNavigation } from '../hooks';
 import { useDateRefresh } from '../hooks/useDateRefresh';
 import { colors, textStyles, spacing } from '../theme';
@@ -42,7 +41,6 @@ export const HomeScreen: React.FC = () => {
   // Store hooks
   const { tasks, loading: tasksLoading, reorderTasks } = useTasksStore();
   const { contributionData, loading: logsLoading } = useLogsStore();
-  const { firstDayOfWeek } = useSettingsStore();
 
 
   // Handle date changes (midnight, app resume, etc)
@@ -155,7 +153,6 @@ export const HomeScreen: React.FC = () => {
                 tasks={tasks}
                 onDayPress={handleDayPress}
                 selectedDate={selectedDate}
-                firstDayOfWeek={firstDayOfWeek}
               />
             </View>
           </ErrorBoundary>

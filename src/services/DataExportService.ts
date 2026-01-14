@@ -58,7 +58,6 @@ class DataExportService {
         globalReminderTime: currentSettings.globalReminderTime,
         debugLoggingEnabled: currentSettings.debugLoggingEnabled,
         currentLogLevel: currentSettings.currentLogLevel,
-        firstDayOfWeek: currentSettings.firstDayOfWeek,
       };
 
       logger.debug('DATA', 'Data fetched for export', { 
@@ -289,11 +288,7 @@ class DataExportService {
           if (exportData.data.settings.currentLogLevel) {
             settingsStore.setLogLevel(exportData.data.settings.currentLogLevel);
           }
-          
-          if (exportData.data.settings.firstDayOfWeek) {
-            settingsStore.setFirstDayOfWeek(exportData.data.settings.firstDayOfWeek);
-          }
-          
+
           settingsImported = true;
           logger.info('DATA', 'Settings imported successfully');
         } catch (error) {

@@ -18,12 +18,6 @@ jest.mock('../../store/logsStore', () => ({
   useLogsStore: jest.fn(),
 }));
 
-jest.mock('../../store/settingsStore', () => ({
-  useSettingsStore: jest.fn(() => ({
-    firstDayOfWeek: 0,
-  })),
-}));
-
 // Mock the new hooks
 jest.mock('../../hooks', () => ({
   useTaskActions: jest.fn(() => ({

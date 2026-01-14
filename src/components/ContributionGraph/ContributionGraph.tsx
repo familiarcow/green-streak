@@ -25,7 +25,6 @@ interface ContributionGraphProps {
   tasks: Task[];
   onDayPress: (date: string) => void;
   selectedDate?: string;
-  firstDayOfWeek?: 'sunday' | 'monday';
 }
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -61,7 +60,6 @@ export const ContributionGraph: React.FC<ContributionGraphProps> = ({
   tasks,
   onDayPress,
   selectedDate,
-  firstDayOfWeek = 'sunday',
 }) => {
   const [selectedDateInternal, setSelectedDateInternal] = useState<string | undefined>(selectedDate);
   const fadeInValue = useSharedValue(0);

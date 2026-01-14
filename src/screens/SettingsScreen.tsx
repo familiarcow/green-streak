@@ -41,13 +41,11 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
     globalReminderTime,
     debugLoggingEnabled,
     currentLogLevel,
-    firstDayOfWeek,
     calendarColor,
     notificationSettings,
     updateGlobalReminder,
     setDebugLogging,
     setLogLevel,
-    setFirstDayOfWeek,
     setCalendarColor,
     exportSettings,
     resetSettings,
@@ -715,53 +713,6 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
         {/* Display Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Display</Text>
-          
-          <View style={styles.settingItem}>
-            <View style={styles.settingInfo}>
-              <Text style={styles.settingTitle}>First Day of Week</Text>
-              <Text style={styles.settingDescription}>
-                Choose which day starts the week in your habit calendar
-              </Text>
-            </View>
-            <View style={styles.dayPicker}>
-              <TouchableOpacity
-                style={[
-                  styles.dayOption,
-                  firstDayOfWeek === 'sunday' && [styles.dayOptionSelected, { backgroundColor: accentColor }],
-                ]}
-                onPress={() => setFirstDayOfWeek('sunday')}
-                accessibilityRole="button"
-                accessibilityLabel="Set first day of week to Sunday"
-                accessibilityHint="Double tap to select Sunday as the first day of the week"
-                accessibilityState={{ selected: firstDayOfWeek === 'sunday' }}
-              >
-                <Text style={[
-                  styles.dayOptionText,
-                  firstDayOfWeek === 'sunday' && styles.dayOptionTextSelected,
-                ]}>
-                  Sunday
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.dayOption,
-                  firstDayOfWeek === 'monday' && [styles.dayOptionSelected, { backgroundColor: accentColor }],
-                ]}
-                onPress={() => setFirstDayOfWeek('monday')}
-                accessibilityRole="button"
-                accessibilityLabel="Set first day of week to Monday"
-                accessibilityHint="Double tap to select Monday as the first day of the week"
-                accessibilityState={{ selected: firstDayOfWeek === 'monday' }}
-              >
-                <Text style={[
-                  styles.dayOptionText,
-                  firstDayOfWeek === 'monday' && styles.dayOptionTextSelected,
-                ]}>
-                  Monday
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
 
           {/* Calendar Color Setting */}
           <View style={styles.settingItem}>
@@ -1045,32 +996,6 @@ const styles = StyleSheet.create({
   },
   
   logLevelTextSelected: {
-    color: colors.text.inverse,
-    fontWeight: '600',
-  },
-
-  dayPicker: {
-    flexDirection: 'row',
-    gap: spacing[2],
-  },
-
-  dayOption: {
-    paddingVertical: spacing[2],
-    paddingHorizontal: spacing[3],
-    borderRadius: radiusValues.box,
-    backgroundColor: colors.interactive.default,
-  },
-
-  dayOptionSelected: {
-    backgroundColor: colors.primary,
-  },
-
-  dayOptionText: {
-    ...textStyles.bodySmall,
-    color: colors.text.primary,
-  },
-
-  dayOptionTextSelected: {
     color: colors.text.inverse,
     fontWeight: '600',
   },
