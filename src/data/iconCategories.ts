@@ -34,6 +34,7 @@ export const ICON_CATEGORY_MAP: Record<IconName, string> = {
   minus: 'other',
   x: 'other',
   moreHorizontal: 'other',
+  'grip-vertical': 'other',
   loader: 'other',
   edit: 'other',
   search: 'other',

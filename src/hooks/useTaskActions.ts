@@ -2,6 +2,7 @@ import { useCallback, useEffect } from 'react';
 import { useTasksStore } from '../store/tasksStore';
 import { useLogsStore } from '../store/logsStore';
 import { useStreaksStore } from '../store/streaksStore';
+import { useSettingsStore } from '../store/settingsStore';
 import { useToast } from '../contexts/ToastContext';
 import { getStreakMessage, isStreakMilestone, getCelebrationLevel, shouldShowStreakToast, getConfettiType } from '../utils/toastMessages';
 import { getTodayString } from '../utils/dateHelpers';
@@ -17,7 +18,26 @@ export const useTaskActions = (): UseTaskActionsReturn => {
   const { tasks, loadTasks } = useTasksStore();
   const { logTaskCompletion, getLogForTaskAndDate, loadContributionData } = useLogsStore();
   const { updateStreakOnCompletion, streaks } = useStreaksStore();
+  const { dynamicIconEnabled } = useSettingsStore();
   const { showToast } = useToast();
+
+  /**
+   * Update dynamic app icon if the feature is enabled.
+   * Fails silently to not disrupt main task operations.
+   */
+  const updateDynamicIconIfEnabled = useCallback(async () => {
+    if (!dynamicIconEnabled) return;
+
+    try {
+      const { getDynamicIconService } = await import('../services/ServiceRegistry');
+      const dynamicIconService = getDynamicIconService();
+      await dynamicIconService.updateIconFromActivity();
+      logger.debug('UI', 'Dynamic icon updated');
+    } catch (error) {
+      // Don't fail the operation if icon update fails
+      logger.warn('UI', 'Failed to update dynamic icon', { error });
+    }
+  }, [dynamicIconEnabled]);
 
   const handleQuickAdd = useCallback(async (taskId: string, date?: string) => {
     try {
@@ -89,14 +109,17 @@ export const useTaskActions = (): UseTaskActionsReturn => {
       
       // Refresh data to reflect changes - expand date range to include target date if needed
       await loadContributionData(true, targetDate);
-      
+
+      // Update dynamic app icon if enabled
+      await updateDynamicIconIfEnabled();
+
       logger.debug('UI', 'Quick add completed', { taskId, newCount });
     } catch (error) {
       console.error('Quick add error:', error);
       logger.error('UI', 'Failed to quick add task', { error, taskId });
       throw error; // Re-throw so components can handle UI feedback
     }
-  }, [logTaskCompletion, loadContributionData, updateStreakOnCompletion, streaks, tasks, showToast]);
+  }, [logTaskCompletion, loadContributionData, updateStreakOnCompletion, streaks, tasks, showToast, updateDynamicIconIfEnabled]);
 
   const handleQuickRemove = useCallback(async (taskId: string, date?: string) => {
     try {
@@ -108,17 +131,20 @@ export const useTaskActions = (): UseTaskActionsReturn => {
       if (currentCount > 0) {
         const newCount = currentCount - 1;
         await logTaskCompletion(taskId, targetDate, newCount);
-        
+
         // Refresh data to reflect changes - expand date range to include target date if needed
         await loadContributionData(true, targetDate);
-        
+
+        // Update dynamic app icon if enabled
+        await updateDynamicIconIfEnabled();
+
         logger.debug('UI', 'Quick remove completed', { taskId, newCount });
       }
     } catch (error) {
       logger.error('UI', 'Failed to quick remove task', { error, taskId });
       throw error; // Re-throw so components can handle UI feedback
     }
-  }, [logTaskCompletion, getLogForTaskAndDate, loadContributionData]);
+  }, [logTaskCompletion, getLogForTaskAndDate, loadContributionData, updateDynamicIconIfEnabled]);
 
   const refreshAllData = useCallback(async () => {
     try {

@@ -10,6 +10,7 @@ import { SoundEffectsService } from './SoundEffectsService';
 import { ConfettiService } from './ConfettiService';
 import { createNotificationOrchestrator, NotificationOrchestrator } from './NotificationOrchestrator';
 import { createNotificationManager, NotificationManager } from './NotificationManager';
+import { DynamicIconService, dynamicIconService } from './DynamicIconService';
 import { repositoryFactory } from '../database/repositories/RepositoryFactory';
 import logger from '../utils/logger';
 
@@ -82,6 +83,7 @@ export class ServiceRegistry {
       this.register('sound', soundService);
       this.register('confetti', confettiService);
       this.register('orchestrator', orchestrator);
+      this.register('dynamicIcon', dynamicIconService);
       
       logger.info('SERVICE', 'Default services registered successfully', {
         servicesCount: this.services.size
@@ -259,5 +261,6 @@ export const getToastService = (): ToastNotificationService => serviceRegistry.g
 export const getSoundService = (): SoundEffectsService => serviceRegistry.get<SoundEffectsService>('sound');
 export const getConfettiService = (): ConfettiService => serviceRegistry.get<ConfettiService>('confetti');
 export const getOrchestrator = (): NotificationOrchestrator => serviceRegistry.get<NotificationOrchestrator>('orchestrator');
+export const getDynamicIconService = (): DynamicIconService => serviceRegistry.get<DynamicIconService>('dynamicIcon');
 
 export default ServiceRegistry;

@@ -42,11 +42,13 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
     debugLoggingEnabled,
     currentLogLevel,
     calendarColor,
+    dynamicIconEnabled,
     notificationSettings,
     updateGlobalReminder,
     setDebugLogging,
     setLogLevel,
     setCalendarColor,
+    setDynamicIconEnabled,
     exportSettings,
     resetSettings,
     updateNotificationSettings,
@@ -64,6 +66,9 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
   const [notificationPermissions, setNotificationPermissions] = useState<'unknown' | 'granted' | 'denied' | 'undetermined'>('unknown');
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
   const [showCalendarColorPicker, setShowCalendarColorPicker] = useState(false);
+  const [isDynamicIconLoading, setIsDynamicIconLoading] = useState(false);
+  const [dynamicIconPlatformNote, setDynamicIconPlatformNote] = useState<string | null>(null);
+  const [isDynamicIconSupported, setIsDynamicIconSupported] = useState(true);
 
   // Get accent color for UI elements
   const accentColor = useAccentColor();
@@ -76,7 +81,26 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
 
   useEffect(() => {
     checkNotificationPermissions();
+    checkDynamicIconSupport();
   }, []);
+
+  const checkDynamicIconSupport = async () => {
+    try {
+      const { getDynamicIconService } = await import('../services/ServiceRegistry');
+      const dynamicIconService = getDynamicIconService();
+      const isSupported = dynamicIconService.isSupported();
+      const platformNote = dynamicIconService.getPlatformNotes();
+
+      setIsDynamicIconSupported(isSupported);
+      setDynamicIconPlatformNote(platformNote);
+
+      logger.debug('UI', 'Dynamic icon support checked', { isSupported, platformNote });
+    } catch (error) {
+      logger.error('UI', 'Failed to check dynamic icon support', { error });
+      setIsDynamicIconSupported(false);
+      setDynamicIconPlatformNote('Dynamic icons require a development build');
+    }
+  };
 
   const checkNotificationPermissions = async () => {
     try {
@@ -159,6 +183,38 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
         },
       ]
     );
+  };
+
+  const handleDynamicIconToggle = async (enabled: boolean) => {
+    // Check if supported before allowing toggle
+    if (!isDynamicIconSupported) {
+      Alert.alert(
+        'Feature Not Available',
+        dynamicIconPlatformNote || 'Dynamic icons require a development build (not available in Expo Go).',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
+    try {
+      setIsDynamicIconLoading(true);
+      await setDynamicIconEnabled(enabled);
+      logger.info('UI', 'Dynamic icon toggled', { enabled });
+
+      if (enabled && dynamicIconPlatformNote) {
+        // Show platform-specific note (e.g., Android restart required)
+        Alert.alert(
+          'Dynamic Icon Enabled',
+          `Your app icon will now show your last 4 days of activity.\n\n${dynamicIconPlatformNote}`,
+          [{ text: 'OK' }]
+        );
+      }
+    } catch (error) {
+      logger.error('UI', 'Failed to toggle dynamic icon', { error });
+      Alert.alert('Error', 'Failed to update app icon setting.');
+    } finally {
+      setIsDynamicIconLoading(false);
+    }
   };
 
   const handleResetOnboarding = () => {
@@ -736,6 +792,32 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
               <Icon name="chevron-right" size={16} color={colors.text.secondary} />
             </TouchableOpacity>
           </View>
+
+          {/* Dynamic App Icon Setting */}
+          <View style={styles.settingItem}>
+            <View style={styles.settingInfo}>
+              <Text style={[styles.settingTitle, !isDynamicIconSupported && styles.settingTitleDisabled]}>
+                Dynamic App Icon
+              </Text>
+              <Text style={styles.settingDescription}>
+                Show your last 4 days of activity on the app icon
+              </Text>
+              {dynamicIconPlatformNote && (
+                <Text style={[styles.settingDescription, styles.platformNote]}>
+                  {dynamicIconPlatformNote}
+                </Text>
+              )}
+            </View>
+            <Switch
+              value={dynamicIconEnabled ?? false}
+              onValueChange={handleDynamicIconToggle}
+              disabled={isDynamicIconLoading || !isDynamicIconSupported}
+              trackColor={{ false: colors.interactive.default, true: accentColor }}
+              thumbColor={colors.surface}
+              accessibilityLabel="Dynamic app icon toggle"
+              accessibilityHint={dynamicIconEnabled ? "Double tap to use default app icon" : "Double tap to enable dynamic app icon"}
+            />
+          </View>
         </View>
 
         {/* Developer Section */}
@@ -936,6 +1018,15 @@ const styles = StyleSheet.create({
     ...textStyles.bodySmall,
     color: colors.text.secondary,
     marginTop: spacing[1],
+  },
+
+  settingTitleDisabled: {
+    opacity: 0.5,
+  },
+
+  platformNote: {
+    fontStyle: 'italic',
+    color: colors.warning,
   },
   
   timeDisplay: {

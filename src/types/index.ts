@@ -79,6 +79,7 @@ export interface AppSettings {
   currentLogLevel: LogLevel;
   notificationSettings?: NotificationSettings; // Smart notification settings
   calendarColor?: string; // Custom calendar/contribution graph color (default: #22c55e)
+  dynamicIconEnabled?: boolean; // Enable dynamic app icon based on activity (default: false)
 }
 
 // Re-export notification types

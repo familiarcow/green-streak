@@ -11,6 +11,7 @@ import { useTasksStore } from '../store/tasksStore';
 import { useLogsStore } from '../store/logsStore';
 import { useTaskActions, useModalManager, useDateNavigation } from '../hooks';
 import { useDateRefresh } from '../hooks/useDateRefresh';
+import { useDynamicIconLifecycle } from '../hooks/useDynamicIconLifecycle';
 import { colors, textStyles, spacing } from '../theme';
 import { radiusValues } from '../theme/utils';
 import { getTodayString } from '../utils/dateHelpers';
@@ -41,6 +42,9 @@ export const HomeScreen: React.FC = () => {
   // Store hooks
   const { tasks, loading: tasksLoading, reorderTasks } = useTasksStore();
   const { contributionData, loading: logsLoading } = useLogsStore();
+
+  // Dynamic icon lifecycle management
+  useDynamicIconLifecycle();
 
 
   // Handle date changes (midnight, app resume, etc)

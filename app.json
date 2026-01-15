@@ -27,7 +27,28 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-sqlite"
+      "expo-sqlite",
+      [
+        "expo-dynamic-app-icon",
+        {
+          "icon_0000": { "image": "./assets/icons/icon_0000.png", "prerendered": true },
+          "icon_0001": { "image": "./assets/icons/icon_0001.png", "prerendered": true },
+          "icon_0010": { "image": "./assets/icons/icon_0010.png", "prerendered": true },
+          "icon_0011": { "image": "./assets/icons/icon_0011.png", "prerendered": true },
+          "icon_0100": { "image": "./assets/icons/icon_0100.png", "prerendered": true },
+          "icon_0101": { "image": "./assets/icons/icon_0101.png", "prerendered": true },
+          "icon_0110": { "image": "./assets/icons/icon_0110.png", "prerendered": true },
+          "icon_0111": { "image": "./assets/icons/icon_0111.png", "prerendered": true },
+          "icon_1000": { "image": "./assets/icons/icon_1000.png", "prerendered": true },
+          "icon_1001": { "image": "./assets/icons/icon_1001.png", "prerendered": true },
+          "icon_1010": { "image": "./assets/icons/icon_1010.png", "prerendered": true },
+          "icon_1011": { "image": "./assets/icons/icon_1011.png", "prerendered": true },
+          "icon_1100": { "image": "./assets/icons/icon_1100.png", "prerendered": true },
+          "icon_1101": { "image": "./assets/icons/icon_1101.png", "prerendered": true },
+          "icon_1110": { "image": "./assets/icons/icon_1110.png", "prerendered": true },
+          "icon_1111": { "image": "./assets/icons/icon_1111.png", "prerendered": true }
+        }
+      ]
     ]
   }
 }
