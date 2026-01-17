@@ -277,18 +277,32 @@ export class StreakService {
           lastCompletionDate: date
         });
       } else {
-        // Streak broken - start fresh at 1
-        logger.debug('SERVICES', 'Streak broken, starting fresh', {
+        // Gap detected - recalculate from full log history
+        // This handles backfilling that bridges previously disconnected streak segments
+        const logs = await this.logRepository.findByTask(taskId);
+        const today = formatDateString(new Date());
+
+        const calculated = calculateStreakFromLogs(
+          logs,
+          task.streakMinimumCount || 1,
+          task.streakSkipWeekends || false,
+          task.streakSkipDays || [],
+          today
+        );
+
+        logger.debug('SERVICES', 'Recalculated streak from logs', {
           taskId,
           date,
           lastCompletionDate: streak.lastCompletionDate,
-          previousStreak: streak.currentStreak
+          previousStreak: streak.currentStreak,
+          calculatedStreak: calculated.currentStreak
         });
-        
+
         updatedStreak = await this.streakRepository.update(taskId, {
-          currentStreak: 1,
-          lastCompletionDate: date,
-          streakStartDate: date
+          currentStreak: calculated.currentStreak,
+          bestStreak: Math.max(streak.bestStreak, calculated.bestStreak),
+          lastCompletionDate: calculated.lastCompletionDate,
+          streakStartDate: calculated.streakStartDate
         });
       }
 
