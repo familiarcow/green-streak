@@ -17,7 +17,6 @@
  * - Expo Go: NOT SUPPORTED. Requires development build with native code.
  */
 
-import { setAppIcon, getAppIcon } from 'expo-dynamic-app-icon';
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import { getDataService } from './ServiceRegistry';
@@ -29,6 +28,55 @@ type IconPattern = `icon_${'0' | '1'}${'0' | '1'}${'0' | '1'}${'0' | '1'}`;
 
 // Debounce delay in milliseconds
 const DEBOUNCE_DELAY = 500;
+
+// ============================================================================
+// Lazy-loaded native module
+// ============================================================================
+// The expo-dynamic-app-icon native module cannot be statically imported because
+// it crashes Expo Go before any runtime checks can run. Instead, we lazy-load
+// it on first use and gracefully fall back to no-ops if unavailable.
+
+// The library types: setAppIcon(name: string) => string | false
+// We cast null when resetting, so keep the implementation flexible
+type SetAppIconFn = (name: string) => string | false;
+type GetAppIconFn = () => string;
+
+let nativeSetAppIcon: SetAppIconFn | null = null;
+let nativeGetAppIcon: GetAppIconFn | null = null;
+let nativeModuleLoaded = false;
+let nativeModuleAvailable = false;
+
+/**
+ * Lazily load the native module. Returns true if the module is available.
+ * This is cached - subsequent calls return immediately with the cached result.
+ */
+async function ensureNativeModule(): Promise<boolean> {
+  if (nativeModuleLoaded) {
+    return nativeModuleAvailable;
+  }
+
+  nativeModuleLoaded = true;
+
+  // Don't even try to load in Expo Go
+  if (Constants.appOwnership === 'expo') {
+    logger.debug('SERVICE', 'Skipping native module load - Expo Go detected');
+    nativeModuleAvailable = false;
+    return false;
+  }
+
+  try {
+    const module = await import('expo-dynamic-app-icon');
+    nativeSetAppIcon = module.setAppIcon;
+    nativeGetAppIcon = module.getAppIcon;
+    nativeModuleAvailable = true;
+    logger.debug('SERVICE', 'Native dynamic icon module loaded successfully');
+  } catch (error) {
+    logger.debug('SERVICE', 'Native dynamic icon module not available', { error });
+    nativeModuleAvailable = false;
+  }
+
+  return nativeModuleAvailable;
+}
 
 // Cache TTL in milliseconds (1 hour)
 // After this time, the cache is considered stale and will be re-validated
@@ -62,8 +110,9 @@ class DynamicIconService {
   }
 
   /**
-   * Check if dynamic icons are supported in the current environment
+   * Check if dynamic icons are supported in the current environment (sync)
    * Returns false for Expo Go (which doesn't have native code)
+   * Note: This is a quick environment check. Use isSupportedAsync() for full check.
    */
   isSupported(): boolean {
     // Expo Go doesn't support native modules like expo-dynamic-app-icon
@@ -75,7 +124,28 @@ class DynamicIconService {
       return false;
     }
 
+    // If we've already loaded the module, also check if it's available
+    if (nativeModuleLoaded && !nativeModuleAvailable) {
+      logger.debug('SERVICE', 'Native module failed to load');
+      return false;
+    }
+
     return true;
+  }
+
+  /**
+   * Check if dynamic icons are supported (async, full check)
+   * This ensures the native module is loaded before checking availability.
+   */
+  async isSupportedAsync(): Promise<boolean> {
+    // Quick environment check first
+    if (Constants.appOwnership === 'expo') {
+      return false;
+    }
+
+    // Ensure native module is loaded and check availability
+    await ensureNativeModule();
+    return nativeModuleAvailable;
   }
 
   /**
@@ -196,6 +266,13 @@ class DynamicIconService {
     try {
       logger.debug('SERVICE', 'Updating dynamic app icon');
 
+      // Ensure native module is loaded
+      const moduleAvailable = await ensureNativeModule();
+      if (!moduleAvailable || !nativeSetAppIcon) {
+        logger.debug('SERVICE', 'Native module not available, skipping icon update');
+        return false;
+      }
+
       // Get the last 4 days
       const dates = this.getLast4Days();
       logger.debug('SERVICE', 'Fetching activity for dates', { dates });
@@ -233,8 +310,8 @@ class DynamicIconService {
 
       logger.info('SERVICE', 'Setting dynamic icon', { pattern, iconName });
 
-      // Set the icon
-      const result = setAppIcon(iconName);
+      // Set the icon using lazy-loaded native function
+      const result = nativeSetAppIcon(iconName);
 
       if (result === false) {
         logger.error('SERVICE', 'Failed to set app icon', { iconName });
@@ -266,6 +343,13 @@ class DynamicIconService {
     try {
       logger.debug('SERVICE', 'Resetting app icon to default');
 
+      // Ensure native module is loaded
+      const moduleAvailable = await ensureNativeModule();
+      if (!moduleAvailable || !nativeSetAppIcon) {
+        logger.debug('SERVICE', 'Native module not available, skipping icon reset');
+        return false;
+      }
+
       // Clear any pending debounced updates
       if (this.debounceTimer) {
         clearTimeout(this.debounceTimer);
@@ -276,7 +360,7 @@ class DynamicIconService {
 
       // Setting to null resets to default icon
       // Note: The library expects a string, but null/undefined triggers default
-      const result = setAppIcon(null as unknown as string);
+      const result = nativeSetAppIcon(null as unknown as string);
 
       if (result === false) {
         logger.error('SERVICE', 'Failed to reset app icon to default');
@@ -298,13 +382,19 @@ class DynamicIconService {
   /**
    * Get the current app icon name
    */
-  getCurrentIcon(): string {
+  async getCurrentIcon(): Promise<string> {
     if (!this.isSupported()) {
       return 'DEFAULT';
     }
 
     try {
-      return getAppIcon();
+      // Ensure native module is loaded
+      const moduleAvailable = await ensureNativeModule();
+      if (!moduleAvailable || !nativeGetAppIcon) {
+        return 'DEFAULT';
+      }
+
+      return nativeGetAppIcon();
     } catch (error) {
       logger.error('SERVICE', 'Error getting current icon', { error });
       return 'DEFAULT';
@@ -314,12 +404,12 @@ class DynamicIconService {
   /**
    * Check if a specific pattern icon is currently set
    */
-  isPatternIconSet(pattern: string): boolean {
+  async isPatternIconSet(pattern: string): Promise<boolean> {
     if (!this.isSupported()) {
       return false;
     }
 
-    const currentIcon = this.getCurrentIcon();
+    const currentIcon = await this.getCurrentIcon();
     return currentIcon === this.getIconName(pattern);
   }
 
