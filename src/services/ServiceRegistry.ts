@@ -11,6 +11,7 @@ import { ConfettiService } from './ConfettiService';
 import { createNotificationOrchestrator, NotificationOrchestrator } from './NotificationOrchestrator';
 import { createNotificationManager, NotificationManager } from './NotificationManager';
 import { DynamicIconService, dynamicIconService } from './DynamicIconService';
+import { AchievementService, createAchievementService } from './AchievementService';
 import { repositoryFactory } from '../database/repositories/RepositoryFactory';
 import logger from '../utils/logger';
 
@@ -70,7 +71,16 @@ export class ServiceRegistry {
         streakService,
         dataService
       );
-      
+
+      // Create AchievementService with dependencies
+      const achievementRepository = repositoryFactory.getAchievementRepository();
+      const achievementService = createAchievementService(
+        achievementRepository,
+        taskRepository,
+        logRepository,
+        streakRepository
+      );
+
       this.register('data', dataService);
       this.register('task', taskService);
       this.register('streak', streakService);
@@ -84,7 +94,8 @@ export class ServiceRegistry {
       this.register('confetti', confettiService);
       this.register('orchestrator', orchestrator);
       this.register('dynamicIcon', dynamicIconService);
-      
+      this.register('achievement', achievementService);
+
       logger.info('SERVICE', 'Default services registered successfully', {
         servicesCount: this.services.size
       });
@@ -262,5 +273,6 @@ export const getSoundService = (): SoundEffectsService => serviceRegistry.get<So
 export const getConfettiService = (): ConfettiService => serviceRegistry.get<ConfettiService>('confetti');
 export const getOrchestrator = (): NotificationOrchestrator => serviceRegistry.get<NotificationOrchestrator>('orchestrator');
 export const getDynamicIconService = (): DynamicIconService => serviceRegistry.get<DynamicIconService>('dynamicIcon');
+export const getAchievementService = (): AchievementService => serviceRegistry.get<AchievementService>('achievement');
 
 export default ServiceRegistry;

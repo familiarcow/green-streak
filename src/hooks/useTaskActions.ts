@@ -3,6 +3,7 @@ import { useTasksStore } from '../store/tasksStore';
 import { useLogsStore } from '../store/logsStore';
 import { useStreaksStore } from '../store/streaksStore';
 import { useSettingsStore } from '../store/settingsStore';
+import { useAchievementsStore } from '../store/achievementsStore';
 import { useToast } from '../contexts/ToastContext';
 import { getStreakMessage, isStreakMilestone, getCelebrationLevel, shouldShowStreakToast, getConfettiType } from '../utils/toastMessages';
 import { getTodayString } from '../utils/dateHelpers';
@@ -19,6 +20,7 @@ export const useTaskActions = (): UseTaskActionsReturn => {
   const { logTaskCompletion, getLogForTaskAndDate, loadContributionData } = useLogsStore();
   const { updateStreakOnCompletion, streaks } = useStreaksStore();
   const { dynamicIconEnabled } = useSettingsStore();
+  const { checkForAchievements } = useAchievementsStore();
   const { showToast } = useToast();
 
   /**
@@ -113,13 +115,35 @@ export const useTaskActions = (): UseTaskActionsReturn => {
       // Update dynamic app icon if enabled
       await updateDynamicIconIfEnabled();
 
+      // Check for achievement unlocks (task completion)
+      try {
+        await checkForAchievements({
+          trigger: 'task_completion',
+          taskId,
+          date: targetDate,
+          count: newCount,
+        });
+
+        // Check for streak-based achievements if streak changed
+        if (updatedStreak && updatedStreak.currentStreak !== previousStreak) {
+          await checkForAchievements({
+            trigger: 'streak_update',
+            taskId,
+            date: targetDate,
+          });
+        }
+      } catch (achievementError) {
+        // Don't fail the operation if achievement check fails
+        logger.warn('UI', 'Failed to check achievements', { error: achievementError });
+      }
+
       logger.debug('UI', 'Quick add completed', { taskId, newCount });
     } catch (error) {
       console.error('Quick add error:', error);
       logger.error('UI', 'Failed to quick add task', { error, taskId });
       throw error; // Re-throw so components can handle UI feedback
     }
-  }, [logTaskCompletion, loadContributionData, updateStreakOnCompletion, streaks, tasks, showToast, updateDynamicIconIfEnabled]);
+  }, [logTaskCompletion, loadContributionData, updateStreakOnCompletion, streaks, tasks, showToast, updateDynamicIconIfEnabled, checkForAchievements]);
 
   const handleQuickRemove = useCallback(async (taskId: string, date?: string) => {
     try {

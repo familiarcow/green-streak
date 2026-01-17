@@ -16,6 +16,7 @@ import { TemplateCatalogModal } from '../components/TemplateCatalog';
 import { IconPickerModal } from '../components/IconPicker';
 import { ColorPickerModal } from '../components/ColorPicker';
 import { useTasksStore } from '../store/tasksStore';
+import { useAchievementsStore } from '../store/achievementsStore';
 import { useAccentColor } from '../hooks';
 import { colors, textStyles, spacing, shadows } from '../theme';
 import { radiusValues } from '../theme/utils';
@@ -48,6 +49,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
   const [showIconPicker, setShowIconPicker] = useState(false);
 
   const { createTask, updateTask, deleteTask } = useTasksStore();
+  const { checkForAchievements } = useAchievementsStore();
   const accentColor = useAccentColor();
   const isEditing = !!existingTask;
 
@@ -157,10 +159,35 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
         logger.debug('UI', 'Updating existing task', { id: existingTask.id, name });
         await updateTask(existingTask.id, taskData);
         logger.info('UI', 'Task updated successfully', { id: existingTask.id, name });
+
+        // Check for customize achievement (if icon or color changed)
+        const wasCustomized =
+          existingTask.icon !== selectedIcon ||
+          existingTask.color !== selectedColor;
+        if (wasCustomized) {
+          try {
+            await checkForAchievements({
+              trigger: 'task_customized',
+              taskId: existingTask.id,
+            });
+          } catch (error) {
+            logger.warn('UI', 'Failed to check achievements after customization', { error });
+          }
+        }
       } else {
         logger.debug('UI', 'Creating new task', { name, description, selectedColor });
-        await createTask(taskData);
+        const newTask = await createTask(taskData);
         logger.info('UI', 'Task created successfully', { name });
+
+        // Check for task creation achievements
+        try {
+          await checkForAchievements({
+            trigger: 'task_created',
+            taskId: newTask.id,
+          });
+        } catch (error) {
+          logger.warn('UI', 'Failed to check achievements after task creation', { error });
+        }
       }
 
       onTaskAdded();

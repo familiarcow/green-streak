@@ -2,6 +2,7 @@ import * as SQLite from 'expo-sqlite';
 import { CREATE_TABLES, DEFAULT_SETTINGS } from './schema';
 import { addStreaksSupport } from './migrations/addStreaksSupport';
 import { addSortOrder } from './migrations/addSortOrder';
+import { addAchievementsSupport } from './migrations/addAchievementsSupport';
 import logger from '../utils/logger';
 
 let database: SQLite.SQLiteDatabase;
@@ -21,6 +22,7 @@ export const initializeDatabase = async (): Promise<SQLite.SQLiteDatabase> => {
     // Run migrations
     await addStreaksSupport(database);
     await addSortOrder(database);
+    await addAchievementsSupport(database);
 
     logger.info('DATA', 'Database initialized successfully');
     

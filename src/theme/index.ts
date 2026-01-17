@@ -22,5 +22,6 @@ export { colors, typography, textStyles, spacing, borderRadius, shadows, themeUt
 export * from './colors';
 export * from './utils';
 export * from './glass';
+export * from './achievements';
 
 export default theme;

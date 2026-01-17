@@ -15,6 +15,8 @@ import { getStreakService, getDateService } from './src/services';
 import { setSystemDate } from './src/store/systemStore';
 import { ToastProvider } from './src/contexts/ToastContext';
 import { ToastContainer } from './src/components/Toast';
+import { AchievementUnlockedModal } from './src/components/modals/AchievementUnlockedModal';
+import { useAchievements } from './src/hooks/useAchievements';
 import HomeScreen from './src/screens/HomeScreen';
 import OnboardingScreen from './src/screens/OnboardingScreen';
 import EditTaskModal from './src/screens/EditTaskModal';
@@ -206,10 +208,26 @@ export default function App() {
         <ToastProvider>
           <HomeScreen />
           <ToastContainer />
+          <AchievementModalContainer />
           <StatusBar style="dark" backgroundColor={colors.background} />
         </ToastProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
+  );
+}
+
+/**
+ * Container component for achievement unlock modal
+ * Manages the achievement queue and displays unlock celebrations
+ */
+function AchievementModalContainer() {
+  const { pendingUnlock, dismissPendingUnlock } = useAchievements();
+
+  return (
+    <AchievementUnlockedModal
+      event={pendingUnlock}
+      onDismiss={dismissPendingUnlock}
+    />
   );
 }
 

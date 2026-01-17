@@ -85,6 +85,9 @@ export interface AppSettings {
 // Re-export notification types
 export * from './notifications';
 
+// Re-export achievement types
+export * from './achievements';
+
 export interface SeedConfig {
   tasks: number;
   days: number;
