@@ -4,10 +4,10 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSpring,
+  withTiming,
   withDelay,
   FadeIn,
   FadeInDown,
-  FadeOut,
 } from 'react-native-reanimated';
 import { ContributionData, Task } from '../../types';
 import { colors, textStyles, spacing, shadows } from '../../theme';
@@ -74,6 +74,23 @@ export const LiveCalendar: React.FC<LiveCalendarProps> = ({
   const todayString = useDynamicToday();
   const [containerWidth, setContainerWidth] = useState(0);
   const [isFilterExpanded, setIsFilterExpanded] = useState(false);
+
+  // Animated chevron rotation
+  const chevronRotation = useSharedValue(0);
+
+  // Animated filter tray
+  const filterHeight = useSharedValue(0);
+  const filterOpacity = useSharedValue(0);
+
+  const chevronAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${chevronRotation.value}deg` }],
+  }));
+
+  const filterTrayStyle = useAnimatedStyle(() => ({
+    height: filterHeight.value,
+    opacity: filterOpacity.value,
+    overflow: 'hidden' as const,
+  }));
 
   // Get calendar color palette from settings
   const calendarPalette = useCalendarColors();
@@ -220,10 +237,19 @@ export const LiveCalendar: React.FC<LiveCalendarProps> = ({
     onDateOffsetChange?.(0);
   }, [viewType, onDateOffsetChange]);
 
+  // Filter tray height constant
+  const FILTER_TRAY_HEIGHT = 40;
+
   // Filter and navigation handlers
   const handleToggleFilter = useCallback(() => {
-    setIsFilterExpanded(prev => !prev);
-  }, []);
+    setIsFilterExpanded(prev => {
+      const newExpanded = !prev;
+      chevronRotation.value = withTiming(newExpanded ? 180 : 0, { duration: 150 });
+      filterHeight.value = withTiming(newExpanded ? FILTER_TRAY_HEIGHT : 0, { duration: 150 });
+      filterOpacity.value = withTiming(newExpanded ? 1 : 0, { duration: newExpanded ? 150 : 100 });
+      return newExpanded;
+    });
+  }, [chevronRotation, filterHeight, filterOpacity]);
 
   const handleNavigateBackward = useCallback(() => {
     onDateOffsetChange?.(dateOffset + 1);
@@ -393,27 +419,18 @@ export const LiveCalendar: React.FC<LiveCalendarProps> = ({
           accessibilityHint="Double tap to show filtering and navigation options"
           accessibilityState={{ expanded: isFilterExpanded }}
         >
-          <Animated.View
-            style={{
-              transform: [{ rotate: isFilterExpanded ? '180deg' : '0deg' }]
-            }}
-          >
-            <Icon 
-              name="chevron-down" 
-              size={14} 
-              color={colors.text.tertiary} 
+          <Animated.View style={chevronAnimatedStyle}>
+            <Icon
+              name="chevron-down"
+              size={18}
+              color={colors.text.tertiary}
             />
           </Animated.View>
         </TouchableOpacity>
       </View>
       
       {/* Collapsible Filter Section */}
-      {isFilterExpanded && (
-        <Animated.View 
-          style={styles.filterSection}
-          entering={FadeIn.duration(200)}
-          exiting={FadeOut.duration(200)}
-        >
+      <Animated.View style={[styles.filterSection, filterTrayStyle]}>
           <View style={styles.filterContainer}>
             <TouchableOpacity
               style={styles.navArrow}
@@ -488,8 +505,7 @@ export const LiveCalendar: React.FC<LiveCalendarProps> = ({
               </TouchableOpacity>
             )}
           </View>
-        </Animated.View>
-      )}
+      </Animated.View>
     </View>
   );
 };
@@ -497,7 +513,9 @@ export const LiveCalendar: React.FC<LiveCalendarProps> = ({
 const styles = StyleSheet.create({
   container: {
     backgroundColor: colors.surface,
-    padding: spacing[4],
+    paddingTop: spacing[4],
+    paddingHorizontal: spacing[4],
+    paddingBottom: spacing[2],
     borderRadius: radiusValues.xl,
     marginHorizontal: spacing[4],
     marginBottom: spacing[6],
@@ -578,7 +596,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginHorizontal: spacing[2],
-    paddingBottom: spacing[3],
   },
 
   navArrow: {
