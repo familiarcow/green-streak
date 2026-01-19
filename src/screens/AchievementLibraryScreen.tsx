@@ -1,7 +1,9 @@
 import React, { useEffect, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useAchievementsStore } from '../store/achievementsStore';
+import { Icon } from '../components/common/Icon';
 import { colors, textStyles, spacing } from '../theme';
+import { radiusValues } from '../theme/utils';
 import { RARITY_COLORS, CATEGORY_NAMES } from '../theme/achievements';
 import { AchievementCategory, AchievementWithStatus } from '../types/achievements';
 
@@ -119,10 +121,28 @@ export const AchievementLibraryScreen: React.FC<AchievementLibraryScreenProps> =
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Achievements</Text>
-        <Text style={styles.statsText}>
-          {displayStats.unlocked}/{displayStats.total} Unlocked
-        </Text>
+        <View style={styles.headerRight}>
+          <Text style={styles.statsText}>
+            {displayStats.unlocked}/{displayStats.total}
+          </Text>
+          <TouchableOpacity
+            style={styles.closeButton}
+            onPress={onClose}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Close"
+          >
+            <Icon name="x" size={20} color={colors.text.secondary} />
+          </TouchableOpacity>
+        </View>
       </View>
+
+      {/* Loading State */}
+      {loading && achievements.length === 0 && (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      )}
 
       {/* Achievement List */}
       <ScrollView
@@ -172,9 +192,25 @@ const styles = StyleSheet.create({
     ...textStyles.h2,
     color: colors.text.primary,
   },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   statsText: {
     ...textStyles.body,
     color: colors.text.secondary,
+  },
+  closeButton: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: spacing[2],
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   scrollView: {
     flex: 1,
@@ -203,7 +239,7 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
     backgroundColor: colors.surface,
-    borderRadius: 12,
+    borderRadius: radiusValues.xl,
     padding: spacing[3],
     marginBottom: spacing[2],
     alignItems: 'center',
