@@ -19,6 +19,7 @@ import EditTaskModal from './EditTaskModal';
 import DailyLogScreen from './DailyLogScreen';
 import SettingsScreen from './SettingsScreen';
 import TaskAnalyticsScreen from './TaskAnalyticsScreen';
+import AchievementLibraryScreen from './AchievementLibraryScreen';
 import { Task } from '../types';
 import logger from '../utils/logger';
 
@@ -34,6 +35,7 @@ export const HomeScreen: React.FC = () => {
     openDailyLog,
     openSettings,
     openTaskAnalytics,
+    openAchievementLibrary,
     closeModal,
     getAnimationStyle,
     animations,
@@ -138,15 +140,26 @@ export const HomeScreen: React.FC = () => {
               <View style={styles.greenBox} />
               <Text style={styles.title}>Green Streak</Text>
             </View>
-            <TouchableOpacity
-              style={styles.settingsButton}
-              onPress={openSettings}
-              accessible={true}
-              accessibilityRole="button"
-              accessibilityLabel="Settings"
-            >
-              <Icon name="settings" size={20} color={colors.text.secondary} />
-            </TouchableOpacity>
+            <View style={styles.headerActions}>
+              <TouchableOpacity
+                style={styles.headerButton}
+                onPress={openAchievementLibrary}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel="Achievements"
+              >
+                <Icon name="trophy" size={20} color={colors.text.secondary} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.headerButton}
+                onPress={openSettings}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel="Settings"
+              >
+                <Icon name="settings" size={20} color={colors.text.secondary} />
+              </TouchableOpacity>
+            </View>
           </View>
 
           {/* Contribution Graph */}
@@ -261,7 +274,7 @@ export const HomeScreen: React.FC = () => {
           isVisible={activeModal === 'taskAnalytics'}
           onClose={closeModal}
         >
-          <ScreenErrorBoundary 
+          <ScreenErrorBoundary
             screenName="Task Analytics"
             onClose={closeModal}
             onRetry={() => {
@@ -279,6 +292,23 @@ export const HomeScreen: React.FC = () => {
                 onClose={closeModal}
               />
             )}
+          </ScreenErrorBoundary>
+        </BaseModal>
+
+        {/* Achievement Library Modal */}
+        <BaseModal
+          isVisible={activeModal === 'achievementLibrary'}
+          onClose={closeModal}
+        >
+          <ScreenErrorBoundary
+            screenName="Achievements"
+            onClose={closeModal}
+            onRetry={() => {
+              closeModal();
+              setTimeout(() => openAchievementLibrary(), 100);
+            }}
+          >
+            <AchievementLibraryScreen onClose={closeModal} />
           </ScreenErrorBoundary>
         </BaseModal>
       </SafeAreaView>
@@ -299,9 +329,9 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    padding: spacing[4],
-    position: 'relative',
+    justifyContent: 'space-between',
+    paddingVertical: spacing[4],
+    paddingHorizontal: spacing[4],
   },
 
   titleContainer: {
@@ -322,9 +352,12 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
   },
 
-  settingsButton: {
-    position: 'absolute',
-    right: spacing[4],
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  headerButton: {
     width: 44,
     height: 44,
     alignItems: 'center',
