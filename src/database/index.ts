@@ -3,6 +3,7 @@ import { CREATE_TABLES, DEFAULT_SETTINGS } from './schema';
 import { addStreaksSupport } from './migrations/addStreaksSupport';
 import { addSortOrder } from './migrations/addSortOrder';
 import { addAchievementsSupport } from './migrations/addAchievementsSupport';
+import { addReminderText } from './migrations/addReminderText';
 import logger from '../utils/logger';
 
 let database: SQLite.SQLiteDatabase;
@@ -23,6 +24,7 @@ export const initializeDatabase = async (): Promise<SQLite.SQLiteDatabase> => {
     await addStreaksSupport(database);
     await addSortOrder(database);
     await addAchievementsSupport(database);
+    await addReminderText(database);
 
     logger.info('DATA', 'Database initialized successfully');
     

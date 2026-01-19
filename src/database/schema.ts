@@ -12,6 +12,7 @@ export const CREATE_TABLES = `
     reminder_enabled BOOLEAN DEFAULT FALSE,
     reminder_time TEXT,
     reminder_frequency TEXT,
+    reminder_text TEXT,
     streak_enabled BOOLEAN DEFAULT TRUE,
     streak_skip_weekends BOOLEAN DEFAULT FALSE,
     streak_skip_days TEXT,

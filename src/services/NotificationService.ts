@@ -2,6 +2,7 @@ import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import { Task } from '../types';
 import logger from '../utils/logger';
+import { getIconEmoji } from '../utils/iconEmoji';
 
 export interface NotificationPermissions {
   status: 'granted' | 'denied' | 'undetermined';
@@ -269,10 +270,8 @@ class NotificationService {
 
       const expoId = await Notifications.scheduleNotificationAsync({
         content: {
-          title: `${task.icon} ${task.name}`,
-          body: task.description 
-            ? `Time for ${task.name.toLowerCase()}: ${task.description}`
-            : `Don't forget your ${task.name.toLowerCase()} habit!`,
+          title: `${getIconEmoji(task.icon ?? 'checkCircle')} ${task.name}`,
+          body: task.reminderText ?? `Time for your ${task.name.toLowerCase()} habit!`,
           data: {
             type: 'task_reminder',
             taskId: task.id,

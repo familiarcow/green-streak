@@ -37,6 +37,7 @@ export interface Task {
   reminderEnabled: boolean;
   reminderTime?: string;
   reminderFrequency?: 'daily' | 'weekly';
+  reminderText?: string; // Custom notification body text
   streakEnabled?: boolean;
   streakSkipWeekends?: boolean;
   streakSkipDays?: string[]; // Array of days to skip (e.g., ['2024-01-01', '2024-12-25'])
