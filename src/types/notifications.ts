@@ -1,8 +1,13 @@
 /**
  * Notification System Type Definitions
- * 
+ *
  * Comprehensive type definitions for the smart notification system
  */
+
+// Utility type for deeply partial objects (allows partial nested updates)
+export type DeepPartial<T> = {
+  [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P];
+};
 
 // Modular notification settings to prevent state explosion
 export interface NotificationSettings {

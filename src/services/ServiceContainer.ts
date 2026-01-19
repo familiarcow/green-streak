@@ -11,7 +11,7 @@ import logger from '../utils/logger';
  * Service registration information
  */
 interface ServiceRegistration {
-  factory: () => any;
+  factory: (...args: any[]) => any;
   instance?: any;
   singleton: boolean;
   dependencies?: string[];

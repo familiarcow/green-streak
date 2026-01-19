@@ -37,8 +37,8 @@ class DevSeedUtility {
     return Math.floor(this.rng() * (max - min + 1)) + min;
   }
 
-  private generateRandomTasks(count: number): Omit<Task, 'id' | 'createdAt'>[] {
-    const tasks: Omit<Task, 'id' | 'createdAt'>[] = [];
+  private generateRandomTasks(count: number): Omit<Task, 'id' | 'createdAt' | 'sortOrder'>[] {
+    const tasks: Omit<Task, 'id' | 'createdAt' | 'sortOrder'>[] = [];
     const usedNames = new Set<string>();
 
     for (let i = 0; i < count; i++) {

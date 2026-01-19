@@ -30,10 +30,14 @@ jest.mock('../NotificationService', () => ({
 const createMockTaskRepository = (): jest.Mocked<ITaskRepository> => ({
   getAll: jest.fn(),
   getById: jest.fn(),
+  getByIds: jest.fn(),
   create: jest.fn(),
   update: jest.fn(),
   archive: jest.fn(),
   delete: jest.fn(),
+  updateSortOrders: jest.fn(),
+  findAll: jest.fn(),
+  findById: jest.fn(),
 });
 
 // Create mock validation service
@@ -57,6 +61,7 @@ const mockTask: Task = {
   reminderEnabled: true,
   reminderTime: '09:00',
   reminderFrequency: 'daily',
+  sortOrder: 0,
 };
 
 const mockTaskData = {

@@ -1162,22 +1162,22 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.08)',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.15)',
-    backdropFilter: 'blur(10px)',
+    // Note: backdropFilter not supported in React Native
     ...shadows.md,
   },
-  
+
   glassCardSubtle: {
     backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.1)',
-    backdropFilter: 'blur(8px)',
+    // Note: backdropFilter not supported in React Native
   },
-  
+
   glassButton: {
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.2)',
-    backdropFilter: 'blur(5px)',
+    // Note: backdropFilter not supported in React Native
   },
   
   fadeIn: {

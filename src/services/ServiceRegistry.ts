@@ -266,7 +266,7 @@ export const getStreakService = (): StreakService => serviceRegistry.get<StreakS
 export const getDateService = (): DateService => serviceRegistry.get<DateService>('date');
 export const getAnalyticsService = (): TaskAnalyticsService => serviceRegistry.get<TaskAnalyticsService>('analytics');
 export const getValidationService = (): ValidationService => serviceRegistry.get<ValidationService>('validation');
-export const getNotificationService = () => serviceRegistry.get('notification');
+export const getNotificationService = (): typeof notificationService => serviceRegistry.get<typeof notificationService>('notification');
 export const getNotificationManager = (): NotificationManager => serviceRegistry.get<NotificationManager>('notificationManager');
 export const getToastService = (): ToastNotificationService => serviceRegistry.get<ToastNotificationService>('toast');
 export const getSoundService = (): SoundEffectsService => serviceRegistry.get<SoundEffectsService>('sound');

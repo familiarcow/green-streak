@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { AppSettings, NotificationSettings } from '../types';
+import { AppSettings, NotificationSettings, DeepPartial } from '../types';
 import { getNotificationService, getNotificationManager } from '../services';
 import logger from '../utils/logger';
 
@@ -45,7 +45,7 @@ interface SettingsState extends AppSettings {
   resetSettings: () => Promise<void>;
 
   // New notification settings actions
-  updateNotificationSettings: (settings: Partial<NotificationSettings>) => Promise<void>;
+  updateNotificationSettings: (settings: DeepPartial<NotificationSettings>) => Promise<void>;
   updateDailyNotification: (settings: Partial<NotificationSettings['daily']>) => Promise<void>;
   updateStreakProtection: (settings: Partial<NotificationSettings['streaks']>) => Promise<void>;
   syncNotifications: () => Promise<void>;
@@ -315,15 +315,23 @@ export const useSettingsStore = create<SettingsState>()(
         }
       },
 
-      updateNotificationSettings: async (settings: Partial<NotificationSettings>) => {
+      updateNotificationSettings: async (settings: DeepPartial<NotificationSettings>) => {
         try {
           logger.debug('STATE', 'Updating notification settings', { settings });
-          
+
           const currentState = get();
           const currentNotificationSettings = currentState.notificationSettings || defaultNotificationSettings;
-          
+
+          // Deep merge settings to handle nested partial updates
           const newNotificationSettings: NotificationSettings = {
-            global: { ...currentNotificationSettings.global, ...settings.global },
+            global: {
+              ...currentNotificationSettings.global,
+              ...settings.global,
+              quietHours: {
+                ...currentNotificationSettings.global.quietHours,
+                ...settings.global?.quietHours,
+              },
+            },
             daily: { ...currentNotificationSettings.daily, ...settings.daily },
             streaks: { ...currentNotificationSettings.streaks, ...settings.streaks },
             achievements: { ...currentNotificationSettings.achievements, ...settings.achievements },

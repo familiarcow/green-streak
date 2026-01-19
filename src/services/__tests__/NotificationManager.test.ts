@@ -92,6 +92,7 @@ const mockTasks: Task[] = [
     createdAt: '2024-01-01',
     reminderEnabled: true,
     reminderTime: '09:00',
+    sortOrder: 0,
   },
   {
     id: 'task-2',
@@ -101,26 +102,31 @@ const mockTasks: Task[] = [
     isMultiCompletion: false,
     createdAt: '2024-01-01',
     reminderEnabled: false,
+    sortOrder: 1,
   },
 ];
 
 const mockStreaks = [
   {
+    id: 'streak-1',
     taskId: 'task-1',
     currentStreak: 10,
     bestStreak: 15,
     lastCompletionDate: '2024-01-14', // yesterday
+    updatedAt: '2024-01-14T12:00:00.000Z',
   },
   {
+    id: 'streak-2',
     taskId: 'task-2',
     currentStreak: 3,
     bestStreak: 5,
     lastCompletionDate: '2024-01-14',
+    updatedAt: '2024-01-14T12:00:00.000Z',
   },
 ];
 
 const mockLogs = [
-  { taskId: 'task-1', count: 1, date: '2024-01-15' },
+  { id: 'log-1', taskId: 'task-1', count: 1, date: '2024-01-15', updatedAt: '2024-01-15T12:00:00.000Z' },
 ];
 
 const defaultSettings: NotificationSettings = {
@@ -279,7 +285,7 @@ describe('NotificationManager', () => {
 
     it('should not schedule for streaks below threshold', async () => {
       mockStreakService.getAllStreaks.mockResolvedValue([
-        { taskId: 'task-1', currentStreak: 1, bestStreak: 2, lastCompletionDate: '2024-01-14' },
+        { id: 'streak-test', taskId: 'task-1', currentStreak: 1, bestStreak: 2, lastCompletionDate: '2024-01-14', updatedAt: '2024-01-14T12:00:00.000Z' },
       ]);
       mockDataService.getLogsInDateRange.mockResolvedValue([]);
 
@@ -296,7 +302,7 @@ describe('NotificationManager', () => {
     it('should skip streaks already completed today', async () => {
       // task-1 completed today
       mockDataService.getLogsInDateRange.mockResolvedValue([
-        { taskId: 'task-1', count: 1, date: '2024-01-15' },
+        { id: 'log-test', taskId: 'task-1', count: 1, date: '2024-01-15', updatedAt: '2024-01-15T12:00:00.000Z' },
       ]);
 
       await notificationManager.scheduleStreakProtection(defaultSettings);
@@ -374,8 +380,8 @@ describe('NotificationManager', () => {
     it('should detect perfect day', async () => {
       // All tasks completed
       mockDataService.getLogsInDateRange.mockResolvedValue([
-        { taskId: 'task-1', count: 1, date: '2024-01-15' },
-        { taskId: 'task-2', count: 1, date: '2024-01-15' },
+        { id: 'log-1', taskId: 'task-1', count: 1, date: '2024-01-15', updatedAt: '2024-01-15T12:00:00.000Z' },
+        { id: 'log-2', taskId: 'task-2', count: 1, date: '2024-01-15', updatedAt: '2024-01-15T12:00:00.000Z' },
       ]);
 
       const activity = await notificationManager.checkTodayActivity();
@@ -434,7 +440,7 @@ describe('NotificationManager', () => {
     it('should exclude completed streaks', async () => {
       // task-1 is completed
       mockDataService.getLogsInDateRange.mockResolvedValue([
-        { taskId: 'task-1', count: 1, date: '2024-01-15' },
+        { id: 'log-1', taskId: 'task-1', count: 1, date: '2024-01-15', updatedAt: '2024-01-15T12:00:00.000Z' },
       ]);
 
       const atRisk = await notificationManager.getStreaksAtRisk(defaultSettings);
@@ -444,7 +450,7 @@ describe('NotificationManager', () => {
 
     it('should respect protection threshold', async () => {
       mockStreakService.getAllStreaks.mockResolvedValue([
-        { taskId: 'task-1', currentStreak: 2, bestStreak: 5, lastCompletionDate: '2024-01-14' },
+        { id: 'streak-1', taskId: 'task-1', currentStreak: 2, bestStreak: 5, lastCompletionDate: '2024-01-14', updatedAt: '2024-01-14T12:00:00.000Z' },
       ]);
       mockDataService.getLogsInDateRange.mockResolvedValue([]);
 

@@ -24,6 +24,7 @@ export const createMockTask = (overrides: Partial<Task> = {}): Task => ({
   isMultiCompletion: false,
   reminderEnabled: false,
   createdAt: '2024-01-01T00:00:00.000Z',
+  sortOrder: 0,
   ...overrides,
 });
 

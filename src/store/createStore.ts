@@ -8,6 +8,10 @@
 import { create } from 'zustand';
 import { Task } from '../types';
 import { ServiceContainer } from '../services/ServiceContainer';
+import { DataService } from '../services/DataService';
+import { TaskService } from '../services/TaskService';
+import NotificationService from '../services/NotificationService';
+import { getAdaptiveRange, formatDate } from '../utils/dateHelpers';
 import logger from '../utils/logger';
 
 /**
@@ -69,7 +73,7 @@ export function createTasksStore(serviceContainer: ServiceContainer) {
         logger.debug('STORE', 'Loading tasks via service layer');
         
         // Get service from container instead of direct import
-        const dataService = serviceContainer.resolve('dataService');
+        const dataService = serviceContainer.resolve<DataService>('dataService');
         const tasks = await dataService.getAllTasks();
 
         set({ tasks, loading: false });
@@ -91,8 +95,8 @@ export function createTasksStore(serviceContainer: ServiceContainer) {
       try {
         logger.debug('STORE', 'Creating task via service layer', { name: taskData.name });
 
-        const taskService = serviceContainer.resolve('taskService');
-        const task = await taskService.createTaskWithValidation(taskData);
+        const taskService = serviceContainer.resolve<TaskService>('taskService');
+        const task = await taskService.createTask(taskData);
 
         // Update local state
         set(state => ({
@@ -120,8 +124,8 @@ export function createTasksStore(serviceContainer: ServiceContainer) {
       try {
         logger.debug('STORE', 'Updating task via service layer', { taskId: id });
 
-        const taskService = serviceContainer.resolve('taskService');
-        const updatedTask = await taskService.updateTaskWithValidation(id, updates);
+        const taskService = serviceContainer.resolve<TaskService>('taskService');
+        const updatedTask = await taskService.updateTask(id, updates);
 
         // Update local state
         set(state => ({
@@ -147,8 +151,8 @@ export function createTasksStore(serviceContainer: ServiceContainer) {
       try {
         logger.debug('STORE', 'Archiving task via service layer', { taskId: id });
 
-        const taskService = serviceContainer.resolve('taskService');
-        await taskService.archiveTaskWithCleanup(id);
+        const taskService = serviceContainer.resolve<TaskService>('taskService');
+        await taskService.archiveTask(id);
 
         // Update local state
         set(state => ({
@@ -171,8 +175,8 @@ export function createTasksStore(serviceContainer: ServiceContainer) {
       try {
         logger.debug('STORE', 'Deleting task via service layer', { taskId: id });
 
-        const taskService = serviceContainer.resolve('taskService');
-        await taskService.deleteTaskWithCleanup(id);
+        const taskService = serviceContainer.resolve<TaskService>('taskService');
+        await taskService.deleteTask(id);
 
         // Update local state
         set(state => ({
@@ -198,10 +202,10 @@ export function createTasksStore(serviceContainer: ServiceContainer) {
       try {
         logger.debug('STORE', 'Syncing notifications via service layer');
 
-        const notificationService = serviceContainer.resolve('notificationService');
+        const notificationService = serviceContainer.resolve<typeof NotificationService>('notificationService');
         const { tasks } = get();
         
-        await notificationService.syncTaskNotifications(tasks);
+        await notificationService.syncTaskReminders(tasks);
         logger.debug('STORE', 'Notifications synced via service layer');
       } catch (error) {
         logger.error('STORE', 'Failed to sync notifications via service layer', { 
@@ -222,14 +226,16 @@ export function createLogsStore(serviceContainer: ServiceContainer) {
     loading: false,
     error: null,
 
-    loadContributionData: async (forceRefresh = false) => {
+    loadContributionData: async (_forceRefresh = false) => {
       set({ loading: true, error: null });
 
       try {
-        logger.debug('STORE', 'Loading contribution data via service layer', { forceRefresh });
+        logger.debug('STORE', 'Loading contribution data via service layer');
 
-        const dataService = serviceContainer.resolve('dataService');
-        const contributionData = await dataService.getContributionDataWithRange(forceRefresh);
+        const dataService = serviceContainer.resolve<DataService>('dataService');
+        // Generate date range for contribution data (default 35 days adaptive range)
+        const dates = getAdaptiveRange(35).map(d => formatDate(d));
+        const contributionData = await dataService.getContributionData(dates);
 
         set({ contributionData, loading: false });
         logger.info('STORE', 'Contribution data loaded via service layer', { 
@@ -249,7 +255,7 @@ export function createLogsStore(serviceContainer: ServiceContainer) {
       try {
         logger.debug('STORE', 'Updating task log via service layer', { taskId, date, count });
 
-        const dataService = serviceContainer.resolve('dataService');
+        const dataService = serviceContainer.resolve<DataService>('dataService');
         await dataService.logTaskCompletion(taskId, date, count);
 
         logger.info('STORE', 'Task log updated via service layer', { taskId, date, count });
@@ -302,13 +308,13 @@ export function createStores(serviceContainer: ServiceContainer) {
 export function createStore<T extends keyof typeof storeFactories>(
   storeName: T,
   serviceContainer: ServiceContainer
-): ReturnType<typeof storeFactories[T]> {
+): ReturnType<(typeof storeFactories)[T]> {
   logger.debug('STORE', 'Creating individual store', { storeName });
-  
+
   const factory = storeFactories[storeName];
   if (!factory) {
     throw new Error(`Unknown store: ${storeName}`);
   }
-  
-  return factory(serviceContainer);
+
+  return factory(serviceContainer) as ReturnType<(typeof storeFactories)[T]>;
 }

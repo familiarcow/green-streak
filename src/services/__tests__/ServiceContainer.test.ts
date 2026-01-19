@@ -52,11 +52,11 @@ describe('ServiceContainer', () => {
     it('should overwrite existing service registration', () => {
       const factory1 = () => ({ value: 'first' });
       const factory2 = () => ({ value: 'second' });
-      
+
       container.registerSingleton('testService', factory1);
       container.registerSingleton('testService', factory2);
-      
-      const resolved = container.resolve('testService');
+
+      const resolved = container.resolve<{ value: string }>('testService');
       expect(resolved.value).toBe('second');
     });
 
@@ -121,9 +121,9 @@ describe('ServiceContainer', () => {
         () => ({ type: 'service', deps: ['resolved'] }),
         ['database', 'logger']
       );
-      
-      const service = container.resolve('service');
-      
+
+      const service = container.resolve<{ type: string }>('service');
+
       expect(service.type).toBe('service');
     });
 
@@ -285,9 +285,9 @@ describe('ServiceContainer', () => {
       container.registerSingleton('level2', () => ({ level: 2 }), ['level1']);
       container.registerSingleton('level3', () => ({ level: 3 }), ['level2']);
       container.registerSingleton('level4', () => ({ level: 4 }), ['level3']);
-      
-      const result = container.resolve('level4');
-      
+
+      const result = container.resolve<{ level: number }>('level4');
+
       expect(result.level).toBe(4);
     });
 
@@ -300,24 +300,24 @@ describe('ServiceContainer', () => {
         () => ({ type: 'main' }),
         ['dep1', 'dep2', 'dep3']
       );
-      
-      const result = container.resolve('service');
-      
+
+      const result = container.resolve<{ type: string }>('service');
+
       expect(result.type).toBe('main');
     });
 
     it('should maintain separate instances across containers', () => {
       const container2 = new ServiceContainer();
-      
+
       container.registerSingleton('shared', () => ({ container: 1 }));
       container2.registerSingleton('shared', () => ({ container: 2 }));
-      
-      const result1 = container.resolve('shared');
-      const result2 = container2.resolve('shared');
-      
+
+      const result1 = container.resolve<{ container: number }>('shared');
+      const result2 = container2.resolve<{ container: number }>('shared');
+
       expect(result1.container).toBe(1);
       expect(result2.container).toBe(2);
-      
+
       container2.clear();
     });
   });
