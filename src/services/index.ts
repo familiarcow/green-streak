@@ -1,6 +1,6 @@
 /**
  * Services Module
- * 
+ *
  * Centralized exports for all application services and service management utilities.
  * Provides both individual service access and service registry functionality.
  */
@@ -38,7 +38,8 @@ export {
   getSoundService,
   getConfettiService,
   getOrchestrator,
-  getAchievementService
+  getAchievementService,
+  getWidgetDataService
 } from './ServiceRegistry';
 
 // Type exports
@@ -50,3 +51,4 @@ export type { ServiceHealthStatus } from './ServiceRegistry';
 // Utility imports for services that aren't part of the main business logic layer
 export { default as encryptionService } from './EncryptionService';
 export { DynamicIconService, dynamicIconService } from './DynamicIconService';
+export { WidgetDataService, widgetDataService } from './WidgetDataService';

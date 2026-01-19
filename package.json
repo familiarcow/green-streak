@@ -25,7 +25,8 @@
     "test:e2e": "node scripts/test.js e2e",
     "lint": "eslint src/ --ext .ts,.tsx",
     "typecheck": "tsc --noEmit",
-    "generate-icons": "node scripts/generateAppIcon.js"
+    "generate-icons": "node scripts/generateAppIcon.js",
+    "xcode": "open ios/greenstreaktemp.xcworkspace"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "2.2.0",

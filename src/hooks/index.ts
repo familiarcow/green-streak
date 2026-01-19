@@ -13,3 +13,5 @@ export { useIconSearch } from './useIconSearch';
 export { useCalendarColors } from './useCalendarColors';
 export { useAccentColor } from './useAccentColor';
 export { useColorName } from './useColorName';
+export { useWidgetSync } from './useWidgetSync';
+export { useDeepLinks } from './useDeepLinks';

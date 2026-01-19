@@ -13,8 +13,10 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.greenstreak.app"
     },
+    "scheme": "greenstreak",
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
@@ -28,6 +30,7 @@
     },
     "plugins": [
       "expo-sqlite",
+      "./plugins/withWidgetExtension",
       [
         "expo-dynamic-app-icon",
         {

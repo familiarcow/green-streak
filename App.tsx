@@ -11,7 +11,7 @@ import { initializeSettings } from './src/store/settingsStore';
 import { useOnboardingStore } from './src/store/onboardingStore';
 import { useTasksStore } from './src/store/tasksStore';
 import { setupDevEnvironment, getDevConfig } from './src/utils/devConfig';
-import { getStreakService, getDateService } from './src/services';
+import { getStreakService, getDateService, getWidgetDataService } from './src/services';
 import { setSystemDate } from './src/store/systemStore';
 import { ToastProvider } from './src/contexts/ToastContext';
 import { ToastContainer } from './src/components/Toast';
@@ -23,6 +23,7 @@ import EditTaskModal from './src/screens/EditTaskModal';
 import { colors, textStyles, spacing } from './src/theme';
 import { HabitTemplate } from './src/types/templates';
 import logger from './src/utils/logger';
+import { useWidgetSync } from './src/hooks/useWidgetSync';
 
 export default function App() {
   const [isInitialized, setIsInitialized] = useState(false);
@@ -33,6 +34,9 @@ export default function App() {
   
   const { hasCompletedOnboarding, completeOnboarding } = useOnboardingStore();
   const { tasks, loadTasks } = useTasksStore();
+
+  // Initialize widget sync
+  useWidgetSync();
 
   useEffect(() => {
     const initializeApp = async () => {
@@ -100,12 +104,23 @@ export default function App() {
           await streakService.validateAllStreaks();
           logger.info('UI', 'Streak validation completed successfully');
         } catch (error) {
-          logger.error('UI', 'Failed to validate streaks on startup', { 
+          logger.error('UI', 'Failed to validate streaks on startup', {
             error: error instanceof Error ? error.message : 'Unknown error',
             stack: error instanceof Error ? error.stack : undefined
           });
         }
-        
+
+        // Initialize widget data service (iOS only)
+        try {
+          logger.info('UI', 'Initializing WidgetDataService');
+          const widgetService = getWidgetDataService();
+          widgetService.initialize();
+          logger.info('UI', 'WidgetDataService initialized successfully');
+        } catch (error) {
+          logger.warn('UI', 'Failed to initialize WidgetDataService', { error });
+          // Don't fail app initialization if widget service fails
+        }
+
         setIsInitialized(true);
         logger.info('UI', 'App initialization completed');
       } catch (error) {

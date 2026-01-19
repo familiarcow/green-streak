@@ -9,7 +9,7 @@ import { TodayCard, EmptyStateSection, TasksSection } from '../components/HomeSc
 import { BaseModal } from '../components/modals';
 import { useTasksStore } from '../store/tasksStore';
 import { useLogsStore } from '../store/logsStore';
-import { useTaskActions, useModalManager, useDateNavigation, useAccentColor, useColorName } from '../hooks';
+import { useTaskActions, useModalManager, useDateNavigation, useAccentColor, useColorName, useDeepLinks } from '../hooks';
 import { useDateRefresh } from '../hooks/useDateRefresh';
 import { useDynamicIconLifecycle } from '../hooks/useDynamicIconLifecycle';
 import { colors, textStyles, spacing } from '../theme';
@@ -52,6 +52,23 @@ export const HomeScreen: React.FC = () => {
   // Dynamic icon lifecycle management
   useDynamicIconLifecycle();
 
+  // Handle deep links from widgets
+  useDeepLinks({
+    onCalendarLink: (date) => {
+      logger.info('UI', 'Deep link: navigating to calendar date', { date });
+      handleDateChange(date);
+    },
+    onTaskLink: (taskId) => {
+      const task = tasks.find(t => t.id === taskId);
+      if (task) {
+        logger.info('UI', 'Deep link: opening task analytics', { taskId });
+        openTaskAnalytics(task);
+      }
+    },
+    onAppOpen: () => {
+      logger.info('UI', 'Deep link: app opened');
+    },
+  });
 
   // Handle date changes (midnight, app resume, etc)
   // Now using centralized DateService through the hook

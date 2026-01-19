@@ -12,6 +12,7 @@ import { createNotificationOrchestrator, NotificationOrchestrator } from './Noti
 import { createNotificationManager, NotificationManager } from './NotificationManager';
 import { DynamicIconService, dynamicIconService } from './DynamicIconService';
 import { AchievementService, createAchievementService } from './AchievementService';
+import { WidgetDataService, widgetDataService } from './WidgetDataService';
 import { repositoryFactory } from '../database/repositories/RepositoryFactory';
 import logger from '../utils/logger';
 
@@ -95,6 +96,7 @@ export class ServiceRegistry {
       this.register('orchestrator', orchestrator);
       this.register('dynamicIcon', dynamicIconService);
       this.register('achievement', achievementService);
+      this.register('widget', widgetDataService);
 
       logger.info('SERVICE', 'Default services registered successfully', {
         servicesCount: this.services.size
@@ -274,5 +276,6 @@ export const getConfettiService = (): ConfettiService => serviceRegistry.get<Con
 export const getOrchestrator = (): NotificationOrchestrator => serviceRegistry.get<NotificationOrchestrator>('orchestrator');
 export const getDynamicIconService = (): DynamicIconService => serviceRegistry.get<DynamicIconService>('dynamicIcon');
 export const getAchievementService = (): AchievementService => serviceRegistry.get<AchievementService>('achievement');
+export const getWidgetDataService = (): WidgetDataService => serviceRegistry.get<WidgetDataService>('widget');
 
 export default ServiceRegistry;
