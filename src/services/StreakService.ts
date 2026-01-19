@@ -259,26 +259,28 @@ export class StreakService {
       );
 
       let updatedStreak: TaskStreak;
-      if (continuesStreak) {
-        // Continue the streak - increment by 1
+      if (continuesStreak && streak.currentStreak > 0) {
+        // Continue the streak - increment by 1 (normal case)
         const currentStreak = streak.currentStreak + 1;
         const bestStreak = Math.max(currentStreak, streak.bestStreak);
-        
+
         logger.debug('SERVICES', 'Continuing streak', {
           taskId,
           date,
           previousStreak: streak.currentStreak,
           newStreak: currentStreak
         });
-        
+
         updatedStreak = await this.streakRepository.update(taskId, {
           currentStreak,
           bestStreak,
           lastCompletionDate: date
         });
       } else {
-        // Gap detected - recalculate from full log history
-        // This handles backfilling that bridges previously disconnected streak segments
+        // Either:
+        // 1. Gap detected (continuesStreak is false)
+        // 2. Bridging a broken streak (continuesStreak is true but currentStreak is 0)
+        // In both cases, recalculate from full log history to get correct streak count
         const logs = await this.logRepository.findByTask(taskId);
         const today = formatDateString(new Date());
 
@@ -295,7 +297,8 @@ export class StreakService {
           date,
           lastCompletionDate: streak.lastCompletionDate,
           previousStreak: streak.currentStreak,
-          calculatedStreak: calculated.currentStreak
+          calculatedStreak: calculated.currentStreak,
+          reason: continuesStreak ? 'bridging_broken_streak' : 'gap_detected'
         });
 
         updatedStreak = await this.streakRepository.update(taskId, {

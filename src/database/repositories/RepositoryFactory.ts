@@ -1,7 +1,8 @@
-import { ITaskRepository, ILogRepository, IStreakRepository } from './interfaces';
+import { ITaskRepository, ILogRepository, IStreakRepository, IAchievementRepository } from './interfaces';
 import { TaskRepository } from './TaskRepository';
 import { LogRepository } from './LogRepository';
 import { StreakRepository } from './StreakRepository';
+import { AchievementRepository } from './AchievementRepository';
 
 /**
  * Repository Factory
@@ -14,12 +15,14 @@ export class RepositoryFactory {
   private _taskRepository: ITaskRepository;
   private _logRepository: ILogRepository;
   private _streakRepository: IStreakRepository;
+  private _achievementRepository: IAchievementRepository;
 
   private constructor() {
     // Initialize default implementations
     this._taskRepository = new TaskRepository();
     this._logRepository = new LogRepository();
     this._streakRepository = new StreakRepository();
+    this._achievementRepository = new AchievementRepository();
   }
 
   /**
@@ -54,6 +57,13 @@ export class RepositoryFactory {
   }
 
   /**
+   * Get achievement repository instance
+   */
+  public getAchievementRepository(): IAchievementRepository {
+    return this._achievementRepository;
+  }
+
+  /**
    * Set task repository implementation (for testing/dependency injection)
    */
   public setTaskRepository(repository: ITaskRepository): void {
@@ -75,12 +85,20 @@ export class RepositoryFactory {
   }
 
   /**
+   * Set achievement repository implementation (for testing/dependency injection)
+   */
+  public setAchievementRepository(repository: IAchievementRepository): void {
+    this._achievementRepository = repository;
+  }
+
+  /**
    * Reset to default implementations
    */
   public resetToDefaults(): void {
     this._taskRepository = new TaskRepository();
     this._logRepository = new LogRepository();
     this._streakRepository = new StreakRepository();
+    this._achievementRepository = new AchievementRepository();
   }
 }
 
@@ -89,5 +107,6 @@ export const repositoryFactory = RepositoryFactory.getInstance();
 export const taskRepository = repositoryFactory.getTaskRepository();
 export const logRepository = repositoryFactory.getLogRepository();
 export const streakRepository = repositoryFactory.getStreakRepository();
+export const achievementRepository = repositoryFactory.getAchievementRepository();
 
 export default RepositoryFactory;

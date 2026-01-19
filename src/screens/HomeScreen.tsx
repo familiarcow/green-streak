@@ -9,7 +9,7 @@ import { TodayCard, EmptyStateSection, TasksSection } from '../components/HomeSc
 import { BaseModal } from '../components/modals';
 import { useTasksStore } from '../store/tasksStore';
 import { useLogsStore } from '../store/logsStore';
-import { useTaskActions, useModalManager, useDateNavigation } from '../hooks';
+import { useTaskActions, useModalManager, useDateNavigation, useAccentColor, useColorName } from '../hooks';
 import { useDateRefresh } from '../hooks/useDateRefresh';
 import { useDynamicIconLifecycle } from '../hooks/useDynamicIconLifecycle';
 import { colors, textStyles, spacing } from '../theme';
@@ -19,6 +19,7 @@ import EditTaskModal from './EditTaskModal';
 import DailyLogScreen from './DailyLogScreen';
 import SettingsScreen from './SettingsScreen';
 import TaskAnalyticsScreen from './TaskAnalyticsScreen';
+import AchievementLibraryScreen from './AchievementLibraryScreen';
 import { Task } from '../types';
 import logger from '../utils/logger';
 
@@ -34,6 +35,7 @@ export const HomeScreen: React.FC = () => {
     openDailyLog,
     openSettings,
     openTaskAnalytics,
+    openAchievementLibrary,
     closeModal,
     getAnimationStyle,
     animations,
@@ -42,6 +44,10 @@ export const HomeScreen: React.FC = () => {
   // Store hooks
   const { tasks, loading: tasksLoading, reorderTasks } = useTasksStore();
   const { contributionData, loading: logsLoading } = useLogsStore();
+
+  // Accent color hooks for dynamic header
+  const accentColor = useAccentColor();
+  const colorName = useColorName();
 
   // Dynamic icon lifecycle management
   useDynamicIconLifecycle();
@@ -135,18 +141,29 @@ export const HomeScreen: React.FC = () => {
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.titleContainer}>
-              <View style={styles.greenBox} />
-              <Text style={styles.title}>Green Streak</Text>
+              <View style={[styles.greenBox, { backgroundColor: accentColor }]} />
+              <Text style={styles.title}>{colorName} Streak</Text>
             </View>
-            <TouchableOpacity
-              style={styles.settingsButton}
-              onPress={openSettings}
-              accessible={true}
-              accessibilityRole="button"
-              accessibilityLabel="Settings"
-            >
-              <Icon name="settings" size={20} color={colors.text.secondary} />
-            </TouchableOpacity>
+            <View style={styles.headerActions}>
+              <TouchableOpacity
+                style={styles.headerButton}
+                onPress={openAchievementLibrary}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel="Achievements"
+              >
+                <Icon name="trophy" size={20} color={colors.text.secondary} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.headerButton}
+                onPress={openSettings}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel="Settings"
+              >
+                <Icon name="settings" size={20} color={colors.text.secondary} />
+              </TouchableOpacity>
+            </View>
           </View>
 
           {/* Contribution Graph */}
@@ -261,7 +278,7 @@ export const HomeScreen: React.FC = () => {
           isVisible={activeModal === 'taskAnalytics'}
           onClose={closeModal}
         >
-          <ScreenErrorBoundary 
+          <ScreenErrorBoundary
             screenName="Task Analytics"
             onClose={closeModal}
             onRetry={() => {
@@ -279,6 +296,23 @@ export const HomeScreen: React.FC = () => {
                 onClose={closeModal}
               />
             )}
+          </ScreenErrorBoundary>
+        </BaseModal>
+
+        {/* Achievement Library Modal */}
+        <BaseModal
+          isVisible={activeModal === 'achievementLibrary'}
+          onClose={closeModal}
+        >
+          <ScreenErrorBoundary
+            screenName="Achievements"
+            onClose={closeModal}
+            onRetry={() => {
+              closeModal();
+              setTimeout(() => openAchievementLibrary(), 100);
+            }}
+          >
+            <AchievementLibraryScreen onClose={closeModal} />
           </ScreenErrorBoundary>
         </BaseModal>
       </SafeAreaView>
@@ -299,9 +333,9 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    padding: spacing[4],
-    position: 'relative',
+    justifyContent: 'space-between',
+    paddingVertical: spacing[4],
+    marginHorizontal: spacing[6],
   },
 
   titleContainer: {
@@ -313,7 +347,6 @@ const styles = StyleSheet.create({
   greenBox: {
     width: 22,
     height: 22,
-    backgroundColor: colors.primary,
     borderRadius: radiusValues.box,
   },
 
@@ -322,9 +355,12 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
   },
 
-  settingsButton: {
-    position: 'absolute',
-    right: spacing[4],
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  headerButton: {
     width: 44,
     height: 44,
     alignItems: 'center',

@@ -16,6 +16,7 @@ import { TemplateCatalogModal } from '../components/TemplateCatalog';
 import { IconPickerModal } from '../components/IconPicker';
 import { ColorPickerModal } from '../components/ColorPicker';
 import { useTasksStore } from '../store/tasksStore';
+import { useAchievementsStore } from '../store/achievementsStore';
 import { useAccentColor } from '../hooks';
 import { colors, textStyles, spacing, shadows } from '../theme';
 import { radiusValues } from '../theme/utils';
@@ -41,6 +42,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
   const [showCustomTimeInput, setShowCustomTimeInput] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [reminderFrequency, setReminderFrequency] = useState<'daily' | 'weekly'>('daily');
+  const [reminderText, setReminderText] = useState('');
   const [streakEnabled, setStreakEnabled] = useState(true);
   const [streakSkipWeekends, setStreakSkipWeekends] = useState(false);
   const [streakMinimumCount, setStreakMinimumCount] = useState(1);
@@ -48,6 +50,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
   const [showIconPicker, setShowIconPicker] = useState(false);
 
   const { createTask, updateTask, deleteTask } = useTasksStore();
+  const { checkForAchievements } = useAchievementsStore();
   const accentColor = useAccentColor();
   const isEditing = !!existingTask;
 
@@ -97,6 +100,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
         setShowCustomTimeInput(true);
       }
       setReminderFrequency((existingTask.reminderFrequency as 'daily' | 'weekly') || 'daily');
+      setReminderText(existingTask.reminderText || '');
       setStreakEnabled(existingTask.streakEnabled !== false);
       setStreakSkipWeekends(existingTask.streakSkipWeekends || false);
       setStreakMinimumCount(existingTask.streakMinimumCount || 1);
@@ -148,6 +152,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
         reminderEnabled,
         reminderTime: reminderEnabled ? reminderTime : undefined,
         reminderFrequency: reminderEnabled ? reminderFrequency : undefined,
+        reminderText: reminderEnabled && reminderText.trim() ? reminderText.trim() : undefined,
         streakEnabled,
         streakSkipWeekends: streakEnabled ? streakSkipWeekends : false,
         streakMinimumCount: streakEnabled ? streakMinimumCount : 1,
@@ -157,10 +162,35 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
         logger.debug('UI', 'Updating existing task', { id: existingTask.id, name });
         await updateTask(existingTask.id, taskData);
         logger.info('UI', 'Task updated successfully', { id: existingTask.id, name });
+
+        // Check for customize achievement (if icon or color changed)
+        const wasCustomized =
+          existingTask.icon !== selectedIcon ||
+          existingTask.color !== selectedColor;
+        if (wasCustomized) {
+          try {
+            await checkForAchievements({
+              trigger: 'task_customized',
+              taskId: existingTask.id,
+            });
+          } catch (error) {
+            logger.warn('UI', 'Failed to check achievements after customization', { error });
+          }
+        }
       } else {
         logger.debug('UI', 'Creating new task', { name, description, selectedColor });
-        await createTask(taskData);
+        const newTask = await createTask(taskData);
         logger.info('UI', 'Task created successfully', { name });
+
+        // Check for task creation achievements
+        try {
+          await checkForAchievements({
+            trigger: 'task_created',
+            taskId: newTask.id,
+          });
+        } catch (error) {
+          logger.warn('UI', 'Failed to check achievements after task creation', { error });
+        }
       }
 
       onTaskAdded();
@@ -488,6 +518,20 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                     </TouchableOpacity>
                   ))}
                 </View>
+              </View>
+
+              <View style={styles.reminderRow}>
+                <Text style={styles.reminderLabel}>Notification Text:</Text>
+                <TextInput
+                  style={[styles.textInput, styles.reminderTextInput]}
+                  value={reminderText}
+                  onChangeText={setReminderText}
+                  placeholder="Time for your habit!"
+                  placeholderTextColor={colors.text.tertiary}
+                  maxLength={100}
+                  accessibilityLabel="Custom notification text"
+                  accessibilityHint="Enter custom text for the notification message"
+                />
               </View>
             </View>
           )}
@@ -871,6 +915,10 @@ const styles = StyleSheet.create({
     fontFamily: 'monospace',
     fontSize: 18,
     fontWeight: '600',
+  },
+
+  reminderTextInput: {
+    marginTop: spacing[2],
   },
 
   frequencyOptions: {

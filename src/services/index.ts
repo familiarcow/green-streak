@@ -20,10 +20,11 @@ export { ConfettiService } from './ConfettiService';
 export { ToastQueue } from './ToastQueue';
 export { NotificationOrchestrator, createNotificationOrchestrator } from './NotificationOrchestrator';
 export { NotificationManager, createNotificationManager } from './NotificationManager';
+export { AchievementService, createAchievementService } from './AchievementService';
 
 // Service Registry
-export { 
-  ServiceRegistry, 
+export {
+  ServiceRegistry,
   serviceRegistry,
   getDataService,
   getTaskService,
@@ -36,7 +37,8 @@ export {
   getToastService,
   getSoundService,
   getConfettiService,
-  getOrchestrator
+  getOrchestrator,
+  getAchievementService
 } from './ServiceRegistry';
 
 // Type exports

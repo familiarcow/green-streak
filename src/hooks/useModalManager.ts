@@ -14,6 +14,7 @@ export type ModalType =
   | 'taskAnalytics'
   | 'confirmation'
   | 'templateCatalog'
+  | 'achievementLibrary'
   | null;
 
 /**
@@ -78,6 +79,7 @@ export interface ModalManagerReturn {
   openSettings: () => void;
   openTaskAnalytics: (task: Task) => void;
   openConfirmation: (onConfirm: () => void, onCancel?: () => void) => void;
+  openAchievementLibrary: () => void;
   
   // Animation helpers
   getAnimationStyle: (animationType: AnimationType) => any;
@@ -360,6 +362,13 @@ export const useModalManager = (): ModalManagerReturn => {
     });
   }, [openModal]);
 
+  const openAchievementLibrary = useCallback(() => {
+    openModal({
+      type: 'achievementLibrary',
+      animationType: 'slide',
+    });
+  }, [openModal]);
+
   // Animation style helpers
   const getAnimationStyle = useCallback((animationType: AnimationType) => {
     switch (animationType) {
@@ -411,7 +420,8 @@ export const useModalManager = (): ModalManagerReturn => {
     openSettings,
     openTaskAnalytics,
     openConfirmation,
-    
+    openAchievementLibrary,
+
     // Animation helpers
     getAnimationStyle,
   };
