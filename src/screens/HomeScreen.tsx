@@ -9,7 +9,7 @@ import { TodayCard, EmptyStateSection, TasksSection } from '../components/HomeSc
 import { BaseModal } from '../components/modals';
 import { useTasksStore } from '../store/tasksStore';
 import { useLogsStore } from '../store/logsStore';
-import { useTaskActions, useModalManager, useDateNavigation } from '../hooks';
+import { useTaskActions, useModalManager, useDateNavigation, useAccentColor, useColorName } from '../hooks';
 import { useDateRefresh } from '../hooks/useDateRefresh';
 import { useDynamicIconLifecycle } from '../hooks/useDynamicIconLifecycle';
 import { colors, textStyles, spacing } from '../theme';
@@ -44,6 +44,10 @@ export const HomeScreen: React.FC = () => {
   // Store hooks
   const { tasks, loading: tasksLoading, reorderTasks } = useTasksStore();
   const { contributionData, loading: logsLoading } = useLogsStore();
+
+  // Accent color hooks for dynamic header
+  const accentColor = useAccentColor();
+  const colorName = useColorName();
 
   // Dynamic icon lifecycle management
   useDynamicIconLifecycle();
@@ -137,8 +141,8 @@ export const HomeScreen: React.FC = () => {
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.titleContainer}>
-              <View style={styles.greenBox} />
-              <Text style={styles.title}>Green Streak</Text>
+              <View style={[styles.greenBox, { backgroundColor: accentColor }]} />
+              <Text style={styles.title}>{colorName} Streak</Text>
             </View>
             <View style={styles.headerActions}>
               <TouchableOpacity
@@ -343,7 +347,6 @@ const styles = StyleSheet.create({
   greenBox: {
     width: 22,
     height: 22,
-    backgroundColor: colors.primary,
     borderRadius: radiusValues.box,
   },
 

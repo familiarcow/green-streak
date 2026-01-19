@@ -156,6 +156,54 @@ export const normalizeHex = (hex: string): string => {
 };
 
 // ============================================
+// Color Name System
+// ============================================
+
+/**
+ * Human-readable names for calendar color presets
+ */
+export const COLOR_PRESET_NAMES: Record<string, string> = {
+  '#22c55e': 'Green',
+  '#3b82f6': 'Blue',
+  '#8b5cf6': 'Violet',
+  '#14b8a6': 'Teal',
+  '#ec4899': 'Pink',
+  '#6366f1': 'Indigo',
+  '#f43f5e': 'Rose',
+};
+
+/**
+ * Get human-readable color name from hex.
+ * Uses preset map for exact matches, HSL-based naming for custom colors.
+ */
+export const getColorName = (hex: string): string => {
+  const normalized = hex.toLowerCase();
+
+  // Check preset map first
+  if (COLOR_PRESET_NAMES[normalized]) {
+    return COLOR_PRESET_NAMES[normalized];
+  }
+
+  // Fallback to hue-based naming for custom colors
+  const rgb = hexToRgb(hex);
+  if (!rgb) return 'Custom';
+
+  const hsv = rgbToHsv(rgb.r, rgb.g, rgb.b);
+  const hue = hsv.h;
+
+  if (hue < 15 || hue >= 345) return 'Red';
+  if (hue < 45) return 'Orange';
+  if (hue < 75) return 'Yellow';
+  if (hue < 150) return 'Green';
+  if (hue < 195) return 'Teal';
+  if (hue < 255) return 'Blue';
+  if (hue < 285) return 'Purple';
+  if (hue < 345) return 'Pink';
+
+  return 'Custom';
+};
+
+// ============================================
 // Contribution Graph Color System
 // ============================================
 
