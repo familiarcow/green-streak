@@ -156,6 +156,8 @@ npm run web                  # Web browser (limited functionality)
 - **[Deployment Guide](./deployment.md)**: Building and distributing the app
 - **[Implementation Status](./status.md)**: Feature completion and known issues
 - **[Roadmap](./roadmap.md)**: Planned features and future development
+- **[iOS Widgets](./widgets.md)**: Widget architecture, data flow, and implementation
+- **[Widget Setup](./widget-setup.md)**: Xcode project configuration for widgets
 
 ## Key Concepts
 

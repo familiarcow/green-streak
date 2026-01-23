@@ -2,6 +2,8 @@
 
 This guide explains how to complete the Xcode project configuration for the Green Streak widgets.
 
+> **Note:** For widget architecture, data flow, and API documentation, see [iOS Widgets](./widgets.md).
+
 ## Prerequisites
 
 - Xcode 14.0 or later
@@ -174,16 +176,12 @@ greenstreak://calendar?date=YYYY-MM-DD
 
 Deep link handling is implemented in `/src/hooks/useDeepLinks.ts`.
 
-## Future Phases
+## Implemented Widgets
 
-This Phase 1 implementation establishes the foundation for future widget types:
+The following widgets are currently implemented:
 
-- **Phase 2**: LiveCalendar + Quick Adds (Medium/Large)
-- **Phase 3**: Single Habit Quick Add (Small) - iOS 17+ interactive
-- **Phase 4**: Multi-Habit Quick Add (Medium/Large) - iOS 17+ interactive
+- **LiveCalendarWidget**: GitHub-style contribution grid (iOS 14+, small size only)
+- **QuickAddWidget**: Single-tap task completion for one task (iOS 17+, small size only)
+- **QuickAddGridWidget**: 2x2 grid for quick adds on 4 tasks (iOS 17+, small size only)
 
-The architecture supports these extensions through:
-- Protocol-based widget structure
-- Shared data models (`WidgetData.swift`)
-- Pending actions array for interactive widget events
-- Quick add configuration in sync data
+See [iOS Widgets](./widgets.md) for detailed documentation on each widget.

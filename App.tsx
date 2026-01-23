@@ -23,7 +23,6 @@ import EditTaskModal from './src/screens/EditTaskModal';
 import { colors, textStyles, spacing } from './src/theme';
 import { HabitTemplate } from './src/types/templates';
 import logger from './src/utils/logger';
-import { useWidgetSync } from './src/hooks/useWidgetSync';
 
 export default function App() {
   const [isInitialized, setIsInitialized] = useState(false);
@@ -31,12 +30,9 @@ export default function App() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showAddTask, setShowAddTask] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<HabitTemplate | undefined>(undefined);
-  
+
   const { hasCompletedOnboarding, completeOnboarding } = useOnboardingStore();
   const { tasks, loadTasks } = useTasksStore();
-
-  // Initialize widget sync
-  useWidgetSync();
 
   useEffect(() => {
     const initializeApp = async () => {

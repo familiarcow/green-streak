@@ -11,12 +11,33 @@ import { useLogsStore } from '../store/logsStore';
 import { useStreaksStore } from '../store/streaksStore';
 import { useSettingsStore } from '../store/settingsStore';
 import { generateContributionPalette, DEFAULT_CONTRIBUTION_PALETTE } from '../utils/colorUtils';
+import { getTodayString } from '../utils/dateHelpers';
 import logger from '../utils/logger';
 
 const { WidgetBridge } = NativeModules;
 
 // Widget data schema version for migrations
 const WIDGET_DATA_VERSION = 1;
+
+/**
+ * Pending action queued by the widget for the app to process
+ */
+export interface PendingWidgetAction {
+  id: string;
+  type: 'quick_add' | 'quick_remove';
+  taskId: string;
+  date: string;      // YYYY-MM-DD
+  timestamp: string; // ISO8601
+  processed: boolean;
+}
+
+/**
+ * Handlers for processing pending widget actions
+ */
+export interface PendingActionHandlers {
+  onQuickAdd: (taskId: string, date: string) => Promise<void>;
+  onQuickRemove: (taskId: string, date: string) => Promise<void>;
+}
 
 /**
  * Data structure synced to the widget extension
@@ -85,14 +106,6 @@ function calculateLevel(count: number, maxCount: number): 0 | 1 | 2 | 3 | 4 {
 }
 
 /**
- * Get today's date string in YYYY-MM-DD format
- */
-function getTodayString(): string {
-  const now = new Date();
-  return now.toISOString().split('T')[0];
-}
-
-/**
  * WidgetDataService class
  *
  * Manages widget data synchronization as a class (not a hook) for
@@ -131,10 +144,9 @@ export class WidgetDataService {
     logger.info('SERVICE', 'Initializing WidgetDataService');
 
     // Subscribe to store changes
+    // The subscriptions will automatically sync when data loads
+    // (no immediate sync here - contribution data may not be loaded yet)
     this.subscribeToStores();
-
-    // Perform initial sync
-    this.performSync();
 
     this.isInitialized = true;
     logger.info('SERVICE', 'WidgetDataService initialized');
@@ -184,6 +196,10 @@ export class WidgetDataService {
     // Subscribe to contribution data changes
     const unsubLogs = useLogsStore.subscribe((state) => {
       if (state.contributionData !== prevContributionData) {
+        logger.debug('SERVICE', 'Contribution data changed, scheduling sync', {
+          prevLength: prevContributionData.length,
+          newLength: state.contributionData.length,
+        });
         prevContributionData = state.contributionData;
         this.scheduleSync();
       }
@@ -259,9 +275,10 @@ export class WidgetDataService {
         return;
       }
 
-      logger.debug('SERVICE', 'Syncing widget data', {
+      logger.info('SERVICE', 'Syncing widget data', {
         taskCount: syncData.tasks.length,
         dateCount: syncData.contributionData.dates.length,
+        tasks: syncData.tasks.map(t => ({ id: t.id, name: t.name, todayCount: t.todayCount })),
       });
 
       // Write data to App Group storage
@@ -307,12 +324,31 @@ export class WidgetDataService {
 
     // Build task data with streak info
     const today = getTodayString();
+    const todayData = contributionData.find(d => d.date === today);
+
+    // Debug logging for widget sync - using INFO level to ensure visibility
+    logger.info('SERVICE', 'Building widget sync data', {
+      today,
+      contributionDataLength: contributionData.length,
+      hasTodayData: !!todayData,
+      todayTotalCount: todayData?.count || 0,
+      todayTasksCount: todayData?.tasks?.length || 0,
+      todayTasks: todayData?.tasks?.map(t => ({ taskId: t.taskId, count: t.count })) || [],
+    });
+
     const taskData = tasks
       .filter(t => !t.archivedAt) // Only active tasks
       .map(task => {
         const streak = streaks.find(s => s.taskId === task.id);
-        const todayData = contributionData.find(d => d.date === today);
         const todayTaskData = todayData?.tasks.find(t => t.taskId === task.id);
+
+        // Debug logging per task - using INFO level
+        logger.info('SERVICE', 'Widget task data', {
+          taskId: task.id,
+          taskName: task.name,
+          todayCount: todayTaskData?.count || 0,
+          foundInTodayTasks: !!todayTaskData,
+        });
 
         return {
           id: task.id,
@@ -392,6 +428,105 @@ export class WidgetDataService {
     } catch (error) {
       logger.error('SERVICE', 'Failed to get widget state', { error });
       return null;
+    }
+  }
+
+  // MARK: - Pending Actions Processing
+
+  /**
+   * Get all pending widget actions from App Groups
+   * Returns only unprocessed actions
+   */
+  async getPendingActions(): Promise<PendingWidgetAction[]> {
+    if (!this.isSupported()) return [];
+
+    try {
+      const jsonString = await WidgetBridge.getPendingActions();
+      if (!jsonString) return [];
+
+      const actions: PendingWidgetAction[] = JSON.parse(jsonString);
+      // Filter to only unprocessed actions
+      return actions.filter(action => !action.processed);
+    } catch (error) {
+      logger.error('SERVICE', 'Failed to get pending widget actions', { error });
+      return [];
+    }
+  }
+
+  /**
+   * Process all pending widget actions
+   * Calls the appropriate handler for each action type
+   * Returns the IDs of successfully processed actions
+   */
+  async processPendingActions(
+    handlers: PendingActionHandlers
+  ): Promise<{ processed: string[]; failed: string[] }> {
+    if (!this.isSupported()) return { processed: [], failed: [] };
+
+    const actions = await this.getPendingActions();
+    if (actions.length === 0) {
+      logger.debug('SERVICE', 'No pending widget actions to process');
+      return { processed: [], failed: [] };
+    }
+
+    logger.info('SERVICE', 'Processing pending widget actions', { count: actions.length });
+
+    const processed: string[] = [];
+    const failed: string[] = [];
+
+    // Process actions sequentially to maintain order
+    for (const action of actions) {
+      try {
+        if (action.type === 'quick_add') {
+          await handlers.onQuickAdd(action.taskId, action.date);
+          logger.debug('SERVICE', 'Processed widget quick_add action', {
+            actionId: action.id,
+            taskId: action.taskId,
+            date: action.date,
+          });
+        } else if (action.type === 'quick_remove') {
+          await handlers.onQuickRemove(action.taskId, action.date);
+          logger.debug('SERVICE', 'Processed widget quick_remove action', {
+            actionId: action.id,
+            taskId: action.taskId,
+            date: action.date,
+          });
+        }
+        processed.push(action.id);
+      } catch (error) {
+        logger.error('SERVICE', 'Failed to process widget action', {
+          actionId: action.id,
+          type: action.type,
+          error,
+        });
+        failed.push(action.id);
+      }
+    }
+
+    // Mark successfully processed actions
+    if (processed.length > 0) {
+      await this.markActionsProcessed(processed);
+    }
+
+    logger.info('SERVICE', 'Widget actions processing complete', {
+      processed: processed.length,
+      failed: failed.length,
+    });
+
+    return { processed, failed };
+  }
+
+  /**
+   * Mark specific actions as processed in App Groups
+   */
+  async markActionsProcessed(actionIds: string[]): Promise<void> {
+    if (!this.isSupported() || actionIds.length === 0) return;
+
+    try {
+      await WidgetBridge.markActionsProcessed(actionIds);
+      logger.debug('SERVICE', 'Marked widget actions as processed', { count: actionIds.length });
+    } catch (error) {
+      logger.error('SERVICE', 'Failed to mark widget actions as processed', { error });
     }
   }
 }

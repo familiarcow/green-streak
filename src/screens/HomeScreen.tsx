@@ -9,7 +9,7 @@ import { TodayCard, EmptyStateSection, TasksSection } from '../components/HomeSc
 import { BaseModal } from '../components/modals';
 import { useTasksStore } from '../store/tasksStore';
 import { useLogsStore } from '../store/logsStore';
-import { useTaskActions, useModalManager, useDateNavigation, useAccentColor, useColorName, useDeepLinks } from '../hooks';
+import { useTaskActions, useModalManager, useDateNavigation, useAccentColor, useColorName, useDeepLinks, useWidgetSync } from '../hooks';
 import { useDateRefresh } from '../hooks/useDateRefresh';
 import { useDynamicIconLifecycle } from '../hooks/useDynamicIconLifecycle';
 import { colors, textStyles, spacing } from '../theme';
@@ -27,6 +27,9 @@ export const HomeScreen: React.FC = () => {
   // Business logic hooks
   const { handleQuickAdd, refreshAllData, refreshContributionData } = useTaskActions();
   const { selectedDate, handleDayPress, handleDateChange } = useDateNavigation();
+
+  // Widget sync (processes pending widget actions, syncs data to widgets)
+  useWidgetSync();
   const {
     activeModal,
     modalConfig,

@@ -25,6 +25,14 @@ RCT_EXTERN_METHOD(setQuickAddConfig:(NSString *)jsonString
 RCT_EXTERN_METHOD(getQuickAddConfig:(RCTPromiseResolveBlock)resolve
                   rejecter:(RCTPromiseRejectBlock)reject)
 
+// Pending actions methods (for Widget Quick Add processing)
+RCT_EXTERN_METHOD(getPendingActions:(RCTPromiseResolveBlock)resolve
+                  rejecter:(RCTPromiseRejectBlock)reject)
+
+RCT_EXTERN_METHOD(markActionsProcessed:(NSArray *)actionIds
+                  resolver:(RCTPromiseResolveBlock)resolve
+                  rejecter:(RCTPromiseRejectBlock)reject)
+
 // Phase 2+ stubs: Event handling
 RCT_EXTERN_METHOD(registerEventEmitter:(RCTPromiseResolveBlock)resolve
                   rejecter:(RCTPromiseRejectBlock)reject)
