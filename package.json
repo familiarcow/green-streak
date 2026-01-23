@@ -26,7 +26,13 @@
     "lint": "eslint src/ --ext .ts,.tsx",
     "typecheck": "tsc --noEmit",
     "generate-icons": "node scripts/generateAppIcon.js",
-    "xcode": "open ios/greenstreaktemp.xcworkspace"
+    "xcode": "open ios/greenstreaktemp.xcworkspace",
+    "version": "node scripts/version.js",
+    "version:build": "node scripts/version.js build",
+    "prebuild": "npm run typecheck && npm test",
+    "build:ios": "eas build --platform ios --profile production",
+    "build:preview": "eas build --platform ios --profile preview",
+    "submit:ios": "eas submit --platform ios"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "2.2.0",
