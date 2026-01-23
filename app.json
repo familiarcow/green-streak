@@ -14,7 +14,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.greenstreak.app"
+      "bundleIdentifier": "com.green-streak.app"
     },
     "scheme": "greenstreak",
     "android": {

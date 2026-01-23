@@ -30,8 +30,8 @@
   "submit": {
     "production": {
       "ios": {
-        "appleId": "",
-        "ascAppId": "",
+        "appleId": "tylerbond95@gmail.com",
+        "ascAppId": "com.green-streak.app",
         "appleTeamId": "974SWJKYUP"
       }
     }
