@@ -3,6 +3,9 @@ import { AppState, AppStateStatus, Platform } from 'react-native';
 import { getWidgetDataService } from '../services';
 import { useDateRefresh } from './useDateRefresh';
 import { useTaskActions } from './useTaskActions';
+import { useTasksStore } from '../store/tasksStore';
+import { useToast } from '../contexts/ToastContext';
+import { PendingWidgetAction } from '../services/WidgetDataService';
 import logger from '../utils/logger';
 
 /**
@@ -21,6 +24,34 @@ export const useWidgetSync = () => {
 
   // Get task actions for processing widget quick adds
   const { handleQuickAdd, handleQuickRemove } = useTaskActions();
+  const { tasks } = useTasksStore();
+  const { showToast } = useToast();
+
+  // Build toast message for processed actions
+  const buildToastMessage = useCallback((actions: PendingWidgetAction[]): string | null => {
+    if (actions.length === 0) return null;
+
+    // Group actions by taskId and type
+    const addCounts: Record<string, number> = {};
+
+    for (const action of actions) {
+      if (action.type === 'quick_add') {
+        addCounts[action.taskId] = (addCounts[action.taskId] || 0) + 1;
+      }
+    }
+
+    // Build message parts
+    const parts: string[] = [];
+    for (const [taskId, count] of Object.entries(addCounts)) {
+      const task = tasks.find(t => t.id === taskId);
+      const taskName = task?.name || 'Unknown Task';
+      parts.push(`${count}x ${taskName}`);
+    }
+
+    if (parts.length === 0) return null;
+
+    return `Adding ${parts.join(', ')} from Widget`;
+  }, [tasks]);
 
   // Process pending widget actions
   // Returns the result so callers can check if actions were processed
@@ -34,6 +65,11 @@ export const useWidgetSync = () => {
     isProcessingRef.current = true;
     try {
       const widgetService = getWidgetDataService();
+
+      // Get pending actions first to build toast message
+      const pendingActions = await widgetService.getPendingActions();
+      const toastMessage = buildToastMessage(pendingActions);
+
       const result = await widgetService.processPendingActions({
         onQuickAdd: handleQuickAdd,
         onQuickRemove: handleQuickRemove,
@@ -44,6 +80,15 @@ export const useWidgetSync = () => {
           processed: result.processed.length,
           failed: result.failed.length,
         });
+
+        // Show toast notification
+        if (toastMessage) {
+          showToast({
+            message: toastMessage,
+            variant: 'success',
+            duration: 3000,
+          });
+        }
       }
       return result;
     } catch (error) {
@@ -52,7 +97,7 @@ export const useWidgetSync = () => {
     } finally {
       isProcessingRef.current = false;
     }
-  }, [handleQuickAdd, handleQuickRemove]);
+  }, [handleQuickAdd, handleQuickRemove, buildToastMessage, showToast]);
 
   // Handle date change (midnight rollover)
   const handleDateChange = useCallback((newDate: string) => {
