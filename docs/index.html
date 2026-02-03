@@ -245,16 +245,18 @@
             opacity: 1;
         }
 
-        /* Toast */
-        .toast-container {
-            position: fixed;
-            top: 80px;
-            right: 20px;
+        /* Toast - positioned relative to phone mockup */
+        .toast-area {
+            position: absolute;
+            top: 50%;
+            left: calc(100% + 20px);
+            transform: translateY(-50%);
             display: flex;
             flex-direction: column;
             gap: 10px;
             z-index: 100;
             pointer-events: none;
+            min-width: 180px;
         }
 
         .toast {
@@ -268,22 +270,35 @@
             gap: 10px;
             font-size: 14px;
             font-weight: 500;
-            animation: toastSlide 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards,
-                       toastFade 0.3s ease 2s forwards;
-            transform: translateX(120%);
+            white-space: nowrap;
+            animation: toastSlide 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards,
+                       toastFade 0.4s ease 4s forwards;
+            transform: translateX(30px);
+            opacity: 0;
         }
 
         @keyframes toastSlide {
-            to { transform: translateX(0); }
+            to { transform: translateX(0); opacity: 1; }
         }
 
         @keyframes toastFade {
-            to { transform: translateX(120%); opacity: 0; }
+            to { transform: translateX(30px); opacity: 0; }
         }
 
         .toast.streak { border-left: 3px solid #FF6B35; }
         .toast.complete { border-left: 3px solid var(--primary); }
         .toast.newday { border-left: 3px solid #3b82f6; }
+
+        /* Hide toast area on mobile - put below instead */
+        @media (max-width: 900px) {
+            .toast-area {
+                position: fixed;
+                top: auto;
+                bottom: 100px;
+                left: 50%;
+                transform: translateX(-50%);
+            }
+        }
 
         /* CTA */
         .cta {
@@ -485,15 +500,15 @@
     </style>
 </head>
 <body>
-    <div class="toast-container" id="toastContainer"></div>
-
     <section class="hero">
         <div class="hero-content">
             <img src="https://raw.githubusercontent.com/familiarcow/green-streak/main/assets/icon.png" alt="Green Streak" class="logo">
             <h1>Your habits, visualized.</h1>
             <p class="tagline">Track daily routines with beautiful contribution graphs. Watch your consistency grow, one green square at a time.</p>
             
-            <div class="phone-frame">
+            <div style="position: relative; display: inline-block;">
+                <div class="toast-area" id="toastContainer"></div>
+                <div class="phone-frame">
                 <div class="app-card">
                     <div class="day-counter">Day <span id="dayNumber">1</span></div>
                     <div class="day-labels">
@@ -508,6 +523,7 @@
                     <div class="contribution-grid" id="contributionGrid"></div>
                 </div>
                 <div class="task-list" id="taskList"></div>
+            </div>
             </div>
             
             <a href="#" class="cta">
@@ -606,9 +622,9 @@
         const TODAY_INDEX = TOTAL_CELLS - 1;
 
         // Timing (ms)
-        const TASK_COMPLETE_INTERVAL = 1200;  // Time between task completions
-        const DAY_TRANSITION_DELAY = 800;     // Pause before new day
-        const DAY_ANIMATION_DURATION = 400;   // Grid shift animation
+        const TASK_COMPLETE_INTERVAL = 2500;  // Time between task completions
+        const DAY_TRANSITION_DELAY = 2000;    // Pause before new day
+        const DAY_ANIMATION_DURATION = 600;   // Grid shift animation
 
         // === STATE ===
         let gridData = new Array(TOTAL_CELLS).fill(0);
@@ -678,7 +694,7 @@
             toast.className = `toast ${type}`;
             toast.textContent = message;
             container.appendChild(toast);
-            setTimeout(() => toast.remove(), 2500);
+            setTimeout(() => toast.remove(), 5000);
         }
 
         // === SIMULATION ACTIONS ===
