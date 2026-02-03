@@ -636,26 +636,29 @@
             }
 
             .demo-wrapper {
-                margin-bottom: 55px;
+                margin-bottom: 60px;
             }
 
             .annotation {
-                flex-direction: row;
-                align-items: flex-start;
+                flex-direction: column;
+                align-items: flex-end;
             }
 
             .annotation-text {
-                font-size: 0.85rem;
-                margin-left: -35px;
-                margin-top: 5px;
-                transform: rotate(-3deg);
+                font-size: 0.95rem;
+                margin-left: 0;
+                margin-right: -60px;
+                margin-top: -15px;
+                transform: rotate(-8deg);
+                order: 2;
             }
 
             .annotation-arrow {
-                width: 50px;
-                height: 40px;
+                width: 110px;
+                height: 70px;
                 margin-left: 0;
-                transform: rotate(-45deg) scaleY(-1);
+                margin-bottom: -10px;
+                order: 1;
             }
 
             .cta {
@@ -770,9 +773,9 @@
             </div>
                 <div class="annotation" id="annotation">
                     <span class="annotation-text">This is you<br>from today on</span>
-                    <svg class="annotation-arrow" viewBox="-80 0 260 90" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M140 8 C 80 15, 20 35, -60 75" />
-                        <path d="M-52 65 L -60 75 L -48 77" />
+                    <svg class="annotation-arrow" id="annotationArrow" viewBox="-80 0 260 90" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path id="arrowCurve" d="M140 8 C 80 15, 20 35, -60 75" />
+                        <path id="arrowHead" d="M-52 65 L -60 75 L -48 77" />
                     </svg>
                 </div>
             </div>
@@ -1148,8 +1151,11 @@
             const phoneFrame = document.querySelector('.phone-frame');
             const demoWrapper = document.querySelector('.demo-wrapper');
             const annotation = document.getElementById('annotation');
+            const arrowSvg = document.getElementById('annotationArrow');
+            const arrowCurve = document.getElementById('arrowCurve');
+            const arrowHead = document.getElementById('arrowHead');
 
-            if (!targetCell || !demoWrapper || !annotation || !phoneFrame) return;
+            if (!targetCell || !demoWrapper || !annotation || !phoneFrame || !arrowSvg || !arrowCurve || !arrowHead) return;
 
             const cellRect = targetCell.getBoundingClientRect();
             const wrapperRect = demoWrapper.getBoundingClientRect();
@@ -1157,15 +1163,22 @@
             const isMobile = window.innerWidth < 768;
 
             if (isMobile) {
-                // On mobile: position below phone, arrow points up-left to gold cell
-                const phoneBottom = phoneRect.bottom - wrapperRect.top;
-                const wrapperCenterX = wrapperRect.width / 2;
+                // On mobile: arrow points UP toward gold cell, text below arrow
+                const cellRightX = cellRect.right - wrapperRect.left;
+                const cellBottomY = cellRect.bottom - wrapperRect.top;
 
-                const annotationX = wrapperCenterX + 30;
-                const annotationY = phoneBottom + 5;
+                // Position annotation below and to the right of the gold cell
+                const annotationX = cellRightX - 70;
+                const annotationY = cellBottomY + 5;
 
                 annotation.style.left = `${annotationX}px`;
                 annotation.style.top = `${annotationY}px`;
+
+                // Draw arrow going UP-LEFT with arrowhead at the top (toward gold cell)
+                arrowSvg.setAttribute('viewBox', '0 0 100 70');
+                arrowCurve.setAttribute('d', 'M85 60 C 60 50, 40 30, 15 10');
+                // Arrowhead pointing UP-LEFT, symmetric wings matching line slope
+                arrowHead.setAttribute('d', 'M26 12 L 15 10 L 20 20');
             } else {
                 // Desktop: position outside the phone frame on the right
                 const phoneRightEdge = phoneRect.right - wrapperRect.left;
@@ -1175,6 +1188,11 @@
 
                 annotation.style.left = `${annotationX}px`;
                 annotation.style.top = `${annotationY}px`;
+
+                // Desktop arrow: original path (down-left with arrowhead at bottom-left)
+                arrowSvg.setAttribute('viewBox', '-80 0 260 90');
+                arrowCurve.setAttribute('d', 'M140 8 C 80 15, 20 35, -60 75');
+                arrowHead.setAttribute('d', 'M-52 65 L -60 75 L -48 77');
             }
             annotation.classList.add('positioned');
         }
