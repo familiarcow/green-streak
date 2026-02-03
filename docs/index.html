@@ -93,11 +93,11 @@
         /* Annotation arrow */
         .annotation {
             position: absolute;
-            right: calc(50% - 400px);
-            bottom: -20px;
+            right: calc(50% - 420px);
+            bottom: 10px;
             display: flex;
             flex-direction: column;
-            align-items: flex-start;
+            align-items: flex-end;
             pointer-events: none;
             z-index: 10;
         }
@@ -108,16 +108,15 @@
             color: #e53935;
             white-space: nowrap;
             line-height: 1.2;
-            text-align: left;
-            transform: rotate(3deg);
+            text-align: right;
+            transform: rotate(-5deg);
         }
 
         .annotation-arrow {
-            width: 120px;
-            height: 90px;
+            width: 140px;
+            height: 110px;
             color: #e53935;
-            margin-left: -30px;
-            margin-top: -10px;
+            margin-right: 20px;
         }
 
         /* Phone Mockup */
@@ -782,9 +781,9 @@
             </div>
                 <div class="annotation">
                     <span class="annotation-text">This is you<br>from today on</span>
-                    <svg class="annotation-arrow" viewBox="0 0 100 80" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M95 75 C 70 70, 30 60, 10 15" />
-                        <path d="M5 25 L 10 15 L 20 20" />
+                    <svg class="annotation-arrow" viewBox="0 0 120 100" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M110 95 C 80 85, 40 50, 15 15" />
+                        <path d="M10 28 L 15 15 L 28 18" />
                     </svg>
                 </div>
             </div>
