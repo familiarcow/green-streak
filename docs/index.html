@@ -93,13 +93,11 @@
         /* Annotation arrow */
         .annotation {
             position: absolute;
-            right: calc(50% - 380px);
-            bottom: 20px;
+            right: calc(50% - 400px);
+            bottom: -20px;
             display: flex;
             flex-direction: column;
-            align-items: flex-end;
-            gap: 4px;
-            transform: rotate(3deg);
+            align-items: flex-start;
             pointer-events: none;
             z-index: 10;
         }
@@ -110,13 +108,16 @@
             color: #e53935;
             white-space: nowrap;
             line-height: 1.2;
-            text-align: right;
+            text-align: left;
+            transform: rotate(3deg);
         }
 
         .annotation-arrow {
-            width: 60px;
-            height: 45px;
+            width: 120px;
+            height: 90px;
             color: #e53935;
+            margin-left: -30px;
+            margin-top: -10px;
         }
 
         /* Phone Mockup */
@@ -645,21 +646,24 @@
                 position: relative;
                 right: auto;
                 bottom: auto;
-                transform: none;
                 align-items: center;
-                margin-top: -10px;
+                margin-top: 16px;
             }
 
             .annotation-text {
                 font-size: 1.2rem;
                 text-align: center;
+                transform: none;
                 order: 1;
             }
 
             .annotation-arrow {
-                transform: rotate(180deg);
-                width: 45px;
-                height: 35px;
+                width: 80px;
+                height: 60px;
+                margin-left: 0;
+                margin-top: 0;
+                margin-bottom: -10px;
+                transform: rotate(90deg) scaleY(-1);
             }
 
             .calendar-section {
@@ -777,11 +781,11 @@
                 </div>
             </div>
                 <div class="annotation">
-                    <svg class="annotation-arrow" viewBox="0 0 70 50" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M35 45 C 40 25, 50 15, 65 5" />
-                        <path d="M58 3 L 65 5 L 62 12" />
-                    </svg>
                     <span class="annotation-text">This is you<br>from today on</span>
+                    <svg class="annotation-arrow" viewBox="0 0 100 80" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M95 75 C 70 70, 30 60, 10 15" />
+                        <path d="M5 25 L 10 15 L 20 20" />
+                    </svg>
                 </div>
             </div>
             
