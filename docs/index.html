@@ -19,7 +19,6 @@
         }
 
         :root {
-            /* App's actual colors */
             --background: #F9F7F4;
             --surface: #FFFFFF;
             --text-primary: #1F2937;
@@ -28,7 +27,6 @@
             --border: #E5E7EB;
             --primary: #22c55e;
             
-            /* Contribution colors */
             --empty: #EBEDF0;
             --level1: #C6E48B;
             --level2: #7BC96F;
@@ -87,14 +85,21 @@
             line-height: 1.7;
         }
 
+        /* Live Demo Container */
+        .demo-container {
+            position: relative;
+            margin-bottom: 48px;
+        }
+
         /* Animated Grid Preview */
         .grid-preview {
             background: var(--surface);
             border-radius: 16px;
             padding: 24px;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
-            margin-bottom: 48px;
             border: 1px solid var(--border);
+            position: relative;
+            overflow: hidden;
         }
 
         .grid-header {
@@ -127,27 +132,20 @@
         .grid-streak span {
             color: var(--primary);
             font-weight: 600;
+            transition: all 0.3s ease;
         }
 
         .grid-demo {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
             gap: 4px;
+            position: relative;
         }
 
         .grid-cell {
             aspect-ratio: 1;
             border-radius: 3px;
-            animation: fillIn 0.4s ease-out forwards;
-            opacity: 0;
-            transform: scale(0.8);
-        }
-
-        @keyframes fillIn {
-            to {
-                opacity: 1;
-                transform: scale(1);
-            }
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .grid-cell.empty { background: var(--empty); }
@@ -155,6 +153,102 @@
         .grid-cell.l2 { background: var(--level2); }
         .grid-cell.l3 { background: var(--level3); }
         .grid-cell.l4 { background: var(--level4); }
+
+        .grid-cell.pulse {
+            animation: cellPulse 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes cellPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.3); }
+            100% { transform: scale(1); }
+        }
+
+        .grid-cell.slide-out {
+            animation: slideOut 0.4s ease forwards;
+        }
+
+        @keyframes slideOut {
+            to {
+                opacity: 0;
+                transform: translateX(-20px) scale(0.8);
+            }
+        }
+
+        .grid-cell.slide-in {
+            animation: slideIn 0.4s ease forwards;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(20px) scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0) scale(1);
+            }
+        }
+
+        /* Toast Notifications */
+        .toast-container {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .toast {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 10px 14px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            white-space: nowrap;
+            animation: toastIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards, 
+                       toastOut 0.3s ease 2.5s forwards;
+            transform: translateX(100%);
+            opacity: 0;
+        }
+
+        @keyframes toastIn {
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes toastOut {
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+
+        .toast-icon {
+            font-size: 1.1rem;
+        }
+
+        .toast.streak {
+            border-left: 3px solid var(--primary);
+        }
+
+        .toast.streak .toast-icon {
+            color: var(--primary);
+        }
+
+        .toast.complete {
+            border-left: 3px solid #3b82f6;
+        }
 
         /* CTA Button */
         .cta {
@@ -333,10 +427,10 @@
             border-radius: 10px;
             opacity: 0;
             transform: translateX(-10px);
-            animation: slideIn 0.4s ease forwards;
+            animation: habitSlideIn 0.4s ease forwards;
         }
 
-        @keyframes slideIn {
+        @keyframes habitSlideIn {
             to {
                 opacity: 1;
                 transform: translateX(0);
@@ -357,25 +451,6 @@
         .habit-check {
             margin-left: auto;
             color: var(--primary);
-        }
-
-        /* Widget Visual */
-        .widget-visual {
-            background: var(--background);
-            border-radius: 20px;
-            padding: 16px;
-            width: 160px;
-        }
-
-        .widget-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 3px;
-        }
-
-        .widget-cell {
-            aspect-ratio: 1;
-            border-radius: 2px;
         }
 
         /* Final CTA */
@@ -459,6 +534,11 @@
             .scroll-hint {
                 display: none;
             }
+
+            .toast-container {
+                right: 0;
+                top: -60px;
+            }
         }
     </style>
 </head>
@@ -469,13 +549,16 @@
             <h1>Your habits, visualized.</h1>
             <p class="tagline">Track daily routines with beautiful contribution graphs. Watch your consistency grow, one green square at a time.</p>
             
-            <div class="grid-preview">
-                <div class="grid-header">
-                    <div class="grid-dot"></div>
-                    <span class="grid-title">Morning Routine</span>
-                    <span class="grid-streak"><span>23</span> day streak</span>
+            <div class="demo-container">
+                <div class="toast-container" id="toastContainer"></div>
+                <div class="grid-preview">
+                    <div class="grid-header">
+                        <div class="grid-dot"></div>
+                        <span class="grid-title">Morning Routine</span>
+                        <span class="grid-streak"><span id="streakCount">12</span> day streak</span>
+                    </div>
+                    <div class="grid-demo" id="heroGrid"></div>
                 </div>
-                <div class="grid-demo" id="heroGrid"></div>
             </div>
             
             <a href="#" class="cta">
@@ -599,37 +682,220 @@
     </footer>
 
     <script>
-        // Generate contribution grid
-        function createGrid(containerId, rows = 5, cols = 7) {
+        // Configuration
+        const HABITS = [
+            { name: 'Exercise', icon: '🏃', color: '#22c55e' },
+            { name: 'Meditation', icon: '🧘', color: '#8b5cf6' },
+            { name: 'Reading', icon: '📚', color: '#3b82f6' },
+            { name: 'Journaling', icon: '✍️', color: '#f59e0b' },
+            { name: 'Hydration', icon: '💧', color: '#06b6d4' },
+            { name: 'Sleep 8hrs', icon: '😴', color: '#ec4899' },
+        ];
+
+        const LEVELS = ['empty', 'l1', 'l2', 'l3', 'l4'];
+        const GRID_ROWS = 4;
+        const GRID_COLS = 7;
+
+        // State
+        let gridData = [];
+        let currentStreak = 12;
+        let toastQueue = [];
+
+        // Initialize grid data
+        function initGridData() {
+            gridData = [];
+            const weights = [0.1, 0.2, 0.25, 0.25, 0.2];
+            for (let i = 0; i < GRID_ROWS * GRID_COLS; i++) {
+                const rand = Math.random();
+                let cumulative = 0;
+                let level = 0;
+                for (let j = 0; j < weights.length; j++) {
+                    cumulative += weights[j];
+                    if (rand < cumulative) {
+                        level = j;
+                        break;
+                    }
+                }
+                gridData.push(level);
+            }
+        }
+
+        // Render grid
+        function renderGrid(containerId) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            container.innerHTML = '';
+            
+            gridData.forEach((level, i) => {
+                const cell = document.createElement('div');
+                cell.className = `grid-cell ${LEVELS[level]}`;
+                cell.dataset.index = i;
+                container.appendChild(cell);
+            });
+        }
+
+        // Show toast notification
+        function showToast(message, icon, type = 'complete') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `<span class="toast-icon">${icon}</span><span>${message}</span>`;
+            container.appendChild(toast);
+            
+            // Remove after animation
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+
+        // Advance the grid (shift left, add new day)
+        function advanceGrid() {
+            const container = document.getElementById('heroGrid');
+            const cells = container.querySelectorAll('.grid-cell');
+            
+            // Animate first column out
+            for (let row = 0; row < GRID_ROWS; row++) {
+                const idx = row * GRID_COLS;
+                cells[idx].classList.add('slide-out');
+            }
+
+            setTimeout(() => {
+                // Shift data left (remove first column, add new column)
+                const newData = [];
+                for (let row = 0; row < GRID_ROWS; row++) {
+                    for (let col = 1; col < GRID_COLS; col++) {
+                        newData.push(gridData[row * GRID_COLS + col]);
+                    }
+                    // Add new random cell for last column
+                    const weights = [0.05, 0.15, 0.3, 0.3, 0.2]; // Bias toward completions
+                    const rand = Math.random();
+                    let cumulative = 0;
+                    let level = 0;
+                    for (let j = 0; j < weights.length; j++) {
+                        cumulative += weights[j];
+                        if (rand < cumulative) {
+                            level = j;
+                            break;
+                        }
+                    }
+                    newData.push(level);
+                }
+                gridData = newData;
+
+                // Re-render
+                renderGrid('heroGrid');
+                
+                // Animate last column in
+                const newCells = container.querySelectorAll('.grid-cell');
+                for (let row = 0; row < GRID_ROWS; row++) {
+                    const idx = row * GRID_COLS + (GRID_COLS - 1);
+                    newCells[idx].classList.add('slide-in');
+                }
+            }, 400);
+        }
+
+        // Simulate a habit completion
+        function simulateCompletion() {
+            const container = document.getElementById('heroGrid');
+            const cells = container.querySelectorAll('.grid-cell');
+            
+            // Pick a random cell in the last 2 columns (recent days)
+            const recentCells = [];
+            for (let row = 0; row < GRID_ROWS; row++) {
+                for (let col = GRID_COLS - 2; col < GRID_COLS; col++) {
+                    const idx = row * GRID_COLS + col;
+                    if (gridData[idx] < 4) {
+                        recentCells.push(idx);
+                    }
+                }
+            }
+
+            if (recentCells.length === 0) return;
+
+            const idx = recentCells[Math.floor(Math.random() * recentCells.length)];
+            const currentLevel = gridData[idx];
+            const newLevel = Math.min(currentLevel + 1, 4);
+            gridData[idx] = newLevel;
+
+            // Update cell
+            const cell = cells[idx];
+            cell.className = `grid-cell ${LEVELS[newLevel]} pulse`;
+
+            // Show toast
+            const habit = HABITS[Math.floor(Math.random() * HABITS.length)];
+            showToast(`${habit.name} completed!`, habit.icon, 'complete');
+
+            // Maybe update streak
+            if (Math.random() > 0.6) {
+                setTimeout(() => {
+                    currentStreak++;
+                    document.getElementById('streakCount').textContent = currentStreak;
+                    document.getElementById('streakCount').style.transform = 'scale(1.2)';
+                    setTimeout(() => {
+                        document.getElementById('streakCount').style.transform = 'scale(1)';
+                    }, 200);
+                    showToast(`${currentStreak} day streak!`, '🔥', 'streak');
+                }, 800);
+            }
+        }
+
+        // Static grid for features section
+        function createStaticGrid(containerId, rows = 5) {
             const container = document.getElementById(containerId);
             if (!container) return;
             
-            const levels = ['empty', 'l1', 'l2', 'l3', 'l4'];
             const weights = [0.15, 0.2, 0.25, 0.25, 0.15];
-            
-            for (let i = 0; i < rows * cols; i++) {
+            for (let i = 0; i < rows * 7; i++) {
                 const cell = document.createElement('div');
                 cell.className = 'grid-cell';
-                
                 const rand = Math.random();
                 let cumulative = 0;
                 for (let j = 0; j < weights.length; j++) {
                     cumulative += weights[j];
                     if (rand < cumulative) {
-                        cell.classList.add(levels[j]);
+                        cell.classList.add(LEVELS[j]);
                         break;
                     }
                 }
-                
-                cell.style.animationDelay = `${i * 25}ms`;
                 container.appendChild(cell);
             }
         }
 
-        createGrid('heroGrid', 4, 7);
-        createGrid('featureGrid', 5, 7);
+        // Initialize
+        initGridData();
+        renderGrid('heroGrid');
+        createStaticGrid('featureGrid', 5);
 
-        // Scroll animations
+        // Start continuous animation loop
+        let lastAdvance = 0;
+        let lastCompletion = 0;
+
+        function animationLoop() {
+            const now = Date.now();
+            
+            // Advance grid every 8 seconds
+            if (now - lastAdvance > 8000) {
+                advanceGrid();
+                lastAdvance = now;
+            }
+            
+            // Simulate completion every 2-4 seconds
+            if (now - lastCompletion > 2000 + Math.random() * 2000) {
+                simulateCompletion();
+                lastCompletion = now;
+            }
+
+            requestAnimationFrame(animationLoop);
+        }
+
+        // Start after a short delay
+        setTimeout(() => {
+            lastAdvance = Date.now();
+            lastCompletion = Date.now();
+            animationLoop();
+        }, 1500);
+
+        // Scroll animations for features
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
