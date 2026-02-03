@@ -84,11 +84,8 @@
 
         /* Demo wrapper */
         .demo-wrapper {
-            position: relative;
             display: flex;
-            align-items: flex-start;
             justify-content: center;
-            gap: 20px;
             margin-bottom: 48px;
         }
 
@@ -197,7 +194,7 @@
         .task-item {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
             padding: 10px 12px;
             background: var(--background);
             border-radius: 10px;
@@ -234,17 +231,19 @@
 
         .task-name {
             font-weight: 500;
-            font-size: 14px;
+            font-size: 13px;
+            line-height: 1.2;
         }
 
         .task-streak {
             font-size: 11px;
             color: var(--text-secondary);
+            line-height: 1.2;
         }
 
         .task-check {
-            width: 22px;
-            height: 22px;
+            width: 20px;
+            height: 20px;
             border-radius: 50%;
             border: 2px solid var(--border);
             display: flex;
@@ -252,6 +251,7 @@
             justify-content: center;
             transition: all 0.2s ease;
             flex-shrink: 0;
+            margin-left: auto;
         }
 
         .task-check.checked {
@@ -260,8 +260,8 @@
         }
 
         .task-check svg {
-            width: 12px;
-            height: 12px;
+            width: 10px;
+            height: 10px;
             opacity: 0;
             transition: opacity 0.2s ease;
         }
@@ -269,47 +269,6 @@
         .task-check.checked svg {
             opacity: 1;
         }
-
-        /* Toast - next to phone mockup */
-        .toast-area {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            z-index: 100;
-            pointer-events: none;
-            min-width: 180px;
-            padding-top: 60px;
-        }
-
-        .toast {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 12px 16px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 14px;
-            font-weight: 500;
-            white-space: nowrap;
-            animation: toastSlide 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards,
-                       toastFade 0.4s ease 4s forwards;
-            transform: translateX(30px);
-            opacity: 0;
-        }
-
-        @keyframes toastSlide {
-            to { transform: translateX(0); opacity: 1; }
-        }
-
-        @keyframes toastFade {
-            to { transform: translateX(30px); opacity: 0; }
-        }
-
-        .toast.streak { border-left: 3px solid #FF6B35; }
-        .toast.complete { border-left: 3px solid var(--primary); }
-        .toast.newday { border-left: 3px solid #3b82f6; }
 
         /* CTA */
         .cta {
@@ -600,11 +559,6 @@
                 min-width: auto;
             }
 
-            /* Hide toasts on mobile */
-            .toast-area {
-                display: none;
-            }
-
             .cta {
                 padding: 12px 24px;
                 font-size: 0.95rem;
@@ -705,7 +659,6 @@
                     <div class="tasks-section" id="taskList"></div>
                 </div>
             </div>
-                <div class="toast-area" id="toastContainer"></div>
             </div>
             
             <a href="#" class="cta">
@@ -876,16 +829,6 @@
             });
         }
 
-        // === TOASTS ===
-        function showToast(message, type = 'complete') {
-            const container = document.getElementById('toastContainer');
-            const toast = document.createElement('div');
-            toast.className = `toast ${type}`;
-            toast.textContent = message;
-            container.appendChild(toast);
-            setTimeout(() => toast.remove(), 5000);
-        }
-
         // === SIMULATION ACTIONS ===
         function completeTask(task) {
             if (todayCompletions.includes(task.id)) return;
@@ -911,14 +854,6 @@
             gridData[TODAY_INDEX] = newLevel;
             updateCell(TODAY_INDEX, newLevel);
             
-            // Show toast
-            showToast(`${task.name} completed!`, 'complete');
-            
-            // Streak milestone
-            const streak = taskStreaks[task.id];
-            if (streak === 7 || streak % 10 === 0) {
-                setTimeout(() => showToast(`🔥 ${streak} day streak!`, 'streak'), 600);
-            }
         }
 
         function advanceDay() {
@@ -936,9 +871,6 @@
             // Re-render
             renderGrid();
             renderTaskList();
-            
-            // Toast for new day
-            showToast(`📅 Day ${currentDay}`, 'newday');
         }
 
         // === MAIN SIMULATION LOOP ===
