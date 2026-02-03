@@ -108,6 +108,20 @@
             border-radius: 16px;
             padding: 16px;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+        }
+
+        .calendar-section {
+            flex: 1;
+        }
+
+        .tasks-section {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            min-width: 110px;
         }
 
         /* Day counter */
@@ -179,21 +193,14 @@
             100% { transform: translateX(-10px); opacity: 0.8; }
         }
 
-        /* Task List */
-        .task-list {
-            margin-top: 16px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
+        /* Compact Task Items */
         .task-item {
             display: flex;
             align-items: center;
-            gap: 12px;
-            padding: 12px;
+            gap: 8px;
+            padding: 8px 10px;
             background: var(--background);
-            border-radius: 12px;
+            border-radius: 10px;
             transition: all 0.2s ease;
         }
 
@@ -206,39 +213,48 @@
         }
 
         .task-icon {
-            width: 36px;
-            height: 36px;
-            border-radius: 10px;
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .task-icon svg {
+            width: 16px;
+            height: 16px;
         }
 
         .task-info {
             flex: 1;
+            min-width: 0;
         }
 
         .task-name {
             font-weight: 500;
-            font-size: 14px;
+            font-size: 12px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .task-streak {
-            font-size: 12px;
+            font-size: 10px;
             color: var(--text-secondary);
-            transition: all 0.3s ease;
         }
 
         .task-check {
-            width: 24px;
-            height: 24px;
+            width: 18px;
+            height: 18px;
             border-radius: 50%;
             border: 2px solid var(--border);
             display: flex;
             align-items: center;
             justify-content: center;
             transition: all 0.2s ease;
+            flex-shrink: 0;
         }
 
         .task-check.checked {
@@ -247,6 +263,8 @@
         }
 
         .task-check svg {
+            width: 10px;
+            height: 10px;
             opacity: 0;
             transition: opacity 0.2s ease;
         }
@@ -530,33 +548,44 @@
                 gap: 3px;
             }
 
-            .task-list {
-                margin-top: 12px;
+            .app-card {
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            .tasks-section {
+                flex-direction: row;
+                flex-wrap: wrap;
                 gap: 6px;
+                min-width: auto;
             }
 
             .task-item {
-                padding: 10px;
-                gap: 10px;
+                padding: 6px 8px;
+                gap: 6px;
             }
 
             .task-icon {
-                width: 32px;
-                height: 32px;
-                font-size: 16px;
+                width: 24px;
+                height: 24px;
+            }
+
+            .task-icon svg {
+                width: 14px;
+                height: 14px;
             }
 
             .task-name {
-                font-size: 13px;
-            }
-
-            .task-streak {
                 font-size: 11px;
             }
 
+            .task-streak {
+                font-size: 9px;
+            }
+
             .task-check {
-                width: 22px;
-                height: 22px;
+                width: 16px;
+                height: 16px;
             }
 
             /* Demo wrapper stacks on mobile */
@@ -663,19 +692,21 @@
             <div class="demo-wrapper">
                 <div class="phone-frame">
                 <div class="app-card">
-                    <div class="day-counter">Day <span id="dayNumber">1</span></div>
-                    <div class="day-labels">
-                        <span class="day-label">S</span>
-                        <span class="day-label">M</span>
-                        <span class="day-label">T</span>
-                        <span class="day-label">W</span>
-                        <span class="day-label">T</span>
-                        <span class="day-label">F</span>
-                        <span class="day-label">S</span>
+                    <div class="calendar-section">
+                        <div class="day-counter">Day <span id="dayNumber">1</span></div>
+                        <div class="day-labels">
+                            <span class="day-label">S</span>
+                            <span class="day-label">M</span>
+                            <span class="day-label">T</span>
+                            <span class="day-label">W</span>
+                            <span class="day-label">T</span>
+                            <span class="day-label">F</span>
+                            <span class="day-label">S</span>
+                        </div>
+                        <div class="contribution-grid" id="contributionGrid"></div>
                     </div>
-                    <div class="contribution-grid" id="contributionGrid"></div>
+                    <div class="tasks-section" id="taskList"></div>
                 </div>
-                <div class="task-list" id="taskList"></div>
             </div>
                 <div class="toast-area" id="toastContainer"></div>
             </div>
@@ -763,10 +794,17 @@
 
     <script>
         // === SIMULATION CONFIG ===
+        // SVG icons matching the app's Lucide icons
+        const ICONS = {
+            dumbbell: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6.5 6.5 11 11"/><path d="m21 21-1-1"/><path d="m3 3 1 1"/><path d="m18 22 4-4"/><path d="m2 6 4-4"/><path d="m3 10 7-7"/><path d="m14 21 7-7"/></svg>',
+            brain: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 4.44-1.04Z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-4.44-1.04Z"/></svg>',
+            book: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>',
+        };
+
         const TASKS = [
-            { id: 1, name: 'Exercise', icon: '🏃', color: '#22c55e' },
-            { id: 2, name: 'Meditation', icon: '🧘', color: '#8b5cf6' },
-            { id: 3, name: 'Read', icon: '📚', color: '#3b82f6' },
+            { id: 1, name: 'Exercise', icon: 'dumbbell', color: '#22c55e' },
+            { id: 2, name: 'Meditate', icon: 'brain', color: '#8b5cf6' },
+            { id: 3, name: 'Read', icon: 'book', color: '#3b82f6' },
         ];
 
         const LEVELS = ['empty', 'l1', 'l2', 'l3', 'l4'];
@@ -824,15 +862,15 @@
                 item.className = 'task-item';
                 item.dataset.taskId = task.id;
                 item.innerHTML = `
-                    <div class="task-icon" style="background: ${task.color}20;">
-                        <span>${task.icon}</span>
+                    <div class="task-icon" style="background: ${task.color}20; color: ${task.color};">
+                        ${ICONS[task.icon]}
                     </div>
                     <div class="task-info">
                         <div class="task-name">${task.name}</div>
-                        <div class="task-streak">${streak > 0 ? streak + ' day streak' : 'Start your streak!'}</div>
+                        <div class="task-streak">${streak > 0 ? streak + ' days' : 'Start!'}</div>
                     </div>
                     <div class="task-check ${completed ? 'checked' : ''}">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="white">
+                        <svg viewBox="0 0 24 24" fill="white">
                             <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
                         </svg>
                     </div>
@@ -877,7 +915,7 @@
             updateCell(TODAY_INDEX, newLevel);
             
             // Show toast
-            showToast(`${task.icon} ${task.name} completed!`, 'complete');
+            showToast(`${task.name} completed!`, 'complete');
             
             // Streak milestone
             const streak = taskStreaks[task.id];
