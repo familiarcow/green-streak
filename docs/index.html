@@ -82,6 +82,16 @@
             line-height: 1.7;
         }
 
+        /* Demo wrapper */
+        .demo-wrapper {
+            position: relative;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 48px;
+        }
+
         /* Phone Mockup */
         .phone-frame {
             background: var(--surface);
@@ -245,18 +255,15 @@
             opacity: 1;
         }
 
-        /* Toast - positioned relative to phone mockup */
+        /* Toast - next to phone mockup */
         .toast-area {
-            position: absolute;
-            top: 50%;
-            left: calc(100% + 20px);
-            transform: translateY(-50%);
             display: flex;
             flex-direction: column;
             gap: 10px;
             z-index: 100;
             pointer-events: none;
             min-width: 180px;
+            padding-top: 60px;
         }
 
         .toast {
@@ -288,17 +295,6 @@
         .toast.streak { border-left: 3px solid #FF6B35; }
         .toast.complete { border-left: 3px solid var(--primary); }
         .toast.newday { border-left: 3px solid #3b82f6; }
-
-        /* Hide toast area on mobile - put below instead */
-        @media (max-width: 900px) {
-            .toast-area {
-                position: fixed;
-                top: auto;
-                bottom: 100px;
-                left: 50%;
-                transform: translateX(-50%);
-            }
-        }
 
         /* CTA */
         .cta {
@@ -489,13 +485,171 @@
 
         footer a:hover { color: var(--primary); }
 
+        /* Mobile styles */
         @media (max-width: 768px) {
+            .hero {
+                min-height: auto;
+                padding: 60px 16px 40px;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            .tagline {
+                font-size: 1rem;
+                margin-bottom: 32px;
+            }
+
+            .logo {
+                width: 80px;
+                height: 80px;
+                margin-bottom: 24px;
+            }
+
+            .phone-frame {
+                padding: 16px;
+                border-radius: 20px;
+                max-width: 100%;
+            }
+
+            .app-card {
+                padding: 12px;
+            }
+
+            .day-labels {
+                gap: 3px;
+                margin-bottom: 6px;
+            }
+
+            .day-label {
+                font-size: 10px;
+            }
+
+            .contribution-grid {
+                gap: 3px;
+            }
+
+            .task-list {
+                margin-top: 12px;
+                gap: 6px;
+            }
+
+            .task-item {
+                padding: 10px;
+                gap: 10px;
+            }
+
+            .task-icon {
+                width: 32px;
+                height: 32px;
+                font-size: 16px;
+            }
+
+            .task-name {
+                font-size: 13px;
+            }
+
+            .task-streak {
+                font-size: 11px;
+            }
+
+            .task-check {
+                width: 22px;
+                height: 22px;
+            }
+
+            /* Demo wrapper stacks on mobile */
+            .demo-wrapper {
+                flex-direction: column;
+                align-items: center;
+                gap: 16px;
+                margin-bottom: 32px;
+            }
+
+            /* Toast on mobile - below mockup */
+            .toast-area {
+                padding-top: 0;
+                min-width: auto;
+                align-items: center;
+            }
+
+            .toast {
+                font-size: 13px;
+                padding: 10px 14px;
+            }
+
+            .cta {
+                padding: 12px 24px;
+                font-size: 0.95rem;
+            }
+
+            .features {
+                padding: 60px 16px;
+            }
+
             .feature {
                 grid-template-columns: 1fr;
                 gap: 32px;
+                margin-bottom: 60px;
             }
-            .feature:nth-child(even) { direction: ltr; }
-            .toast-container { right: 10px; left: 10px; }
+
+            .feature:nth-child(even) {
+                direction: ltr;
+            }
+
+            .feature-text h2 {
+                font-size: 1.4rem;
+            }
+
+            .feature-text p {
+                font-size: 1rem;
+            }
+
+            .feature-visual {
+                padding: 24px;
+                min-height: 180px;
+            }
+
+            .streak-number {
+                font-size: 3rem;
+            }
+
+            .final-cta {
+                padding: 60px 16px;
+            }
+
+            .final-cta h2 {
+                font-size: 1.6rem;
+            }
+
+            .badges {
+                gap: 8px;
+            }
+
+            .badge {
+                padding: 6px 12px;
+                font-size: 0.8rem;
+            }
+
+            footer {
+                padding: 30px 16px;
+            }
+        }
+
+        /* Extra small screens */
+        @media (max-width: 380px) {
+            .phone-frame {
+                padding: 12px;
+            }
+
+            .contribution-grid {
+                gap: 2px;
+            }
+
+            .task-item {
+                padding: 8px;
+            }
         }
     </style>
 </head>
@@ -506,8 +660,7 @@
             <h1>Your habits, visualized.</h1>
             <p class="tagline">Track daily routines with beautiful contribution graphs. Watch your consistency grow, one green square at a time.</p>
             
-            <div style="position: relative; display: inline-block;">
-                <div class="toast-area" id="toastContainer"></div>
+            <div class="demo-wrapper">
                 <div class="phone-frame">
                 <div class="app-card">
                     <div class="day-counter">Day <span id="dayNumber">1</span></div>
@@ -524,6 +677,7 @@
                 </div>
                 <div class="task-list" id="taskList"></div>
             </div>
+                <div class="toast-area" id="toastContainer"></div>
             </div>
             
             <a href="#" class="cta">
