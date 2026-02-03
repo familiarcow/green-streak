@@ -619,12 +619,8 @@
                 height: 14px;
             }
 
-            .task-name {
-                font-size: 10px;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-                max-width: 60px;
+            .task-info {
+                display: none;
             }
 
             .task-streak {
@@ -1159,12 +1155,12 @@
             const isMobile = window.innerWidth < 768;
 
             if (isMobile) {
-                // On mobile: position to the right of phone, arrow points up-left at gold cell
-                const phoneRightEdge = phoneRect.right - wrapperRect.left;
-                const cellBottomY = cellRect.bottom - wrapperRect.top;
+                // On mobile: position below the phone frame, to the right
+                const phoneBottom = phoneRect.bottom - wrapperRect.top;
+                const cellCenterX = cellRect.left + cellRect.width / 2 - wrapperRect.left;
 
-                const annotationX = phoneRightEdge - 15;
-                const annotationY = cellBottomY - 25;
+                const annotationX = cellCenterX + 20;
+                const annotationY = phoneBottom - 30;
 
                 annotation.style.left = `${annotationX}px`;
                 annotation.style.top = `${annotationY}px`;
