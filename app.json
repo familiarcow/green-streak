@@ -17,7 +17,8 @@
       "bundleIdentifier": "com.green-streak.app",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
-      }
+      },
+      "buildNumber": "2"
     },
     "scheme": "greenstreak",
     "android": {
