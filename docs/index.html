@@ -394,43 +394,42 @@
         .carousel-track {
             display: flex;
             gap: 24px;
-            padding: 20px 40px;
+            padding: 20px 0;
             overflow-x: auto;
             scroll-snap-type: x mandatory;
             scrollbar-width: none;
             -ms-overflow-style: none;
-            cursor: grab;
+            scroll-behavior: smooth;
         }
 
         .carousel-track::-webkit-scrollbar {
             display: none;
         }
 
-        .carousel-track:active {
-            cursor: grabbing;
-        }
-
         .carousel-card {
-            flex: 0 0 320px;
+            flex: 0 0 340px;
             background: var(--surface);
             border-radius: 24px;
             padding: 32px;
             border: 1px solid var(--border);
             scroll-snap-align: center;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            transition: transform 0.4s ease, box-shadow 0.4s ease, opacity 0.4s ease;
+            opacity: 0.6;
+            transform: scale(0.95);
         }
 
-        .carousel-card:hover {
-            transform: translateY(-4px);
+        .carousel-card.active {
+            opacity: 1;
+            transform: scale(1);
             box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.1);
         }
 
         .carousel-card:first-child {
-            margin-left: calc(50vw - 180px);
+            margin-left: calc(50vw - 170px);
         }
 
         .carousel-card:last-child {
-            margin-right: calc(50vw - 180px);
+            margin-right: calc(50vw - 170px);
         }
 
         .card-icon {
@@ -1091,56 +1090,79 @@
             const dotsContainer = document.getElementById('carouselDots');
             const cards = track.querySelectorAll('.carousel-card');
             const cardCount = cards.length;
+            let currentIndex = 0;
+            let autoScrollInterval;
             
             // Create dots
             for (let i = 0; i < cardCount; i++) {
                 const dot = document.createElement('div');
                 dot.className = 'carousel-dot' + (i === 0 ? ' active' : '');
-                dot.addEventListener('click', () => scrollToCard(i));
+                dot.addEventListener('click', () => {
+                    scrollToCard(i);
+                    resetAutoScroll();
+                });
                 dotsContainer.appendChild(dot);
             }
             
-            // Update dots on scroll
-            track.addEventListener('scroll', () => {
+            // Set first card as active initially
+            cards[0].classList.add('active');
+            
+            // Update active card and dots on scroll
+            function updateActiveState() {
                 const scrollLeft = track.scrollLeft;
-                const cardWidth = cards[0].offsetWidth + 24; // card + gap
-                const centerOffset = track.offsetWidth / 2 - cardWidth / 2;
-                const activeIndex = Math.round((scrollLeft - centerOffset + cardWidth / 2) / cardWidth);
+                const cardWidth = cards[0].offsetWidth + 24;
+                const newIndex = Math.round(scrollLeft / cardWidth);
+                const clampedIndex = Math.max(0, Math.min(newIndex, cardCount - 1));
                 
-                document.querySelectorAll('.carousel-dot').forEach((dot, i) => {
-                    dot.classList.toggle('active', i === Math.max(0, Math.min(activeIndex, cardCount - 1)));
+                if (clampedIndex !== currentIndex) {
+                    currentIndex = clampedIndex;
+                }
+                
+                // Update cards
+                cards.forEach((card, i) => {
+                    card.classList.toggle('active', i === clampedIndex);
                 });
-            });
+                
+                // Update dots
+                document.querySelectorAll('.carousel-dot').forEach((dot, i) => {
+                    dot.classList.toggle('active', i === clampedIndex);
+                });
+            }
+            
+            track.addEventListener('scroll', updateActiveState);
             
             function scrollToCard(index) {
                 const cardWidth = cards[0].offsetWidth + 24;
-                const centerOffset = track.offsetWidth / 2 - cardWidth / 2;
                 track.scrollTo({
-                    left: index * cardWidth - centerOffset + cardWidth / 2,
+                    left: index * cardWidth,
                     behavior: 'smooth'
                 });
             }
             
-            // Drag to scroll
-            let isDown = false;
-            let startX;
-            let scrollLeft;
+            // Auto-scroll every 5 seconds
+            function startAutoScroll() {
+                autoScrollInterval = setInterval(() => {
+                    currentIndex = (currentIndex + 1) % cardCount;
+                    scrollToCard(currentIndex);
+                }, 5000);
+            }
             
-            track.addEventListener('mousedown', (e) => {
-                isDown = true;
-                startX = e.pageX - track.offsetLeft;
-                scrollLeft = track.scrollLeft;
-            });
+            function resetAutoScroll() {
+                clearInterval(autoScrollInterval);
+                startAutoScroll();
+            }
             
-            track.addEventListener('mouseleave', () => isDown = false);
-            track.addEventListener('mouseup', () => isDown = false);
+            // Start auto-scroll
+            startAutoScroll();
             
-            track.addEventListener('mousemove', (e) => {
-                if (!isDown) return;
-                e.preventDefault();
-                const x = e.pageX - track.offsetLeft;
-                const walk = (x - startX) * 1.5;
-                track.scrollLeft = scrollLeft - walk;
+            // Pause on hover
+            track.addEventListener('mouseenter', () => clearInterval(autoScrollInterval));
+            track.addEventListener('mouseleave', startAutoScroll);
+            
+            // Touch handling
+            track.addEventListener('touchstart', () => clearInterval(autoScrollInterval));
+            track.addEventListener('touchend', () => {
+                setTimeout(startAutoScroll, 3000);
             });
         }
 
