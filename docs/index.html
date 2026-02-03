@@ -95,33 +95,33 @@
         /* Phone Mockup */
         .phone-frame {
             background: var(--surface);
-            border-radius: 24px;
-            padding: 20px;
+            border-radius: 28px;
+            padding: 24px;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
             border: 1px solid var(--border);
-            max-width: 340px;
-            margin: 0 auto 48px;
+            min-width: 480px;
         }
 
         .app-card {
             background: var(--surface);
             border-radius: 16px;
-            padding: 16px;
+            padding: 20px;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
             display: flex;
-            gap: 16px;
+            gap: 24px;
             align-items: flex-start;
         }
 
         .calendar-section {
             flex: 1;
+            min-width: 240px;
         }
 
         .tasks-section {
             display: flex;
             flex-direction: column;
-            gap: 8px;
-            min-width: 110px;
+            gap: 10px;
+            min-width: 140px;
         }
 
         /* Day counter */
@@ -193,12 +193,12 @@
             100% { transform: translateX(-10px); opacity: 0.8; }
         }
 
-        /* Compact Task Items */
+        /* Task Items */
         .task-item {
             display: flex;
             align-items: center;
-            gap: 8px;
-            padding: 8px 10px;
+            gap: 10px;
+            padding: 10px 12px;
             background: var(--background);
             border-radius: 10px;
             transition: all 0.2s ease;
@@ -213,8 +213,8 @@
         }
 
         .task-icon {
-            width: 28px;
-            height: 28px;
+            width: 32px;
+            height: 32px;
             border-radius: 8px;
             display: flex;
             align-items: center;
@@ -223,8 +223,8 @@
         }
 
         .task-icon svg {
-            width: 16px;
-            height: 16px;
+            width: 18px;
+            height: 18px;
         }
 
         .task-info {
@@ -234,20 +234,17 @@
 
         .task-name {
             font-weight: 500;
-            font-size: 12px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            font-size: 14px;
         }
 
         .task-streak {
-            font-size: 10px;
+            font-size: 11px;
             color: var(--text-secondary);
         }
 
         .task-check {
-            width: 18px;
-            height: 18px;
+            width: 22px;
+            height: 22px;
             border-radius: 50%;
             border: 2px solid var(--border);
             display: flex;
@@ -263,8 +260,8 @@
         }
 
         .task-check svg {
-            width: 10px;
-            height: 10px;
+            width: 12px;
+            height: 12px;
             opacity: 0;
             transition: opacity 0.2s ease;
         }
@@ -528,7 +525,9 @@
             .phone-frame {
                 padding: 16px;
                 border-radius: 20px;
-                max-width: 100%;
+                min-width: auto;
+                width: 100%;
+                max-width: 360px;
             }
 
             .app-card {
@@ -555,9 +554,10 @@
 
             .tasks-section {
                 flex-direction: row;
-                flex-wrap: wrap;
-                gap: 6px;
+                flex-wrap: nowrap;
+                gap: 8px;
                 min-width: auto;
+                justify-content: space-between;
             }
 
             .task-item {
@@ -592,20 +592,17 @@
             .demo-wrapper {
                 flex-direction: column;
                 align-items: center;
-                gap: 16px;
+                gap: 0;
                 margin-bottom: 32px;
             }
 
-            /* Toast on mobile - below mockup */
-            .toast-area {
-                padding-top: 0;
+            .calendar-section {
                 min-width: auto;
-                align-items: center;
             }
 
-            .toast {
-                font-size: 13px;
-                padding: 10px 14px;
+            /* Hide toasts on mobile */
+            .toast-area {
+                display: none;
             }
 
             .cta {
