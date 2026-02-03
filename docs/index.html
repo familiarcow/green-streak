@@ -204,6 +204,14 @@
             to { opacity: 1; }
         }
 
+        .day-labels.fading {
+            animation: gridFadeOut 0.3s ease forwards;
+        }
+
+        .day-labels.appearing {
+            animation: gridFadeIn 0.3s ease forwards;
+        }
+
         .day-counter span {
             display: inline-block;
         }
@@ -673,15 +681,7 @@
                 <div class="app-card">
                     <div class="calendar-section">
                         <div class="day-counter">Day <span id="dayNumber">1</span></div>
-                        <div class="day-labels">
-                            <span class="day-label">S</span>
-                            <span class="day-label">M</span>
-                            <span class="day-label">T</span>
-                            <span class="day-label">W</span>
-                            <span class="day-label">T</span>
-                            <span class="day-label">F</span>
-                            <span class="day-label">S</span>
-                        </div>
+                        <div class="day-labels" id="dayLabels"></div>
                         <div class="contribution-grid" id="contributionGrid"></div>
                     </div>
                     <div class="tasks-section" id="taskList"></div>
@@ -804,9 +804,27 @@
         gridData[TOTAL_CELLS - 3] = 2;  // 2 days ago
         gridData[TOTAL_CELLS - 2] = 3;  // yesterday
         let currentDay = 5;
+        let currentDayOfWeek = 6;  // 0=Sun, 1=Mon, ... 6=Sat (start on Saturday)
+        const DAY_NAMES = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
         let taskStreaks = { 1: 4, 2: 3, 3: 4 };
         let todayCompletions = [];
         let simulationRunning = false;
+
+        // === DAY LABELS ===
+        function renderDayLabels() {
+            const container = document.getElementById('dayLabels');
+            container.innerHTML = '';
+            
+            // Column i shows day: (currentDayOfWeek + i + 1) % 7
+            // This makes column 6 (rightmost) = currentDayOfWeek (today)
+            for (let i = 0; i < 7; i++) {
+                const dayIndex = (currentDayOfWeek + i + 1) % 7;
+                const label = document.createElement('span');
+                label.className = 'day-label';
+                label.textContent = DAY_NAMES[dayIndex];
+                container.appendChild(label);
+            }
+        }
 
         // === GRID RENDERING ===
         function renderGrid() {
@@ -890,11 +908,13 @@
 
         function advanceDay() {
             const grid = document.getElementById('contributionGrid');
+            const dayLabels = document.getElementById('dayLabels');
             const dayCounterEl = document.querySelector('.day-counter');
             const dayNumber = document.getElementById('dayNumber');
             
-            // Fade out
+            // Fade out grid and labels together
             grid.classList.add('fading');
+            dayLabels.classList.add('fading');
             
             setTimeout(() => {
                 // Update data while hidden
@@ -902,21 +922,26 @@
                 gridData.push(0);
                 todayCompletions = [];
                 currentDay++;
+                currentDayOfWeek = (currentDayOfWeek + 1) % 7;
                 
                 // Update displays
                 dayNumber.textContent = currentDay;
                 renderGrid();
+                renderDayLabels();
                 renderTaskList();
                 
                 // Switch to fade in
                 grid.classList.remove('fading');
                 grid.classList.add('appearing');
+                dayLabels.classList.remove('fading');
+                dayLabels.classList.add('appearing');
                 
                 // Day counter bump
                 dayCounterEl.classList.add('updating');
                 
                 setTimeout(() => {
                     grid.classList.remove('appearing');
+                    dayLabels.classList.remove('appearing');
                     dayCounterEl.classList.remove('updating');
                 }, 300);
             }, 300);
@@ -995,6 +1020,7 @@
         streakObserver.observe(streakEl);
 
         // === INIT ===
+        renderDayLabels();
         renderGrid();
         renderTaskList();
         renderFeatureGrid();
