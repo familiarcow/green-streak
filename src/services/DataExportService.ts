@@ -3,9 +3,12 @@ import * as Sharing from 'expo-sharing';
 import * as DocumentPicker from 'expo-document-picker';
 import TaskRepository from '../database/repositories/TaskRepository';
 import LogRepository from '../database/repositories/LogRepository';
+import { achievementRepository } from '../database/repositories/RepositoryFactory';
 import EncryptionService from './EncryptionService';
 import { useSettingsStore } from '../store/settingsStore';
+import { useOnboardingStore } from '../store/onboardingStore';
 import { Task, Log, AppSettings } from '../types';
+import { UnlockedAchievement } from '../types/achievements';
 import logger from '../utils/logger';
 
 export interface ExportData {
@@ -16,10 +19,16 @@ export interface ExportData {
     tasks: Task[];
     logs: Log[];
     settings: AppSettings;
+    achievements: UnlockedAchievement[];
+    onboarding: {
+      hasCompletedOnboarding: boolean;
+      onboardingVersion: string;
+    };
   };
   metadata: {
     totalTasks: number;
     totalLogs: number;
+    totalAchievements: number;
     dateRange?: {
       earliest: string;
       latest: string;
@@ -33,13 +42,15 @@ export interface ImportResult {
   data?: {
     tasksImported: number;
     logsImported: number;
+    achievementsImported: number;
     settingsImported: boolean;
+    onboardingImported: boolean;
     errors?: string[];
   };
 }
 
 class DataExportService {
-  private static readonly EXPORT_VERSION = '1.0.0';
+  private static readonly EXPORT_VERSION = '2.0.0';  // Bumped for achievements + full settings
   private static readonly APP_VERSION = '1.0.0';
   private static readonly FILE_EXTENSION = '.greenstreak';
 
@@ -47,23 +58,45 @@ class DataExportService {
     try {
       logger.info('DATA', 'Starting data export');
 
-      // Fetch all data from repositories and settings
+      // Fetch all data from repositories and stores
       const tasks = await TaskRepository.getAll();
       const logs = await LogRepository.getAll();
+      
+      // Fetch unlocked achievements
+      let achievements: UnlockedAchievement[] = [];
+      try {
+        achievements = await achievementRepository.getAllUnlocked();
+      } catch (error) {
+        logger.warn('DATA', 'Could not fetch achievements for export', { error });
+      }
+      
+      // Get settings state
       const currentSettings = useSettingsStore.getState();
       
-      // Extract only the settings data, not the actions
+      // Extract ALL settings data, not just basic fields
       const settings: AppSettings = {
         globalReminderEnabled: currentSettings.globalReminderEnabled,
         globalReminderTime: currentSettings.globalReminderTime,
         debugLoggingEnabled: currentSettings.debugLoggingEnabled,
         currentLogLevel: currentSettings.currentLogLevel,
+        notificationSettings: currentSettings.notificationSettings,
+        calendarColor: currentSettings.calendarColor,
+        dynamicIconEnabled: currentSettings.dynamicIconEnabled,
+      };
+      
+      // Get onboarding state
+      const onboardingState = useOnboardingStore.getState();
+      const onboarding = {
+        hasCompletedOnboarding: onboardingState.hasCompletedOnboarding,
+        onboardingVersion: onboardingState.onboardingVersion,
       };
 
       logger.debug('DATA', 'Data fetched for export', { 
         tasksCount: tasks.length, 
         logsCount: logs.length,
-        settingsIncluded: true
+        achievementsCount: achievements.length,
+        settingsIncluded: true,
+        onboardingIncluded: true,
       });
 
       // Create export data structure
@@ -75,10 +108,13 @@ class DataExportService {
           tasks,
           logs,
           settings,
+          achievements,
+          onboarding,
         },
         metadata: {
           totalTasks: tasks.length,
           totalLogs: logs.length,
+          totalAchievements: achievements.length,
           dateRange: this.getDateRange(logs),
         },
       };
@@ -211,7 +247,9 @@ class DataExportService {
     const errors: string[] = [];
     let tasksImported = 0;
     let logsImported = 0;
+    let achievementsImported = 0;
     let settingsImported = false;
+    let onboardingImported = false;
 
     try {
       // Import tasks
@@ -268,6 +306,36 @@ class DataExportService {
         }
       }
 
+      // Import achievements if they exist in the export
+      if (exportData.data.achievements && exportData.data.achievements.length > 0) {
+        for (const achievement of exportData.data.achievements) {
+          try {
+            // Check if achievement already unlocked
+            const existing = await achievementRepository.isUnlocked(achievement.achievementId);
+            if (existing) {
+              logger.debug('DATA', 'Achievement already unlocked, skipping', { 
+                achievementId: achievement.achievementId 
+              });
+              continue;
+            }
+
+            // Record the unlock (note: original unlock date is not preserved, 
+            // will use current date - this could be enhanced in the future)
+            await achievementRepository.recordUnlock(
+              achievement.achievementId,
+              achievement.taskId,
+              achievement.metadata
+            );
+            achievementsImported++;
+          } catch (error) {
+            const errorMsg = `Failed to import achievement ${achievement.achievementId}: ${error}`;
+            errors.push(errorMsg);
+            logger.error('DATA', errorMsg);
+          }
+        }
+        logger.info('DATA', 'Achievements imported', { count: achievementsImported });
+      }
+
       // Import settings if they exist in the export
       if (exportData.data.settings) {
         try {
@@ -288,6 +356,21 @@ class DataExportService {
           if (exportData.data.settings.currentLogLevel) {
             settingsStore.setLogLevel(exportData.data.settings.currentLogLevel);
           }
+          
+          // Import calendar color
+          if (exportData.data.settings.calendarColor) {
+            settingsStore.setCalendarColor(exportData.data.settings.calendarColor);
+          }
+          
+          // Import dynamic icon setting
+          if (typeof exportData.data.settings.dynamicIconEnabled === 'boolean') {
+            await settingsStore.setDynamicIconEnabled(exportData.data.settings.dynamicIconEnabled);
+          }
+          
+          // Import notification settings
+          if (exportData.data.settings.notificationSettings) {
+            await settingsStore.updateNotificationSettings(exportData.data.settings.notificationSettings);
+          }
 
           settingsImported = true;
           logger.info('DATA', 'Settings imported successfully');
@@ -298,9 +381,32 @@ class DataExportService {
         }
       }
 
-      const message = `Successfully imported ${tasksImported} tasks and ${logsImported} logs${
-        settingsImported ? ' and settings' : ''
-      }.${errors.length > 0 ? ` ${errors.length} errors occurred.` : ''}`;
+      // Import onboarding state if it exists
+      if (exportData.data.onboarding) {
+        try {
+          const onboardingStore = useOnboardingStore.getState();
+          if (exportData.data.onboarding.hasCompletedOnboarding) {
+            onboardingStore.completeOnboarding();
+          }
+          onboardingImported = true;
+          logger.info('DATA', 'Onboarding state imported');
+        } catch (error) {
+          const errorMsg = `Failed to import onboarding state: ${error}`;
+          errors.push(errorMsg);
+          logger.error('DATA', errorMsg);
+        }
+      }
+
+      const parts = [];
+      if (tasksImported > 0) parts.push(`${tasksImported} tasks`);
+      if (logsImported > 0) parts.push(`${logsImported} logs`);
+      if (achievementsImported > 0) parts.push(`${achievementsImported} achievements`);
+      if (settingsImported) parts.push('settings');
+      if (onboardingImported) parts.push('onboarding');
+      
+      const message = parts.length > 0 
+        ? `Successfully imported ${parts.join(', ')}.${errors.length > 0 ? ` ${errors.length} errors occurred.` : ''}`
+        : 'No new data to import (all data already exists).';
 
       return {
         success: true,
@@ -308,7 +414,9 @@ class DataExportService {
         data: {
           tasksImported,
           logsImported,
+          achievementsImported,
           settingsImported,
+          onboardingImported,
           errors: errors.length > 0 ? errors : undefined,
         },
       };
