@@ -798,7 +798,7 @@
             const streakEl = taskItem.querySelector('.task-streak');
             if (streakEl) streakEl.textContent = `${state.streak} day streak`;
             
-            // Update today's cell in grid
+            // Update ONLY today's cell (last cell in the grid)
             const todayLevel = Math.min(gridData[TODAY_INDEX] + 1, 4);
             gridData[TODAY_INDEX] = todayLevel;
             
