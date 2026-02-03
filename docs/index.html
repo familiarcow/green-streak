@@ -106,7 +106,7 @@
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
             display: flex;
             gap: 24px;
-            align-items: flex-start;
+            align-items: center;
         }
 
         .calendar-section {
@@ -797,9 +797,14 @@
         const DAY_ANIMATION_DURATION = 600;   // Grid shift animation
 
         // === STATE ===
+        // Pre-fill grid with some history (last 4 days have activity)
         let gridData = new Array(TOTAL_CELLS).fill(0);
-        let currentDay = 1;
-        let taskStreaks = { 1: 0, 2: 0, 3: 0 };
+        gridData[TOTAL_CELLS - 5] = 2;  // 4 days ago
+        gridData[TOTAL_CELLS - 4] = 3;  // 3 days ago
+        gridData[TOTAL_CELLS - 3] = 2;  // 2 days ago
+        gridData[TOTAL_CELLS - 2] = 3;  // yesterday
+        let currentDay = 5;
+        let taskStreaks = { 1: 4, 2: 3, 3: 4 };
         let todayCompletions = [];
         let simulationRunning = false;
 
@@ -845,7 +850,7 @@
                     </div>
                     <div class="task-info">
                         <div class="task-name">${task.name}</div>
-                        <div class="task-streak">${streak > 0 ? streak + ' days' : 'Start!'}</div>
+                        <div class="task-streak">${streak} day${streak !== 1 ? 's' : ''} streak</div>
                     </div>
                     <div class="task-check ${completed ? 'checked' : ''}">
                         <svg viewBox="0 0 24 24" fill="white">
@@ -873,8 +878,7 @@
                 const checkbox = taskItem.querySelector('.task-check');
                 if (checkbox) checkbox.classList.add('checked');
                 
-                const streakEl = taskItem.querySelector('.task-streak');
-                if (streakEl) streakEl.textContent = `${taskStreaks[task.id]} day streak`;
+                // Streak text stays static - only updates on new day
             }
             
             // Update today's cell - level based on completions today
