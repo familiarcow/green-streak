@@ -93,13 +93,13 @@
         /* Annotation arrow */
         .annotation {
             position: absolute;
-            left: calc(50% - 360px);
-            top: 30px;
+            right: calc(50% - 380px);
+            bottom: 20px;
             display: flex;
             flex-direction: column;
             align-items: flex-end;
-            gap: 6px;
-            transform: rotate(-5deg);
+            gap: 4px;
+            transform: rotate(3deg);
             pointer-events: none;
             z-index: 10;
         }
@@ -114,8 +114,8 @@
         }
 
         .annotation-arrow {
-            width: 70px;
-            height: 50px;
+            width: 60px;
+            height: 45px;
             color: #e53935;
         }
 
@@ -642,7 +642,24 @@
             }
 
             .annotation {
-                display: none;
+                position: relative;
+                right: auto;
+                bottom: auto;
+                transform: none;
+                align-items: center;
+                margin-top: -10px;
+            }
+
+            .annotation-text {
+                font-size: 1.2rem;
+                text-align: center;
+                order: 1;
+            }
+
+            .annotation-arrow {
+                transform: rotate(180deg);
+                width: 45px;
+                height: 35px;
             }
 
             .calendar-section {
@@ -749,13 +766,6 @@
             <p class="tagline">Track daily routines with beautiful contribution graphs. Watch your consistency grow, one green square at a time.</p>
             
             <div class="demo-wrapper">
-                <div class="annotation">
-                    <span class="annotation-text">This is you<br>from today on</span>
-                    <svg class="annotation-arrow" viewBox="0 0 70 50" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M5 10 C 25 15, 45 25, 60 40" />
-                        <path d="M50 38 L 60 40 L 55 48" />
-                    </svg>
-                </div>
                 <div class="phone-frame">
                 <div class="app-card">
                     <div class="calendar-section">
@@ -766,6 +776,13 @@
                     <div class="tasks-section" id="taskList"></div>
                 </div>
             </div>
+                <div class="annotation">
+                    <svg class="annotation-arrow" viewBox="0 0 70 50" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M35 45 C 40 25, 50 15, 65 5" />
+                        <path d="M58 3 L 65 5 L 62 12" />
+                    </svg>
+                    <span class="annotation-text">This is you<br>from today on</span>
+                </div>
             </div>
             
             <a href="#" class="cta">
