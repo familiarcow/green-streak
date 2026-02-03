@@ -93,30 +93,28 @@
         /* Annotation arrow */
         .annotation {
             position: absolute;
-            right: calc(50% - 420px);
-            bottom: 10px;
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
+            right: -180px;
+            bottom: 40px;
             pointer-events: none;
             z-index: 10;
         }
 
         .annotation-text {
             font-family: 'Caveat', cursive;
-            font-size: 1.4rem;
+            font-size: 1.5rem;
             color: #e53935;
             white-space: nowrap;
             line-height: 1.2;
-            text-align: right;
-            transform: rotate(-5deg);
+            transform: rotate(-8deg);
         }
 
         .annotation-arrow {
-            width: 140px;
-            height: 110px;
+            position: absolute;
+            left: -100px;
+            top: -60px;
+            width: 130px;
+            height: 100px;
             color: #e53935;
-            margin-right: 20px;
         }
 
         /* Phone Mockup */
@@ -642,27 +640,7 @@
             }
 
             .annotation {
-                position: relative;
-                right: auto;
-                bottom: auto;
-                align-items: center;
-                margin-top: 16px;
-            }
-
-            .annotation-text {
-                font-size: 1.2rem;
-                text-align: center;
-                transform: none;
-                order: 1;
-            }
-
-            .annotation-arrow {
-                width: 80px;
-                height: 60px;
-                margin-left: 0;
-                margin-top: 0;
-                margin-bottom: -10px;
-                transform: rotate(90deg) scaleY(-1);
+                display: none;
             }
 
             .calendar-section {
@@ -780,11 +758,11 @@
                 </div>
             </div>
                 <div class="annotation">
-                    <span class="annotation-text">This is you<br>from today on</span>
-                    <svg class="annotation-arrow" viewBox="0 0 120 100" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M110 95 C 80 85, 40 50, 15 15" />
-                        <path d="M10 28 L 15 15 L 28 18" />
+                    <svg class="annotation-arrow" viewBox="0 0 130 100" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M125 90 Q 60 80, 15 20" />
+                        <path d="M8 32 L 15 20 L 27 25" />
                     </svg>
+                    <span class="annotation-text">This is you<br>from today on</span>
                 </div>
             </div>
             
