@@ -93,27 +93,25 @@
         /* Annotation arrow */
         .annotation {
             position: absolute;
-            left: calc(50% + 180px);
-            bottom: 30px;
             pointer-events: none;
             z-index: 10;
+            opacity: 0;
+            transition: opacity 0.3s ease;
         }
-
+        .annotation.positioned {
+            opacity: 1;
+        }
         .annotation-text {
             font-family: 'Caveat', cursive;
-            font-size: 1.5rem;
+            font-size: clamp(1.2rem, 2vw, 1.5rem);
             color: #e53935;
             white-space: nowrap;
             line-height: 1.2;
             transform: rotate(-8deg);
-            margin-top: 8px;
         }
-
         .annotation-arrow {
-            width: 260px;
-            height: 140px;
             color: #e53935;
-            transform: translate(-200px, 75px);
+            overflow: visible;
         }
 
         /* Phone Mockup */
@@ -574,32 +572,29 @@
 
             .app-card {
                 padding: 12px;
+                gap: 16px;
+            }
+
+            .calendar-section {
+                min-width: 180px;
             }
 
             .day-labels {
-                gap: 3px;
-                margin-bottom: 6px;
+                gap: 2px;
+                margin-bottom: 4px;
             }
 
             .day-label {
-                font-size: 10px;
+                font-size: 9px;
             }
 
             .contribution-grid {
-                gap: 3px;
-            }
-
-            .app-card {
-                flex-direction: column;
-                gap: 12px;
+                gap: 2px;
             }
 
             .tasks-section {
-                flex-direction: row;
-                flex-wrap: nowrap;
-                gap: 8px;
-                min-width: auto;
-                justify-content: space-between;
+                gap: 6px;
+                min-width: 100px;
             }
 
             .task-item {
@@ -630,20 +625,12 @@
                 height: 16px;
             }
 
-            /* Demo wrapper stacks on mobile */
             .demo-wrapper {
-                flex-direction: column;
-                align-items: center;
-                gap: 0;
                 margin-bottom: 32px;
             }
 
             .annotation {
                 display: none;
-            }
-
-            .calendar-section {
-                min-width: auto;
             }
 
             .cta {
@@ -756,12 +743,12 @@
                     <div class="tasks-section" id="taskList"></div>
                 </div>
             </div>
-                <div class="annotation">
-                    <svg class="annotation-arrow" viewBox="0 0 130 100" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M125 90 Q 60 80, 15 20" />
-                        <path d="M8 32 L 15 20 L 27 25" />
-                    </svg>
+                <div class="annotation" id="annotation">
                     <span class="annotation-text">This is you<br>from today on</span>
+                    <svg class="annotation-arrow" id="annotationArrow" viewBox="0 0 200 150" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path id="arrowPath" d="" />
+                        <path id="arrowHead" d="" />
+                    </svg>
                 </div>
             </div>
             
@@ -1129,11 +1116,72 @@
             });
         }
 
+        // === ANNOTATION POSITIONING ===
+        function positionAnnotation() {
+            if (window.innerWidth < 768) return; // Skip on mobile
+
+            // Target the last cell (bottom-right, index 34) - NOT the animated "today" cell
+            const cells = document.querySelectorAll('.grid-cell');
+            const targetCell = cells[cells.length - 1]; // Last cell in grid
+            const phoneFrame = document.querySelector('.phone-frame');
+            const demoWrapper = document.querySelector('.demo-wrapper');
+            const annotation = document.getElementById('annotation');
+
+            if (!targetCell || !demoWrapper || !annotation || !phoneFrame) return;
+
+            const cellRect = targetCell.getBoundingClientRect();
+            const wrapperRect = demoWrapper.getBoundingClientRect();
+            const phoneRect = phoneFrame.getBoundingClientRect();
+
+            // Position annotation to the RIGHT of the phone frame
+            const phoneRightEdge = phoneRect.right - wrapperRect.left;
+            const annotationX = phoneRightEdge + 15;
+
+            // Vertically align with the bottom-right cell
+            const cellCenterY = cellRect.top + cellRect.height / 2 - wrapperRect.top;
+            const annotationY = cellCenterY - 40;
+
+            annotation.style.left = `${annotationX}px`;
+            annotation.style.top = `${annotationY}px`;
+
+            // Calculate arrow to point at the target cell
+            const arrowTargetX = cellRect.right - wrapperRect.left - annotationX + 5;
+            const arrowTargetY = cellRect.top + cellRect.height / 2 - wrapperRect.top - annotationY;
+
+            // Arrow starts below the text
+            const startX = 50;
+            const startY = 55;
+            const endX = arrowTargetX;
+            const endY = arrowTargetY;
+
+            // Curved path from text to target cell
+            const controlX = startX - 30;
+            const controlY = endY;
+            document.getElementById('arrowPath').setAttribute('d',
+                `M${startX},${startY} Q${controlX},${controlY} ${endX},${endY}`);
+
+            // Arrow head pointing left toward the cell
+            document.getElementById('arrowHead').setAttribute('d',
+                `M${endX+8},${endY-5} L${endX},${endY} L${endX+8},${endY+5}`);
+
+            document.getElementById('annotationArrow').setAttribute('viewBox', '-100 0 200 120');
+            annotation.classList.add('positioned');
+        }
+
+        // ResizeObserver for responsive updates
+        const annotationObserver = new ResizeObserver(positionAnnotation);
+        const dw = document.querySelector('.demo-wrapper');
+        if (dw) annotationObserver.observe(dw);
+        window.addEventListener('resize', positionAnnotation);
+
         // === INIT ===
         renderDayLabels();
         renderGrid();
         renderTaskList();
         initCarousel();
+
+        // Position annotation after grid renders
+        requestAnimationFrame(() => positionAnnotation());
 
         // Start simulation after short delay
         setTimeout(runSimulation, 1500);
