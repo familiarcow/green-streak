@@ -97,6 +97,9 @@
             z-index: 10;
             opacity: 0;
             transition: opacity 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
         }
         .annotation.positioned {
             opacity: 1;
@@ -108,10 +111,14 @@
             white-space: nowrap;
             line-height: 1.2;
             transform: rotate(-8deg);
+            margin-left: 60px;
         }
         .annotation-arrow {
+            width: 220px;
+            height: 90px;
             color: #e53935;
-            overflow: visible;
+            margin-top: -5px;
+            margin-left: -80px;
         }
 
         /* Phone Mockup */
@@ -617,7 +624,7 @@
             }
 
             .task-streak {
-                font-size: 9px;
+                display: none;
             }
 
             .task-check {
@@ -630,7 +637,23 @@
             }
 
             .annotation {
-                display: none;
+                flex-direction: row;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .annotation-text {
+                font-size: 1rem;
+                margin-left: 0;
+                order: 2;
+            }
+
+            .annotation-arrow {
+                width: 80px;
+                height: 50px;
+                margin-left: 0;
+                order: 1;
+                transform: rotate(90deg) scaleX(-1);
             }
 
             .cta {
@@ -745,9 +768,9 @@
             </div>
                 <div class="annotation" id="annotation">
                     <span class="annotation-text">This is you<br>from today on</span>
-                    <svg class="annotation-arrow" id="annotationArrow" viewBox="0 0 200 150" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <path id="arrowPath" d="" />
-                        <path id="arrowHead" d="" />
+                    <svg class="annotation-arrow" viewBox="-80 0 260 90" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M140 8 C 80 15, 20 35, -60 75" />
+                        <path d="M-52 65 L -60 75 L -48 77" />
                     </svg>
                 </div>
             </div>
@@ -1118,11 +1141,8 @@
 
         // === ANNOTATION POSITIONING ===
         function positionAnnotation() {
-            if (window.innerWidth < 768) return; // Skip on mobile
-
-            // Target the last cell (bottom-right, index 34) - NOT the animated "today" cell
             const cells = document.querySelectorAll('.grid-cell');
-            const targetCell = cells[cells.length - 1]; // Last cell in grid
+            const targetCell = cells[cells.length - 1];
             const phoneFrame = document.querySelector('.phone-frame');
             const demoWrapper = document.querySelector('.demo-wrapper');
             const annotation = document.getElementById('annotation');
@@ -1132,39 +1152,28 @@
             const cellRect = targetCell.getBoundingClientRect();
             const wrapperRect = demoWrapper.getBoundingClientRect();
             const phoneRect = phoneFrame.getBoundingClientRect();
+            const isMobile = window.innerWidth < 768;
 
-            // Position annotation to the RIGHT of the phone frame
-            const phoneRightEdge = phoneRect.right - wrapperRect.left;
-            const annotationX = phoneRightEdge + 15;
+            if (isMobile) {
+                // On mobile: position below the phone, centered, arrow points up
+                const phoneBottom = phoneRect.bottom - wrapperRect.top;
+                const phoneCenterX = (phoneRect.left + phoneRect.right) / 2 - wrapperRect.left;
 
-            // Vertically align with the bottom-right cell
-            const cellCenterY = cellRect.top + cellRect.height / 2 - wrapperRect.top;
-            const annotationY = cellCenterY - 40;
+                const annotationX = phoneCenterX - 20;
+                const annotationY = phoneBottom + 5;
 
-            annotation.style.left = `${annotationX}px`;
-            annotation.style.top = `${annotationY}px`;
+                annotation.style.left = `${annotationX}px`;
+                annotation.style.top = `${annotationY}px`;
+            } else {
+                // Desktop: position outside the phone frame on the right
+                const phoneRightEdge = phoneRect.right - wrapperRect.left;
+                const annotationX = phoneRightEdge + 10;
+                const targetY = cellRect.top + cellRect.height / 2 - wrapperRect.top;
+                const annotationY = targetY - 115;
 
-            // Calculate arrow to point at the target cell
-            const arrowTargetX = cellRect.right - wrapperRect.left - annotationX + 5;
-            const arrowTargetY = cellRect.top + cellRect.height / 2 - wrapperRect.top - annotationY;
-
-            // Arrow starts below the text
-            const startX = 50;
-            const startY = 55;
-            const endX = arrowTargetX;
-            const endY = arrowTargetY;
-
-            // Curved path from text to target cell
-            const controlX = startX - 30;
-            const controlY = endY;
-            document.getElementById('arrowPath').setAttribute('d',
-                `M${startX},${startY} Q${controlX},${controlY} ${endX},${endY}`);
-
-            // Arrow head pointing left toward the cell
-            document.getElementById('arrowHead').setAttribute('d',
-                `M${endX+8},${endY-5} L${endX},${endY} L${endX+8},${endY+5}`);
-
-            document.getElementById('annotationArrow').setAttribute('viewBox', '-100 0 200 120');
+                annotation.style.left = `${annotationX}px`;
+                annotation.style.top = `${annotationY}px`;
+            }
             annotation.classList.add('positioned');
         }
 
