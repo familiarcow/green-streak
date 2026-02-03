@@ -93,8 +93,8 @@
         /* Annotation arrow */
         .annotation {
             position: absolute;
-            right: -180px;
-            bottom: 40px;
+            left: calc(50% + 260px);
+            bottom: 20px;
             pointer-events: none;
             z-index: 10;
         }
@@ -106,15 +106,14 @@
             white-space: nowrap;
             line-height: 1.2;
             transform: rotate(-8deg);
+            margin-top: 8px;
         }
 
         .annotation-arrow {
-            position: absolute;
-            left: -100px;
-            top: -60px;
-            width: 130px;
-            height: 100px;
+            width: 120px;
+            height: 80px;
             color: #e53935;
+            transform: translateX(-90px);
         }
 
         /* Phone Mockup */
