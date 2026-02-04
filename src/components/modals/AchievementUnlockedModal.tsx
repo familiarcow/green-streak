@@ -37,7 +37,6 @@ export const AchievementUnlockedModal: React.FC<AchievementUnlockedModalProps> =
 
   // Animation values
   const iconScale = useSharedValue(0);
-  const iconRotation = useSharedValue(-30);
   const contentOpacity = useSharedValue(0);
   const badgeScale = useSharedValue(0);
 
@@ -46,19 +45,14 @@ export const AchievementUnlockedModal: React.FC<AchievementUnlockedModalProps> =
     if (isVisible && event && !hasPlayedEffects.current) {
       hasPlayedEffects.current = true;
 
-      // Start animations
-      iconScale.value = withSequence(
-        withDelay(100, withSpring(1.2, { damping: 8 })),
-        withSpring(1, { damping: 12 })
+      // Start animations - subtle and professional
+      iconScale.value = withDelay(
+        100,
+        withSpring(1, { damping: 20, stiffness: 300 })
       );
 
-      iconRotation.value = withSequence(
-        withDelay(100, withSpring(10, { damping: 8 })),
-        withSpring(0, { damping: 12 })
-      );
-
-      contentOpacity.value = withDelay(300, withSpring(1));
-      badgeScale.value = withDelay(400, withSpring(1, { damping: 10 }));
+      contentOpacity.value = withDelay(250, withSpring(1, { damping: 20 }));
+      badgeScale.value = withDelay(350, withSpring(1, { damping: 18, stiffness: 250 }));
 
       // Trigger celebration effects
       playCelebrationEffects(event);
@@ -68,11 +62,10 @@ export const AchievementUnlockedModal: React.FC<AchievementUnlockedModalProps> =
     if (!isVisible) {
       hasPlayedEffects.current = false;
       iconScale.value = 0;
-      iconRotation.value = -30;
       contentOpacity.value = 0;
       badgeScale.value = 0;
     }
-  }, [isVisible, event, iconScale, iconRotation, contentOpacity, badgeScale]);
+  }, [isVisible, event, iconScale, contentOpacity, badgeScale]);
 
   const playCelebrationEffects = (unlockEvent: AchievementUnlockEvent) => {
     const { celebration, rarity } = unlockEvent.achievement;
@@ -103,10 +96,7 @@ export const AchievementUnlockedModal: React.FC<AchievementUnlockedModalProps> =
 
   // Animated styles
   const iconAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [
-      { scale: iconScale.value },
-      { rotate: `${iconRotation.value}deg` },
-    ],
+    transform: [{ scale: iconScale.value }],
   }));
 
   const contentAnimatedStyle = useAnimatedStyle(() => ({
