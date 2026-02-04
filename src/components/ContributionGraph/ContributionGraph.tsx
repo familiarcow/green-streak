@@ -25,6 +25,7 @@ interface ContributionGraphProps {
   tasks: Task[];
   onDayPress: (date: string) => void;
   selectedDate?: string;
+  showFilterToggle?: boolean;
 }
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -60,6 +61,7 @@ export const ContributionGraph: React.FC<ContributionGraphProps> = ({
   tasks,
   onDayPress,
   selectedDate,
+  showFilterToggle = true,
 }) => {
   const [selectedDateInternal, setSelectedDateInternal] = useState<string | undefined>(selectedDate);
   const fadeInValue = useSharedValue(0);
@@ -97,6 +99,7 @@ export const ContributionGraph: React.FC<ContributionGraphProps> = ({
       onTaskSelectionChange={setSelectedTaskIds}
       dateOffset={dateOffset}
       onDateOffsetChange={setDateOffset}
+      showFilterToggle={showFilterToggle}
     />
   );
 };

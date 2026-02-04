@@ -18,12 +18,11 @@ import Animated, {
   SlideInRight,
 } from 'react-native-reanimated';
 import { AnimatedButton } from '../components/AnimatedButton';
-import { ContributionGraph } from '../components/ContributionGraph';
+import { OnboardingDemo } from '../components/OnboardingDemo';
 import { Icon, IconName } from '../components/common/Icon';
 import { TemplateCatalogModal } from '../components/TemplateCatalog';
 import { colors, textStyles, spacing, shadows } from '../theme';
 import { radiusValues } from '../theme/utils';
-import { ContributionData } from '../types';
 import { HabitTemplate } from '../types/templates';
 import logger from '../utils/logger';
 
@@ -32,16 +31,6 @@ interface OnboardingScreenProps {
 }
 
 const { width: screenWidth } = Dimensions.get('window');
-
-// Sample data for demonstration
-const sampleContributionData: ContributionData[] = [
-  { date: '2024-01-01', count: 0, tasks: [] },
-  { date: '2024-01-02', count: 2, tasks: [{ taskId: '1', name: 'Exercise', color: '#22c55e', count: 1 }, { taskId: '2', name: 'Read', color: '#3b82f6', count: 1 }] },
-  { date: '2024-01-03', count: 3, tasks: [{ taskId: '1', name: 'Exercise', color: '#22c55e', count: 2 }, { taskId: '2', name: 'Read', color: '#3b82f6', count: 1 }] },
-  { date: '2024-01-04', count: 1, tasks: [{ taskId: '2', name: 'Read', color: '#3b82f6', count: 1 }] },
-  { date: '2024-01-05', count: 4, tasks: [{ taskId: '1', name: 'Exercise', color: '#22c55e', count: 2 }, { taskId: '2', name: 'Read', color: '#3b82f6', count: 2 }] },
-  // ... more sample data for a week
-];
 
 const onboardingSteps = [
   {
@@ -170,19 +159,25 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
       >
         {onboardingSteps.map((step, index) => (
           <View key={step.id} style={styles.stepContainer}>
-            <View style={styles.contentContainer}>
-              <Animated.View 
-                entering={FadeInUp.delay(200)}
-                style={styles.iconContainer}
-              >
-                <Icon 
-                  name={step.icon} 
-                  size={64} 
-                  color={colors.primary} 
-                />
-              </Animated.View>
+            <ScrollView
+              style={styles.contentScrollView}
+              contentContainerStyle={styles.contentContainer}
+              showsVerticalScrollIndicator={false}
+            >
+              {!step.showGraph && (
+                <Animated.View
+                  entering={FadeInUp.delay(200)}
+                  style={styles.iconContainer}
+                >
+                  <Icon
+                    name={step.icon}
+                    size={64}
+                    color={colors.primary}
+                  />
+                </Animated.View>
+              )}
 
-              <Animated.View 
+              <Animated.View
                 entering={FadeInUp.delay(300)}
                 style={styles.textContainer}
               >
@@ -192,19 +187,14 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
               </Animated.View>
 
               {step.showGraph && (
-                <Animated.View 
+                <Animated.View
                   entering={SlideInRight.delay(400)}
                   style={styles.graphContainer}
                 >
-                  <ContributionGraph
-                    data={sampleContributionData}
-                    tasks={[]}
-                    onDayPress={() => {}}
-                    selectedDate=""
-                  />
+                  <OnboardingDemo />
                 </Animated.View>
               )}
-            </View>
+            </ScrollView>
 
             <View style={styles.actionsContainer}>
               {!isLastStep || index !== currentStep ? (
@@ -283,7 +273,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: spacing[4],
-    paddingVertical: spacing[3],
+    paddingVertical: spacing[2],
     borderBottomWidth: 1,
     borderBottomColor: colors.divider,
   },
@@ -313,16 +303,21 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
 
-  contentContainer: {
+  contentScrollView: {
     flex: 1,
-    paddingHorizontal: spacing[6],
-    paddingTop: spacing[8],
+  },
+
+  contentContainer: {
+    flexGrow: 1,
+    paddingHorizontal: spacing[4],
+    paddingTop: spacing[4],
+    paddingBottom: spacing[2],
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   iconContainer: {
-    marginBottom: spacing[6],
+    marginBottom: spacing[4],
     padding: spacing[4],
     backgroundColor: colors.accent.light,
     borderRadius: spacing[4],
@@ -331,7 +326,7 @@ const styles = StyleSheet.create({
 
   textContainer: {
     alignItems: 'center',
-    marginBottom: spacing[6],
+    marginBottom: spacing[3],
   },
 
   title: {
@@ -359,15 +354,11 @@ const styles = StyleSheet.create({
 
   graphContainer: {
     width: '100%',
-    backgroundColor: colors.surface,
-    borderRadius: radiusValues.box,
-    padding: spacing[4],
-    ...shadows.sm,
   },
 
   actionsContainer: {
-    paddingHorizontal: spacing[6],
-    paddingBottom: spacing[8],
+    paddingHorizontal: spacing[4],
+    paddingBottom: spacing[4],
   },
 
   finalButtons: {
@@ -408,7 +399,7 @@ const styles = StyleSheet.create({
   },
 
   footer: {
-    paddingVertical: spacing[4],
+    paddingVertical: spacing[2],
     alignItems: 'center',
     backgroundColor: colors.surface,
     borderTopWidth: 1,

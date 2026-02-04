@@ -32,6 +32,7 @@ interface LiveCalendarProps {
   onTaskSelectionChange?: (selectedTaskIds: string[]) => void;
   dateOffset?: number;
   onDateOffsetChange?: (offset: number) => void;
+  showFilterToggle?: boolean;
 }
 
 const DAYS_PER_WEEK = 7;
@@ -69,6 +70,7 @@ export const LiveCalendar: React.FC<LiveCalendarProps> = ({
   onTaskSelectionChange,
   dateOffset = 0,
   onDateOffsetChange,
+  showFilterToggle = true,
 }) => {
   // Use dynamic today that updates at midnight
   const todayString = useDynamicToday();
@@ -409,41 +411,44 @@ export const LiveCalendar: React.FC<LiveCalendarProps> = ({
       )}
       
       {/* Filter Toggle Bump */}
-      <View style={styles.filterBumpContainer}>
-        <TouchableOpacity 
-          style={styles.filterBump}
-          onPress={handleToggleFilter}
-          activeOpacity={0.7}
-          accessibilityRole="button"
-          accessibilityLabel={`${isFilterExpanded ? 'Collapse' : 'Expand'} habit filters`}
-          accessibilityHint="Double tap to show filtering and navigation options"
-          accessibilityState={{ expanded: isFilterExpanded }}
-        >
-          <Animated.View style={chevronAnimatedStyle}>
-            <Icon
-              name="chevron-down"
-              size={18}
-              color={colors.text.tertiary}
-            />
-          </Animated.View>
-        </TouchableOpacity>
-      </View>
-      
+      {showFilterToggle && (
+        <View style={styles.filterBumpContainer}>
+          <TouchableOpacity
+            style={styles.filterBump}
+            onPress={handleToggleFilter}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel={`${isFilterExpanded ? 'Collapse' : 'Expand'} habit filters`}
+            accessibilityHint="Double tap to show filtering and navigation options"
+            accessibilityState={{ expanded: isFilterExpanded }}
+          >
+            <Animated.View style={chevronAnimatedStyle}>
+              <Icon
+                name="chevron-down"
+                size={18}
+                color={colors.text.tertiary}
+              />
+            </Animated.View>
+          </TouchableOpacity>
+        </View>
+      )}
+
       {/* Collapsible Filter Section */}
-      <Animated.View style={[styles.filterSection, filterTrayStyle]}>
+      {showFilterToggle && (
+        <Animated.View style={[styles.filterSection, filterTrayStyle]}>
           <View style={styles.filterContainer}>
             <TouchableOpacity
               style={styles.navArrow}
               onPress={handleNavigateBackward}
               activeOpacity={0.7}
             >
-              <Icon 
-                name="chevron-left" 
-                size={20} 
-                color={colors.text.primary} 
+              <Icon
+                name="chevron-left"
+                size={20}
+                color={colors.text.primary}
               />
             </TouchableOpacity>
-            
+
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -466,12 +471,12 @@ export const LiveCalendar: React.FC<LiveCalendarProps> = ({
                   ALL
                 </Text>
               </TouchableOpacity>
-              
+
               {/* Individual habit pills */}
               {tasks.map((task) => {
                 const isSelected = isTaskSelected(task.id);
                 const showAsSelected = isSelected || isAllSelected;
-                
+
                 return (
                   <TouchableOpacity
                     key={task.id}
@@ -490,22 +495,23 @@ export const LiveCalendar: React.FC<LiveCalendarProps> = ({
                 );
               })}
             </ScrollView>
-            
+
             {canNavigateForward && (
               <TouchableOpacity
                 style={styles.navArrow}
                 onPress={handleNavigateForward}
                 activeOpacity={0.7}
               >
-                <Icon 
-                  name="chevron-right" 
-                  size={20} 
-                  color={colors.text.primary} 
+                <Icon
+                  name="chevron-right"
+                  size={20}
+                  color={colors.text.primary}
                 />
               </TouchableOpacity>
             )}
           </View>
-      </Animated.View>
+        </Animated.View>
+      )}
     </View>
   );
 };
