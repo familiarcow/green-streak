@@ -207,7 +207,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
               ) : (
                 <View style={styles.finalButtons}>
                   <AnimatedButton
-                    title="Choose from Templates"
+                    title="Browse Templates"
                     onPress={handleBrowseTemplates}
                     variant="primary"
                     size="large"
@@ -217,18 +217,15 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
                     onPress={handleSetupTask}
                     style={styles.secondaryActionButton}
                   >
-                    <Icon name="plus" size={18} color={colors.primary} />
                     <Text style={styles.secondaryActionButtonText}>
-                      Create Custom Habit
+                      Create from Scratch
                     </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={handleSkipSetup}
-                    style={styles.secondaryAction}
+                    style={styles.skipButton}
                   >
-                    <Text style={styles.secondaryActionText}>
-                      Explore First
-                    </Text>
+                    <Text style={styles.skipButtonText}>Skip</Text>
                   </TouchableOpacity>
                 </View>
               )}
@@ -363,7 +360,7 @@ const styles = StyleSheet.create({
 
   finalButtons: {
     alignItems: 'center',
-    gap: spacing[3],
+    gap: spacing[2],
   },
 
   primaryAction: {
@@ -371,31 +368,26 @@ const styles = StyleSheet.create({
   },
 
   secondaryActionButton: {
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: spacing[3],
-    paddingHorizontal: spacing[4],
-    backgroundColor: colors.surface,
-    borderRadius: radiusValues.box,
-    borderWidth: 1,
-    borderColor: colors.primary,
-    gap: spacing[2],
+    paddingVertical: spacing[3],
+    paddingHorizontal: spacing[6],
   },
 
   secondaryActionButtonText: {
     ...textStyles.button,
     color: colors.primary,
+    fontWeight: '600',
   },
 
-  secondaryAction: {
-    padding: spacing[3],
+  skipButton: {
+    paddingVertical: spacing[2],
+    paddingHorizontal: spacing[4],
   },
 
-  secondaryActionText: {
-    ...textStyles.button,
-    color: colors.text.secondary,
-    textAlign: 'center',
+  skipButtonText: {
+    ...textStyles.bodySmall,
+    color: colors.text.tertiary,
   },
 
   footer: {
