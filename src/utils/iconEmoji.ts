@@ -13,7 +13,6 @@ export const ICON_TO_EMOJI: Record<IconName, string> = {
   'chevron-down': '🔽',
   'checkCircle': '✅',
   'check': '✓',
-  'circle': '⭕',
   'plus': '➕',
   'minus': '➖',
   'x': '❌',

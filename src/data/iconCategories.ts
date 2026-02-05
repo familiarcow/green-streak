@@ -29,7 +29,6 @@ export const ICON_CATEGORY_MAP: Record<IconName, string> = {
   'chevron-down': 'other',
   checkCircle: 'other',
   check: 'other',
-  circle: 'other',
   plus: 'other',
   minus: 'other',
   x: 'other',
