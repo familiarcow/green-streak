@@ -418,10 +418,10 @@ export const useSettingsStore = create<SettingsState>()(
       syncNotifications: async () => {
         try {
           logger.debug('STATE', 'Syncing notifications with current settings');
-          
+
           const state = get();
           const notificationSettings = state.notificationSettings || defaultNotificationSettings;
-          
+
           // Use NotificationManager for smart notifications
           try {
             const notificationManager = getNotificationManager();
@@ -429,7 +429,7 @@ export const useSettingsStore = create<SettingsState>()(
           } catch (managerError) {
             // Fallback to basic notification service if manager not available
             logger.warn('STATE', 'NotificationManager not available, using basic service', { error: managerError });
-            
+
             const notificationService = getNotificationService();
             if (notificationSettings.global.enabled && notificationSettings.daily.enabled) {
               await notificationService.scheduleGlobalDailyReminder(
@@ -440,7 +440,15 @@ export const useSettingsStore = create<SettingsState>()(
               await notificationService.cancelGlobalDailyReminder();
             }
           }
-          
+
+          // Also sync task/habit notifications (they check global.enabled internally)
+          try {
+            const { useTasksStore } = await import('./tasksStore');
+            await useTasksStore.getState().syncNotifications();
+          } catch (taskSyncError) {
+            logger.warn('STATE', 'Failed to sync task notifications', { error: taskSyncError });
+          }
+
           logger.info('STATE', 'Notifications synced');
         } catch (error) {
           logger.error('STATE', 'Failed to sync notifications', { error });

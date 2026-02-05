@@ -26,6 +26,17 @@ jest.mock('../NotificationService', () => ({
   cancelTaskReminder: jest.fn(),
 }));
 
+// Mock the settings store (for global notifications check)
+jest.mock('../../store/settingsStore', () => ({
+  useSettingsStore: {
+    getState: jest.fn(() => ({
+      notificationSettings: {
+        global: { enabled: true },
+      },
+    })),
+  },
+}));
+
 // Create mock task repository
 const createMockTaskRepository = (): jest.Mocked<ITaskRepository> => ({
   getAll: jest.fn(),

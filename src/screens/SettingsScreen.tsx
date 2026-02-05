@@ -43,14 +43,26 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
   } = useSettingsStore();
 
   const { exportData, importData, isExporting, isImporting } = useDataStore();
-  const { loadTasks } = useTasksStore();
+  const { tasks, loadTasks, updateTask } = useTasksStore();
   const { loadContributionData } = useLogsStore();
+
+  // Filter habits with reminders configured
+  const habitsWithReminders = tasks.filter(t => t.reminderEnabled || t.reminderTime);
 
   const [reminderTime, setReminderTime] = useState(globalReminderTime);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [notificationPermissions, setNotificationPermissions] = useState<'unknown' | 'granted' | 'denied' | 'undetermined'>('unknown');
-  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    notifications: true,
+    display: true,
+    data: false,
+  });
   const [showCalendarColorPicker, setShowCalendarColorPicker] = useState(false);
+
+  // Toggle section expansion
+  const toggleSection = (section: string) => {
+    setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
+  };
   const [isDynamicIconLoading, setIsDynamicIconLoading] = useState(false);
   const [dynamicIconPlatformNote, setDynamicIconPlatformNote] = useState<string | null>(null);
   const [isDynamicIconSupported, setIsDynamicIconSupported] = useState(true);
@@ -280,40 +292,54 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
         
         {/* Notifications Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Notifications</Text>
-          
-          {notificationPermissions === 'denied' && (
-            <View style={styles.warningCard}>
-              <Text style={styles.warningText}>
-                Notifications are disabled. Enable them in device settings to use reminders.
-              </Text>
-            </View>
-          )}
-          
-          {/* Master Notifications Toggle */}
-          <View style={[styles.settingItem, glassStyles.card]}>
-            <View style={styles.settingInfo}>
-              <Text style={styles.settingTitle}>Enable Notifications</Text>
-              <Text style={styles.settingDescription}>
-                Master toggle for all notifications
-              </Text>
-            </View>
-            <Switch
-              value={notificationSettings?.global?.enabled ?? false}
-              onValueChange={(enabled) => {
-                updateNotificationSettings({
-                  global: { ...notificationSettings?.global, enabled }
-                });
-              }}
-              trackColor={{ false: colors.interactive.default, true: accentColor }}
-              thumbColor={colors.surface}
-              disabled={notificationPermissions === 'denied'}
-              accessibilityLabel="Master notifications toggle"
-              accessibilityHint={notificationSettings?.global?.enabled ? "Double tap to disable all notifications" : "Double tap to enable notifications"}
+          <TouchableOpacity
+            style={styles.sectionHeader}
+            onPress={() => toggleSection('notifications')}
+            accessibilityRole="button"
+            accessibilityLabel={`Notifications section, ${expandedSections.notifications ? 'expanded' : 'collapsed'}`}
+          >
+            <Text style={styles.sectionTitle}>Notifications</Text>
+            <Icon
+              name={expandedSections.notifications ? 'chevron-up' : 'chevron-down'}
+              size={20}
+              color={colors.text.secondary}
             />
-          </View>
+          </TouchableOpacity>
 
-          {notificationSettings?.global?.enabled && (
+          {expandedSections.notifications && (
+            <>
+              {notificationPermissions === 'denied' && (
+                <View style={styles.warningCard}>
+                  <Text style={styles.warningText}>
+                    Notifications are disabled. Enable them in device settings to use reminders.
+                  </Text>
+                </View>
+              )}
+
+              {/* Master Notifications Toggle */}
+              <View style={[styles.settingItem, glassStyles.card]}>
+                <View style={styles.settingInfo}>
+                  <Text style={styles.settingTitle}>Enable Notifications</Text>
+                  <Text style={styles.settingDescription}>
+                    Master toggle for all notifications
+                  </Text>
+                </View>
+                <Switch
+                  value={notificationSettings?.global?.enabled ?? false}
+                  onValueChange={(enabled) => {
+                    updateNotificationSettings({
+                      global: { ...notificationSettings?.global, enabled }
+                    });
+                  }}
+                  trackColor={{ false: colors.interactive.default, true: accentColor }}
+                  thumbColor={colors.surface}
+                  disabled={notificationPermissions === 'denied'}
+                  accessibilityLabel="Master notifications toggle"
+                  accessibilityHint={notificationSettings?.global?.enabled ? "Double tap to disable all notifications" : "Double tap to enable notifications"}
+                />
+              </View>
+
+              {notificationSettings?.global?.enabled && (
             <>
               {/* Daily Smart Notifications */}
               <View style={[styles.subSection, styles.fadeIn]}>
@@ -336,7 +362,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
 
                 {notificationSettings?.daily?.enabled && (
                   <>
-                    <View style={styles.settingItem}>
+                    <View style={[styles.settingItem, glassStyles.cardSubtle]}>
                       <View style={styles.settingInfo}>
                         <Text style={styles.settingSubtitle}>Time</Text>
                         <TouchableOpacity onPress={() => setShowTimePicker(!showTimePicker)}>
@@ -364,7 +390,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
                       />
                     </View>
 
-                    <View style={styles.settingItem}>
+                    <View style={[styles.settingItem, glassStyles.cardSubtle]}>
                       <View style={styles.settingInfo}>
                         <Text style={styles.settingSubtitle}>Include Motivation</Text>
                         <Text style={styles.settingDescription}>
@@ -386,7 +412,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
 
               {/* Streak Protection */}
               <View style={styles.subSection}>
-                <View style={styles.settingItem}>
+                <View style={[styles.settingItem, glassStyles.card]}>
                   <View style={styles.settingInfo}>
                     <Text style={styles.settingTitle}>Streak Protection</Text>
                     <Text style={styles.settingDescription}>
@@ -405,7 +431,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
 
                 {notificationSettings?.streaks?.protectionEnabled && (
                   <>
-                    <View style={styles.settingItem}>
+                    <View style={[styles.settingItem, glassStyles.cardSubtle]}>
                       <View style={styles.settingInfo}>
                         <Text style={styles.settingSubtitle}>Protection Time</Text>
                         <TouchableOpacity onPress={() => setExpandedSections({...expandedSections, streakTime: true})}>
@@ -444,7 +470,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
                       </View>
                     </View>
 
-                    <View style={styles.settingItem}>
+                    <View style={[styles.settingItem, glassStyles.cardSubtle]}>
                       <View style={styles.settingInfo}>
                         <Text style={styles.settingSubtitle}>Priority Alerts</Text>
                         <Text style={styles.settingDescription}>
@@ -466,7 +492,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
 
               {/* Achievement Notifications */}
               <View style={styles.subSection}>
-                <View style={styles.settingItem}>
+                <View style={[styles.settingItem, glassStyles.card]}>
                   <View style={styles.settingInfo}>
                     <Text style={styles.settingTitle}>Achievements</Text>
                     <Text style={styles.settingDescription}>
@@ -487,7 +513,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
 
                 {notificationSettings?.achievements?.enabled && (
                   <>
-                    <View style={styles.settingItem}>
+                    <View style={[styles.settingItem, glassStyles.cardSubtle]}>
                       <View style={styles.settingInfo}>
                         <Text style={styles.settingSubtitle}>Weekly Recap</Text>
                         <Text style={styles.settingDescription}>
@@ -507,7 +533,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
                     </View>
 
                     {notificationSettings?.achievements?.weeklyRecapEnabled && (
-                      <View style={styles.settingItem}>
+                      <View style={[styles.settingItem, glassStyles.cardSubtle]}>
                         <View style={styles.settingInfo}>
                           <Text style={styles.settingSubtitle}>Recap Day</Text>
                         </View>
@@ -553,8 +579,8 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
 
               {/* Advanced Settings */}
               <View style={styles.subSection}>
-                <TouchableOpacity 
-                  style={styles.settingItem}
+                <TouchableOpacity
+                  style={[styles.settingItem, glassStyles.card]}
                   onPress={() => setExpandedSections({...expandedSections, advanced: !expandedSections.advanced})}
                 >
                   <View style={styles.settingInfo}>
@@ -572,7 +598,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
 
                 {expandedSections.advanced && (
                   <>
-                    <View style={styles.settingItem}>
+                    <View style={[styles.settingItem, glassStyles.cardSubtle]}>
                       <View style={styles.settingInfo}>
                         <Text style={styles.settingSubtitle}>Weekend Mode</Text>
                         <Text style={styles.settingDescription}>
@@ -602,7 +628,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
                       </View>
                     </View>
 
-                    <View style={styles.settingItem}>
+                    <View style={[styles.settingItem, glassStyles.cardSubtle]}>
                       <View style={styles.settingInfo}>
                         <Text style={styles.settingSubtitle}>Quiet Hours</Text>
                         <Text style={styles.settingDescription}>
@@ -625,7 +651,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
                     </View>
 
                     {notificationSettings?.global?.quietHours?.enabled && (
-                      <View style={styles.settingItem}>
+                      <View style={[styles.settingItem, glassStyles.cardSubtle]}>
                         <View style={styles.settingInfo}>
                           <Text style={styles.settingDescription}>
                             From {notificationSettings?.global?.quietHours?.start || '22:00'} to {notificationSettings?.global?.quietHours?.end || '08:00'}
@@ -634,7 +660,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
                       </View>
                     )}
 
-                    <View style={styles.settingItem}>
+                    <View style={[styles.settingItem, glassStyles.cardSubtle]}>
                       <View style={styles.settingInfo}>
                         <Text style={styles.settingSubtitle}>Sound</Text>
                         <Text style={styles.settingDescription}>
@@ -653,7 +679,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
                       />
                     </View>
 
-                    <View style={styles.settingItem}>
+                    <View style={[styles.settingItem, glassStyles.cardSubtle]}>
                       <View style={styles.settingInfo}>
                         <Text style={styles.settingSubtitle}>Vibration</Text>
                         <Text style={styles.settingDescription}>
@@ -707,102 +733,189 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
               </ScrollView>
             </View>
           )}
+
+          {/* Habit Reminders - nested in Notifications */}
+          {notificationSettings?.global?.enabled && habitsWithReminders.length > 0 && (
+            <View style={styles.subSection}>
+              <View style={[styles.habitRemindersCard, glassStyles.card]}>
+                <View style={styles.habitRemindersHeader}>
+                  <Text style={styles.settingTitle}>Habit Reminders</Text>
+                </View>
+                {habitsWithReminders.map((habit, index) => (
+                  <View
+                    key={habit.id}
+                    style={[
+                      styles.habitReminderRow,
+                      index < habitsWithReminders.length - 1 && styles.habitReminderRowBorder
+                    ]}
+                  >
+                    <View style={styles.habitReminderInfo}>
+                      <View style={styles.habitReminderHeader}>
+                        <View style={[styles.habitIcon, { backgroundColor: habit.color + '20' }]}>
+                          <Icon name={habit.icon as any} size={14} color={habit.color} />
+                        </View>
+                        <Text style={styles.habitReminderName} numberOfLines={1}>{habit.name}</Text>
+                      </View>
+                      {habit.reminderTime && (
+                        <Text style={styles.habitReminderTime}>
+                          {habit.reminderTime} • {habit.reminderFrequency || 'daily'}
+                        </Text>
+                      )}
+                    </View>
+                    <Switch
+                      value={habit.reminderEnabled}
+                      onValueChange={(enabled) => {
+                        updateTask(habit.id, { reminderEnabled: enabled })
+                          .then(() => {
+                            logger.info('UI', 'Habit reminder toggled from settings', {
+                              habitId: habit.id,
+                              enabled
+                            });
+                          })
+                          .catch((error) => {
+                            logger.error('UI', 'Failed to toggle habit reminder', { error });
+                            Alert.alert('Error', 'Failed to update reminder setting');
+                          });
+                      }}
+                      trackColor={{ false: colors.interactive.default, true: accentColor }}
+                      thumbColor={colors.surface}
+                      accessibilityLabel={`${habit.name} reminder toggle`}
+                    />
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
+            </>
+          )}
         </View>
 
         {/* Display Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Display</Text>
-
-          {/* Calendar Color Setting */}
-          <View style={styles.settingItem}>
-            <View style={styles.settingInfo}>
-              <Text style={styles.settingTitle}>Calendar Color</Text>
-              <Text style={styles.settingDescription}>
-                Customize the contribution graph colors
-              </Text>
-              <View style={styles.calendarColorPreview}>
-                <CalendarColorPreview palette={calendarPalette} size={20} />
-              </View>
-            </View>
-            <TouchableOpacity
-              style={styles.changeColorButton}
-              onPress={() => setShowCalendarColorPicker(true)}
-              accessibilityRole="button"
-              accessibilityLabel="Change calendar color"
-              accessibilityHint="Double tap to open color picker"
-            >
-              <View style={[styles.colorSwatch, { backgroundColor: currentCalendarColor }]} />
-              <Icon name="chevron-right" size={16} color={colors.text.secondary} />
-            </TouchableOpacity>
-          </View>
-
-          {/* Dynamic App Icon Setting */}
-          <View style={styles.settingItem}>
-            <View style={styles.settingInfo}>
-              <Text style={[styles.settingTitle, !isDynamicIconSupported && styles.settingTitleDisabled]}>
-                Dynamic App Icon
-              </Text>
-              <Text style={styles.settingDescription}>
-                Show your last 4 days of activity on the app icon
-              </Text>
-              {dynamicIconPlatformNote && (
-                <Text style={[styles.settingDescription, styles.platformNote]}>
-                  {dynamicIconPlatformNote}
-                </Text>
-              )}
-            </View>
-            <Switch
-              value={dynamicIconEnabled ?? false}
-              onValueChange={handleDynamicIconToggle}
-              disabled={isDynamicIconLoading || !isDynamicIconSupported}
-              trackColor={{ false: colors.interactive.default, true: accentColor }}
-              thumbColor={colors.surface}
-              accessibilityLabel="Dynamic app icon toggle"
-              accessibilityHint={dynamicIconEnabled ? "Double tap to use default app icon" : "Double tap to enable dynamic app icon"}
+          <TouchableOpacity
+            style={styles.sectionHeader}
+            onPress={() => toggleSection('display')}
+            accessibilityRole="button"
+            accessibilityLabel={`Display section, ${expandedSections.display ? 'expanded' : 'collapsed'}`}
+          >
+            <Text style={styles.sectionTitle}>Display</Text>
+            <Icon
+              name={expandedSections.display ? 'chevron-up' : 'chevron-down'}
+              size={20}
+              color={colors.text.secondary}
             />
-          </View>
+          </TouchableOpacity>
+
+          {expandedSections.display && (
+            <>
+              {/* Calendar Color Setting */}
+              <View style={[styles.settingItem, glassStyles.card]}>
+                <View style={styles.settingInfo}>
+                  <Text style={styles.settingTitle}>Calendar Color</Text>
+                  <Text style={styles.settingDescription}>
+                    Customize the contribution graph colors
+                  </Text>
+                  <View style={styles.calendarColorPreview}>
+                    <CalendarColorPreview palette={calendarPalette} size={20} />
+                  </View>
+                </View>
+                <TouchableOpacity
+                  style={styles.changeColorButton}
+                  onPress={() => setShowCalendarColorPicker(true)}
+                  accessibilityRole="button"
+                  accessibilityLabel="Change calendar color"
+                  accessibilityHint="Double tap to open color picker"
+                >
+                  <View style={[styles.colorSwatch, { backgroundColor: currentCalendarColor }]} />
+                  <Icon name="chevron-right" size={16} color={colors.text.secondary} />
+                </TouchableOpacity>
+              </View>
+
+              {/* Dynamic App Icon Setting */}
+              <View style={[styles.settingItem, glassStyles.card]}>
+                <View style={styles.settingInfo}>
+                  <Text style={[styles.settingTitle, !isDynamicIconSupported && styles.settingTitleDisabled]}>
+                    Dynamic App Icon
+                  </Text>
+                  <Text style={styles.settingDescription}>
+                    Show your last 4 days of activity on the app icon
+                  </Text>
+                  {dynamicIconPlatformNote && (
+                    <Text style={[styles.settingDescription, styles.platformNote]}>
+                      {dynamicIconPlatformNote}
+                    </Text>
+                  )}
+                </View>
+                <Switch
+                  value={dynamicIconEnabled ?? false}
+                  onValueChange={handleDynamicIconToggle}
+                  disabled={isDynamicIconLoading || !isDynamicIconSupported}
+                  trackColor={{ false: colors.interactive.default, true: accentColor }}
+                  thumbColor={colors.surface}
+                  accessibilityLabel="Dynamic app icon toggle"
+                  accessibilityHint={dynamicIconEnabled ? "Double tap to use default app icon" : "Double tap to enable dynamic app icon"}
+                />
+              </View>
+            </>
+          )}
         </View>
 
         {/* Data Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Data</Text>
-
-          <View style={styles.dataButtonRow}>
-            <TouchableOpacity
-              style={[styles.dataButton, (isExporting || isImporting) && styles.dataButtonDisabled]}
-              onPress={handleExportData}
-              disabled={isExporting || isImporting}
-              accessibilityRole="button"
-              accessibilityLabel="Export data"
-            >
-              <Icon name={isExporting ? 'loader' : 'send'} size={20} color={isExporting || isImporting ? colors.text.tertiary : accentColor} />
-              <Text style={[styles.dataButtonText, (isExporting || isImporting) && styles.dataButtonTextDisabled]}>
-                {isExporting ? 'Exporting...' : 'Export'}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.dataButton, (isExporting || isImporting) && styles.dataButtonDisabled]}
-              onPress={handleImportData}
-              disabled={isExporting || isImporting}
-              accessibilityRole="button"
-              accessibilityLabel="Import data"
-            >
-              <Icon name={isImporting ? 'loader' : 'inbox'} size={20} color={isExporting || isImporting ? colors.text.tertiary : accentColor} />
-              <Text style={[styles.dataButtonText, (isExporting || isImporting) && styles.dataButtonTextDisabled]}>
-                {isImporting ? 'Importing...' : 'Import'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-
           <TouchableOpacity
-            style={styles.resetLink}
-            onPress={handleResetSettings}
+            style={styles.sectionHeader}
+            onPress={() => toggleSection('data')}
             accessibilityRole="button"
-            accessibilityLabel="Reset all settings"
+            accessibilityLabel={`Data section, ${expandedSections.data ? 'expanded' : 'collapsed'}`}
           >
-            <Text style={styles.resetLinkText}>Reset All Settings</Text>
+            <Text style={styles.sectionTitle}>Data</Text>
+            <Icon
+              name={expandedSections.data ? 'chevron-up' : 'chevron-down'}
+              size={20}
+              color={colors.text.secondary}
+            />
           </TouchableOpacity>
+
+          {expandedSections.data && (
+            <>
+              <View style={styles.dataButtonRow}>
+                <TouchableOpacity
+                  style={[styles.dataButton, (isExporting || isImporting) && styles.dataButtonDisabled]}
+                  onPress={handleExportData}
+                  disabled={isExporting || isImporting}
+                  accessibilityRole="button"
+                  accessibilityLabel="Export data"
+                >
+                  <Icon name={isExporting ? 'loader' : 'send'} size={20} color={isExporting || isImporting ? colors.text.tertiary : accentColor} />
+                  <Text style={[styles.dataButtonText, (isExporting || isImporting) && styles.dataButtonTextDisabled]}>
+                    {isExporting ? 'Exporting...' : 'Export'}
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.dataButton, (isExporting || isImporting) && styles.dataButtonDisabled]}
+                  onPress={handleImportData}
+                  disabled={isExporting || isImporting}
+                  accessibilityRole="button"
+                  accessibilityLabel="Import data"
+                >
+                  <Icon name={isImporting ? 'loader' : 'inbox'} size={20} color={isExporting || isImporting ? colors.text.tertiary : accentColor} />
+                  <Text style={[styles.dataButtonText, (isExporting || isImporting) && styles.dataButtonTextDisabled]}>
+                    {isImporting ? 'Importing...' : 'Import'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              <TouchableOpacity
+                style={styles.resetLink}
+                onPress={handleResetSettings}
+                accessibilityRole="button"
+                accessibilityLabel="Reset all settings"
+              >
+                <Text style={styles.resetLinkText}>Reset All Settings</Text>
+              </TouchableOpacity>
+            </>
+          )}
         </View>
 
         <View style={styles.footer}>
@@ -863,11 +976,18 @@ const styles = StyleSheet.create({
   section: {
     marginBottom: spacing[6],
   },
-  
+
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: spacing[2],
+    marginBottom: spacing[3],
+  },
+
   sectionTitle: {
     ...textStyles.h3,
     color: colors.text.primary,
-    marginBottom: spacing[3],
   },
   
   warningCard: {
@@ -1024,6 +1144,63 @@ const styles = StyleSheet.create({
   resetLinkText: {
     ...textStyles.bodySmall,
     color: colors.error,
+  },
+
+  habitRemindersCard: {
+    padding: 0,
+    overflow: 'hidden',
+  },
+
+  habitRemindersHeader: {
+    paddingHorizontal: spacing[4],
+    paddingTop: spacing[3],
+    paddingBottom: spacing[2],
+  },
+
+  habitReminderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: spacing[3],
+    paddingHorizontal: spacing[4],
+  },
+
+  habitReminderRowBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: colors.divider,
+  },
+
+  habitReminderInfo: {
+    flex: 1,
+    marginRight: spacing[3],
+  },
+
+  habitReminderHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
+  },
+
+  habitIcon: {
+    width: 24,
+    height: 24,
+    borderRadius: radiusValues.box,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  habitReminderName: {
+    ...textStyles.bodySmall,
+    color: colors.text.primary,
+    fontWeight: '500',
+    flex: 1,
+  },
+
+  habitReminderTime: {
+    ...textStyles.caption,
+    color: colors.text.tertiary,
+    marginTop: 2,
+    marginLeft: 24 + spacing[2], // Align with name (icon width + gap)
   },
 
   subSection: {

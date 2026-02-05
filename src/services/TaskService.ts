@@ -314,26 +314,55 @@ export class TaskService {
   }
 
   /**
+   * Check if global notifications are enabled
+   * Uses lazy import to avoid circular dependencies
+   */
+  private async isGlobalNotificationsEnabled(): Promise<boolean> {
+    try {
+      // Use require for Jest compatibility with mocks
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { useSettingsStore } = require('../store/settingsStore');
+      return useSettingsStore.getState().notificationSettings?.global?.enabled ?? false;
+    } catch (error) {
+      logger.warn('SERVICES', 'Failed to check global notification settings', { error });
+      return false;
+    }
+  }
+
+  /**
    * Private helper to schedule task notifications
+   * Respects global notification settings - won't schedule if global is disabled
    */
   private async scheduleTaskNotification(task: Task): Promise<void> {
     try {
       if (task.reminderEnabled && task.reminderTime) {
+        // Check if global notifications are enabled
+        const globalEnabled = await this.isGlobalNotificationsEnabled();
+        if (!globalEnabled) {
+          logger.debug('SERVICES', 'Task notification paused - global notifications disabled', {
+            taskId: task.id,
+            taskName: task.name
+          });
+          // Cancel any existing notification but keep the task's reminder settings
+          await notificationService.cancelTaskReminder(task.id);
+          return;
+        }
+
         await notificationService.scheduleTaskReminder(
           task,
           task.reminderTime,
           task.reminderFrequency || 'daily'
         );
-        logger.debug('SERVICES', 'Task notification scheduled', { 
+        logger.debug('SERVICES', 'Task notification scheduled', {
           taskId: task.id,
           reminderTime: task.reminderTime,
-          frequency: task.reminderFrequency 
+          frequency: task.reminderFrequency
         });
       }
     } catch (error) {
-      logger.error('SERVICES', 'Failed to schedule task notification', { 
+      logger.error('SERVICES', 'Failed to schedule task notification', {
         error,
-        taskId: task.id 
+        taskId: task.id
       });
       // Don't throw - notification failure shouldn't fail task operations
     }

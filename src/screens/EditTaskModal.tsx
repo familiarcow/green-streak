@@ -17,6 +17,7 @@ import { IconPickerModal } from '../components/IconPicker';
 import { ColorPickerModal } from '../components/ColorPicker';
 import { useTasksStore } from '../store/tasksStore';
 import { useAchievementsStore } from '../store/achievementsStore';
+import { useSettingsStore } from '../store/settingsStore';
 import { useAccentColor } from '../hooks';
 import { colors, textStyles, spacing, shadows } from '../theme';
 import { radiusValues } from '../theme/utils';
@@ -51,8 +52,26 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
 
   const { createTask, updateTask, deleteTask } = useTasksStore();
   const { checkForAchievements } = useAchievementsStore();
+  const { notificationSettings, updateNotificationSettings } = useSettingsStore();
   const accentColor = useAccentColor();
   const isEditing = !!existingTask;
+
+  // Handle reminder toggle - auto-enable global notifications if needed
+  const handleReminderToggle = useCallback(async (enabled: boolean) => {
+    setReminderEnabled(enabled);
+
+    // If enabling a reminder and global notifications are off, enable them
+    if (enabled && !notificationSettings?.global?.enabled) {
+      try {
+        await updateNotificationSettings({
+          global: { ...notificationSettings?.global, enabled: true }
+        });
+        logger.info('UI', 'Auto-enabled global notifications for habit reminder');
+      } catch (error) {
+        logger.error('UI', 'Failed to auto-enable global notifications', { error });
+      }
+    }
+  }, [notificationSettings, updateNotificationSettings]);
 
   // Handle template selection - populate form with template data
   const handleSelectTemplate = useCallback((template: HabitTemplate) => {
@@ -416,7 +435,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
             </View>
             <Switch
               value={reminderEnabled}
-              onValueChange={setReminderEnabled}
+              onValueChange={handleReminderToggle}
               trackColor={{ false: colors.interactive.default, true: accentColor }}
               thumbColor={colors.surface}
               accessibilityLabel="Reminder setting"

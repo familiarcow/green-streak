@@ -234,9 +234,10 @@ class NotificationService {
   }
 
   async scheduleTaskReminder(
-    task: Task, 
-    time: string, 
-    frequency: 'daily' | 'weekly' = 'daily'
+    task: Task,
+    time: string,
+    frequency: 'daily' | 'weekly' = 'daily',
+    options?: { skipGlobalCheck?: boolean }
   ): Promise<string | null> {
     if (!task.reminderEnabled || !task.reminderTime) {
       await this.cancelTaskReminder(task.id);

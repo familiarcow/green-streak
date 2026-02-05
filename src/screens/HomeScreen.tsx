@@ -136,6 +136,7 @@ export const HomeScreen: React.FC = () => {
     openEditTask(task);
   }, [openEditTask]);
 
+
   const handleTaskAnalytics = useCallback((task: Task) => {
     logger.debug('UI', 'Task analytics requested', { taskId: task.id, taskName: task.name });
     openTaskAnalytics(task);
