@@ -303,7 +303,7 @@ green-streak/
 │   ├── theme/               # Design system
 │   └── types/               # TypeScript definitions
 ├── tests/                   # Test files and utilities
-├── docs/                    # Documentation
+├── dev-docs/                # Documentation
 ├── scripts/                 # Development scripts
 └── assets/                  # Static assets
 ```

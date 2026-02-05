@@ -60,12 +60,43 @@
             max-width: 600px;
         }
 
+        .logo-wrapper {
+            display: inline-flex;
+            align-items: center;
+            margin-bottom: 32px;
+        }
+
         .logo {
             width: 100px;
             height: 100px;
-            margin-bottom: 32px;
             border-radius: 22px;
             box-shadow: 0 8px 30px rgba(34, 197, 94, 0.2);
+            flex-shrink: 0;
+        }
+
+        .logo-title {
+            font-size: clamp(2.2rem, 7vw, 3.5rem);
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            max-width: 0;
+            opacity: 0;
+            transform: translateX(-8px);
+            transition: max-width 0.45s cubic-bezier(0.4, 0, 0.2, 1),
+                        opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+                        transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                        margin-left 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+            margin-left: 0;
+            pointer-events: none;
+        }
+
+        .logo-wrapper:hover .logo-title {
+            max-width: 500px;
+            opacity: 1;
+            transform: translateX(0);
+            margin-left: 20px;
         }
 
         h1 {
@@ -367,7 +398,16 @@
         /* Features */
         /* Carousel Section */
         .carousel-section {
-            padding: 80px 0;
+            position: relative;
+        }
+
+        .carousel-sticky {
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
             overflow: hidden;
         }
 
@@ -396,10 +436,8 @@
             gap: 32px;
             padding: 20px 0;
             overflow-x: auto;
-            scroll-snap-type: x mandatory;
             scrollbar-width: none;
             -ms-overflow-style: none;
-            scroll-behavior: smooth;
         }
 
         .carousel-track::-webkit-scrollbar {
@@ -412,7 +450,6 @@
             border-radius: 24px;
             padding: 36px;
             border: 1px solid var(--border);
-            scroll-snap-align: center;
             transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), 
                         box-shadow 0.5s cubic-bezier(0.4, 0, 0.2, 1), 
                         opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1);
@@ -578,10 +615,17 @@
                 margin-bottom: 32px;
             }
 
+            .logo-wrapper {
+                margin-bottom: 24px;
+            }
+
             .logo {
                 width: 80px;
                 height: 80px;
-                margin-bottom: 24px;
+            }
+
+            .logo-wrapper:hover .logo-title {
+                margin-left: 14px;
             }
 
             .phone-frame {
@@ -682,7 +726,7 @@
             }
 
             .carousel-section {
-                padding: 60px 0;
+                /* height set by JS */
             }
 
             .carousel-header {
@@ -771,7 +815,10 @@
 <body>
     <section class="hero">
         <div class="hero-content">
-            <img src="https://raw.githubusercontent.com/familiarcow/green-streak/main/assets/icon.png" alt="Green Streak" class="logo">
+            <div class="logo-wrapper">
+                <img src="https://raw.githubusercontent.com/familiarcow/green-streak/main/assets/icon.png" alt="Green Streak" class="logo">
+                <span class="logo-title">Green Streak</span>
+            </div>
             <h1>Your habits, visualized.</h1>
             <p class="tagline">Track daily routines with beautiful contribution graphs. Watch your consistency grow, one green square at a time.</p>
             
@@ -804,7 +851,8 @@
         </div>
     </section>
 
-    <section class="carousel-section">
+    <section class="carousel-section" id="carouselSection">
+        <div class="carousel-sticky">
         <div class="carousel-header">
             <h2>Become who you want to be</h2>
             <p>Small actions, repeated daily, transform into the person you're meant to become. Green Streak makes that journey visible.</p>
@@ -863,6 +911,7 @@
         </div>
         
         <div class="carousel-dots" id="carouselDots"></div>
+        </div>
     </section>
 
     <section class="final-cta">
@@ -1100,93 +1149,92 @@
             return new Promise(resolve => setTimeout(resolve, ms));
         }
 
-        // === CAROUSEL ===
+        // === CAROUSEL (scroll-linked) ===
         function initCarousel() {
+            const section = document.getElementById('carouselSection');
             const track = document.getElementById('carouselTrack');
             const dotsContainer = document.getElementById('carouselDots');
             const cards = track.querySelectorAll('.carousel-card');
             const cardCount = cards.length;
-            let currentIndex = 0;
-            let autoScrollInterval;
-            const gap = 32;
-            
+            let cardWidth, maxScroll;
+
             // Create dots
             for (let i = 0; i < cardCount; i++) {
                 const dot = document.createElement('div');
                 dot.className = 'carousel-dot' + (i === 0 ? ' active' : '');
-                dot.addEventListener('click', () => {
-                    scrollToCard(i);
-                    resetAutoScroll();
-                });
+                dot.addEventListener('click', () => scrollToCard(i));
                 dotsContainer.appendChild(dot);
             }
-            
-            // Set first card as active initially
+
             cards[0].classList.add('active');
-            
-            // Scroll to center first card on load
-            setTimeout(() => {
-                track.scrollTo({ left: 0, behavior: 'instant' });
-            }, 100);
-            
-            // Get card width dynamically
-            function getCardWidth() {
-                return cards[0].offsetWidth + gap;
+
+            // Calculate dimensions and set section height for scroll room
+            function recalc() {
+                const gap = parseFloat(getComputedStyle(track).gap) || 32;
+                cardWidth = cards[0].offsetWidth + gap;
+                maxScroll = track.scrollWidth - track.clientWidth;
+                section.style.height = (window.innerHeight + maxScroll) + 'px';
             }
-            
-            // Update active card and dots on scroll
+
+            recalc();
+            window.addEventListener('resize', recalc);
+
+            // Update active card and dots from track scroll position
             function updateActiveState() {
-                const cardWidth = getCardWidth();
                 const scrollLeft = track.scrollLeft;
                 const newIndex = Math.round(scrollLeft / cardWidth);
                 const clampedIndex = Math.max(0, Math.min(newIndex, cardCount - 1));
-                
-                currentIndex = clampedIndex;
-                
-                // Update cards
+
                 cards.forEach((card, i) => {
                     card.classList.toggle('active', i === clampedIndex);
                 });
-                
-                // Update dots
                 document.querySelectorAll('.carousel-dot').forEach((dot, i) => {
                     dot.classList.toggle('active', i === clampedIndex);
                 });
             }
-            
-            track.addEventListener('scroll', updateActiveState);
-            
+
+            // Scroll-linked animation
+            let sectionVisible = false;
+            let userDragging = false;
+
+            const observer = new IntersectionObserver((entries) => {
+                sectionVisible = entries[0].isIntersecting;
+            }, { threshold: 0 });
+            observer.observe(section);
+
+            function onPageScroll() {
+                if (userDragging || !sectionVisible) return;
+                const rect = section.getBoundingClientRect();
+                const scrollRange = section.offsetHeight - window.innerHeight;
+                if (scrollRange <= 0) return;
+
+                const progress = Math.max(0, Math.min(1, -rect.top / scrollRange));
+                track.scrollLeft = progress * maxScroll;
+                updateActiveState();
+            }
+
+            window.addEventListener('scroll', onPageScroll, { passive: true });
+
+            // Dot click: scroll page so the carousel lands on that card
             function scrollToCard(index) {
-                const cardWidth = getCardWidth();
-                track.scrollTo({
-                    left: index * cardWidth,
-                    behavior: 'smooth'
-                });
+                const progress = index / (cardCount - 1);
+                const scrollRange = section.offsetHeight - window.innerHeight;
+                const targetScrollY = section.offsetTop + progress * scrollRange;
+                window.scrollTo({ top: targetScrollY, behavior: 'smooth' });
             }
-            
-            // Auto-scroll every 4 seconds
-            function startAutoScroll() {
-                autoScrollInterval = setInterval(() => {
-                    currentIndex = (currentIndex + 1) % cardCount;
-                    scrollToCard(currentIndex);
-                }, 4000);
-            }
-            
-            function resetAutoScroll() {
-                clearInterval(autoScrollInterval);
-                startAutoScroll();
-            }
-            
-            // Start auto-scroll after initial delay
-            setTimeout(startAutoScroll, 3000);
-            
-            // Pause on hover
-            track.addEventListener('mouseenter', () => clearInterval(autoScrollInterval));
-            track.addEventListener('mouseleave', () => setTimeout(startAutoScroll, 1000));
-            
-            // Touch handling
-            track.addEventListener('touchstart', () => clearInterval(autoScrollInterval));
-            track.addEventListener('touchend', () => setTimeout(startAutoScroll, 2000));
+
+            // Mobile touch: allow manual drag as fallback
+            track.addEventListener('touchstart', () => { userDragging = true; }, { passive: true });
+            track.addEventListener('touchend', () => {
+                setTimeout(() => { userDragging = false; }, 300);
+            }, { passive: true });
+
+            track.addEventListener('scroll', () => {
+                if (userDragging) updateActiveState();
+            });
+
+            // Set initial state
+            onPageScroll();
         }
 
         // === ANNOTATION POSITIONING ===

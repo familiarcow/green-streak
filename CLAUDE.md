@@ -11,7 +11,7 @@ When implementing features, always prefer using existing reusable components ove
   - Consistent backdrop behavior with `closeOnBackdropPress` prop
   - Consistent styling and swipe handle
   - Proper accessibility support
-- See `docs/architecture.md` Modal Architecture section for detailed guidance
+- See `dev-docs/architecture.md` Modal Architecture section for detailed guidance
 
 ### Icons
 - **Use `Icon` from `src/components/common/Icon.tsx`** with the `IconName` type
@@ -28,7 +28,7 @@ When implementing features, always prefer using existing reusable components ove
 
 ## Architecture Patterns
 
-- Follow the layered architecture documented in `docs/architecture.md`
+- Follow the layered architecture documented in `dev-docs/architecture.md`
 - Use the Service Layer (TaskService, DataService, etc.) for business logic
 - Keep stores thin - delegate complex logic to services
 - Use custom hooks to encapsulate reusable UI logic

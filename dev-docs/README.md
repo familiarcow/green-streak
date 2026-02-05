@@ -69,7 +69,7 @@ Green Streak is a privacy-first mobile habit tracker that transforms your daily 
 
 ```
 green-streak/
-├── docs/                    # Comprehensive documentation
+├── dev-docs/                # Comprehensive documentation
 ├── src/
 │   ├── components/          # Reusable UI components
 │   │   ├── ContributionGraph/   # Main visualization component
@@ -175,13 +175,13 @@ The app includes extensive development tooling to make debugging, testing, and e
 This is an open-source project designed to be educational and extensible. The codebase includes comprehensive documentation, testing, and tooling to support learning and contribution.
 
 ### Getting Help
-- Review the documentation in `/docs/`
-- Check the implementation status in `/docs/status.md`
+- Review the documentation in `/dev-docs/`
+- Check the implementation status in `/dev-docs/status.md`
 - Examine the test files for usage examples
 - Use the development CLI for realistic test data
 
 ### Contributing
-- Follow the development setup guide in `/docs/development.md`
+- Follow the development setup guide in `/dev-docs/development.md`
 - Run tests with `npm test` before submitting changes
 - Maintain TypeScript strict mode compliance
 - Add tests for new functionality
