@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,8 @@ import {
   TouchableOpacity,
   NativeScrollEvent,
   NativeSyntheticEvent,
+  Switch,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, {
@@ -17,13 +19,19 @@ import Animated, {
   FadeInUp,
   SlideInRight,
 } from 'react-native-reanimated';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { AnimatedButton } from '../components/AnimatedButton';
 import { OnboardingDemo } from '../components/OnboardingDemo';
 import { Icon, IconName } from '../components/common/Icon';
 import { TemplateCatalogModal } from '../components/TemplateCatalog';
+import { CalendarColorPreview } from '../components/CalendarColorPreview';
+import { HueBar } from '../components/ColorPicker/HueBar';
 import { colors, textStyles, spacing, shadows } from '../theme';
 import { radiusValues } from '../theme/utils';
 import { HabitTemplate } from '../types/templates';
+import { useSettingsStore, DEFAULT_CALENDAR_COLOR } from '../store/settingsStore';
+import { CALENDAR_COLOR_PRESETS, generateContributionPalette, hexToHsv, hsvToHex } from '../utils/colorUtils';
+import notificationService from '../services/NotificationService';
 import logger from '../utils/logger';
 
 interface OnboardingScreenProps {
@@ -37,9 +45,10 @@ const onboardingSteps = [
     id: 1,
     icon: 'heart' as IconName,
     title: 'Welcome to Green Streak!',
-    subtitle: 'Build lasting habits with visual progress tracking',
-    content: 'Track your daily habits and watch your consistency grow with our GitHub-style contribution graph. Every completion counts towards building your green streak!',
+    subtitle: 'Build healthy habits and become who you were meant to be',
+    content: 'Every green square on the contribution chart is a promise kept to yourself. Watch your consistency grow, one day at a time.',
     showGraph: false,
+    showSettings: false,
   },
   {
     id: 2,
@@ -48,22 +57,25 @@ const onboardingSteps = [
     subtitle: 'See your consistency at a glance',
     content: 'Your habit completions are displayed in an intuitive calendar grid. Darker squares mean more activity - build those streaks and watch your dedication shine!',
     showGraph: true,
+    showSettings: false,
   },
   {
     id: 3,
-    icon: 'target' as IconName,
-    title: 'Track Multiple Habits',
-    subtitle: 'One app for all your goals',
-    content: 'Whether it\'s exercising, reading, or drinking water - track unlimited habits with custom colors and icons. Each habit can be completed once or multiple times per day.',
+    icon: 'settings' as IconName,
+    title: 'Settings',
+    subtitle: 'Set up your preferences',
+    content: '',
     showGraph: false,
+    showSettings: true,
   },
   {
     id: 4,
     icon: 'checkCircle' as IconName,
     title: 'Ready to Start?',
     subtitle: 'Your journey begins now',
-    content: 'You can set up your first habit right away, or explore the app and add habits later. Either way, you\'re about to start building amazing consistent habits!',
+    content: 'You can set up your first habit right away, or explore the app and add habits later.',
     showGraph: false,
+    showSettings: false,
   },
 ];
 
@@ -72,6 +84,37 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
   const [showTemplateCatalog, setShowTemplateCatalog] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
   const slideAnimation = useSharedValue(0);
+
+  // Settings state
+  const [selectedColor, setSelectedColor] = useState(DEFAULT_CALENDAR_COLOR);
+  const [colorPickerExpanded, setColorPickerExpanded] = useState(false);
+  const [hue, setHue] = useState(() => {
+    const hsv = hexToHsv(DEFAULT_CALENDAR_COLOR);
+    return hsv?.h || 120;
+  });
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [dailyRemindersEnabled, setDailyRemindersEnabled] = useState(false);
+  const [streakProtectionEnabled, setStreakProtectionEnabled] = useState(false);
+
+  // Handle hue change from slider
+  const handleHueChange = useCallback((newHue: number) => {
+    setHue(newHue);
+    // Convert hue to hex with fixed saturation and value for vibrant colors
+    const newColor = hsvToHex(newHue, 0.7, 0.85);
+    setSelectedColor(newColor);
+  }, []);
+
+  // Handle preset color selection
+  const handlePresetSelect = useCallback((color: string) => {
+    setSelectedColor(color);
+    const hsv = hexToHsv(color);
+    if (hsv) {
+      setHue(hsv.h);
+    }
+  }, []);
+
+  // Settings store
+  const { setCalendarColor, updateNotificationSettings } = useSettingsStore();
 
   const handleNext = () => {
     if (currentStep < onboardingSteps.length - 1) {
@@ -104,8 +147,47 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
     }
   };
 
-  const handleSetupTask = () => {
+  // Save settings before completing onboarding
+  const saveOnboardingSettings = useCallback(async () => {
+    try {
+      // Save calendar color
+      setCalendarColor(selectedColor);
+
+      // Request notification permissions if any notification setting is enabled
+      if (notificationsEnabled || dailyRemindersEnabled || streakProtectionEnabled) {
+        const hasPermission = await notificationService.requestPermissions();
+        if (!hasPermission) {
+          logger.warn('UI', 'Notification permission denied during onboarding');
+        }
+      }
+
+      // Save notification settings
+      await updateNotificationSettings({
+        global: {
+          enabled: notificationsEnabled,
+        },
+        daily: {
+          enabled: dailyRemindersEnabled,
+        },
+        streaks: {
+          protectionEnabled: streakProtectionEnabled,
+        },
+      });
+
+      logger.info('UI', 'Onboarding settings saved', {
+        calendarColor: selectedColor,
+        notificationsEnabled,
+        dailyRemindersEnabled,
+        streakProtectionEnabled,
+      });
+    } catch (error) {
+      logger.error('UI', 'Failed to save onboarding settings', { error });
+    }
+  }, [selectedColor, notificationsEnabled, dailyRemindersEnabled, streakProtectionEnabled, setCalendarColor, updateNotificationSettings]);
+
+  const handleSetupTask = async () => {
     logger.info('UI', 'User chose to set up first task during onboarding');
+    await saveOnboardingSettings();
     onComplete(true);
   };
 
@@ -114,16 +196,39 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
     setShowTemplateCatalog(true);
   }, []);
 
-  const handleSelectTemplate = useCallback((template: HabitTemplate) => {
+  const handleSelectTemplate = useCallback(async (template: HabitTemplate) => {
     logger.info('UI', 'User selected template during onboarding', { templateId: template.id });
     setShowTemplateCatalog(false);
+    await saveOnboardingSettings();
     onComplete(true, template);
-  }, [onComplete]);
+  }, [onComplete, saveOnboardingSettings]);
 
-  const handleSkipSetup = () => {
+  const handleSkipSetup = async () => {
     logger.info('UI', 'User chose to explore app without setting up task');
+    await saveOnboardingSettings();
     onComplete(false);
   };
+
+  // Handle master notifications toggle
+  const handleNotificationsToggle = useCallback(async (enabled: boolean) => {
+    if (enabled) {
+      const hasPermission = await notificationService.requestPermissions();
+      if (!hasPermission) {
+        Alert.alert(
+          'Notifications Disabled',
+          'Please enable notifications in your device settings to receive reminders.',
+          [{ text: 'OK' }]
+        );
+        return;
+      }
+    }
+    setNotificationsEnabled(enabled);
+    // If turning off master notifications, turn off sub-notifications too
+    if (!enabled) {
+      setDailyRemindersEnabled(false);
+      setStreakProtectionEnabled(false);
+    }
+  }, []);
 
   const animatedIndicatorStyle = useAnimatedStyle(() => ({
     transform: [{ 
@@ -194,6 +299,129 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
                   <OnboardingDemo />
                 </Animated.View>
               )}
+
+              {step.showSettings && (
+                <Animated.View
+                  entering={FadeInUp.delay(300)}
+                  style={styles.settingsContainer}
+                >
+                  {/* Calendar Color Selection */}
+                  <View style={styles.settingSection}>
+                    <Text style={styles.settingSectionTitle}>Calendar Color</Text>
+
+                    {/* Color Preview Row */}
+                    <View style={styles.colorPreviewRow}>
+                      <View style={styles.colorPreviewLeft}>
+                        <CalendarColorPreview
+                          palette={generateContributionPalette(selectedColor)}
+                          size={24}
+                        />
+                      </View>
+                      <TouchableOpacity
+                        style={styles.editColorButton}
+                        onPress={() => setColorPickerExpanded(!colorPickerExpanded)}
+                        accessibilityLabel={colorPickerExpanded ? "Close color picker" : "Edit color"}
+                      >
+                        <Text style={styles.editColorButtonText}>
+                          {colorPickerExpanded ? 'Done' : 'Edit'}
+                        </Text>
+                        <Icon
+                          name={colorPickerExpanded ? 'chevron-up' : 'chevron-down'}
+                          size={16}
+                          color={colors.primary}
+                        />
+                      </TouchableOpacity>
+                    </View>
+
+                    {/* Expandable Color Options */}
+                    {colorPickerExpanded && (
+                      <Animated.View
+                        entering={FadeInUp.duration(200)}
+                        style={styles.colorOptionsContainer}
+                      >
+                        <View style={styles.colorOptionsRow}>
+                          {CALENDAR_COLOR_PRESETS.map((color) => (
+                            <TouchableOpacity
+                              key={color}
+                              style={[
+                                styles.colorOption,
+                                { backgroundColor: color },
+                                selectedColor.toUpperCase() === color.toUpperCase() && styles.colorOptionSelected,
+                              ]}
+                              onPress={() => handlePresetSelect(color)}
+                              accessibilityLabel={`Select ${color} color`}
+                            />
+                          ))}
+                        </View>
+                        <GestureHandlerRootView style={styles.hueBarContainer}>
+                          <HueBar
+                            hue={hue}
+                            onHueChange={handleHueChange}
+                            width={screenWidth - spacing[8] * 2 - spacing[6]}
+                            height={28}
+                          />
+                        </GestureHandlerRootView>
+                      </Animated.View>
+                    )}
+                  </View>
+
+                  {/* Notification Settings */}
+                  <View style={styles.settingSection}>
+                    <Text style={styles.settingSectionTitle}>Notifications</Text>
+
+                    <View style={styles.settingRow}>
+                      <View style={styles.settingInfo}>
+                        <Text style={styles.settingLabel}>Enable Notifications</Text>
+                        <Text style={styles.settingDescription}>
+                          Allow reminders and alerts
+                        </Text>
+                      </View>
+                      <Switch
+                        value={notificationsEnabled}
+                        onValueChange={handleNotificationsToggle}
+                        trackColor={{ false: colors.interactive.default, true: colors.primary }}
+                        thumbColor={colors.surface}
+                      />
+                    </View>
+
+                    <View style={[styles.settingRow, !notificationsEnabled && styles.settingRowDisabled]}>
+                      <View style={styles.settingInfo}>
+                        <Text style={[styles.settingLabel, !notificationsEnabled && styles.settingLabelDisabled]}>
+                          Daily Reminders
+                        </Text>
+                        <Text style={styles.settingDescription}>
+                          Get reminded to log your habits
+                        </Text>
+                      </View>
+                      <Switch
+                        value={dailyRemindersEnabled}
+                        onValueChange={setDailyRemindersEnabled}
+                        disabled={!notificationsEnabled}
+                        trackColor={{ false: colors.interactive.default, true: colors.primary }}
+                        thumbColor={colors.surface}
+                      />
+                    </View>
+
+                    <View style={[styles.settingRow, !notificationsEnabled && styles.settingRowDisabled]}>
+                      <View style={styles.settingInfo}>
+                        <Text style={[styles.settingLabel, !notificationsEnabled && styles.settingLabelDisabled]}>
+                          Streak Protection
+                        </Text>
+                        <Text style={styles.settingDescription}>
+                          Get warned before losing a streak
+                        </Text>
+                      </View>
+                      <Switch
+                        value={streakProtectionEnabled}
+                        onValueChange={setStreakProtectionEnabled}
+                        disabled={!notificationsEnabled}
+                        trackColor={{ false: colors.interactive.default, true: colors.primary }}
+                        thumbColor={colors.surface}
+                      />
+                    </View>
+                  </View>
+                </Animated.View>
+              )}
             </ScrollView>
 
             <View style={styles.actionsContainer}>
@@ -213,20 +441,23 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
                     size="large"
                     style={styles.primaryAction}
                   />
-                  <TouchableOpacity
-                    onPress={handleSetupTask}
-                    style={styles.secondaryActionButton}
-                  >
-                    <Text style={styles.secondaryActionButtonText}>
-                      Create from Scratch
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={handleSkipSetup}
-                    style={styles.skipButton}
-                  >
-                    <Text style={styles.skipButtonText}>Skip</Text>
-                  </TouchableOpacity>
+                  <View style={styles.secondaryActionsRow}>
+                    <TouchableOpacity
+                      onPress={handleSkipSetup}
+                      style={styles.skipButton}
+                    >
+                      <Text style={styles.skipButtonText}>Skip</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={handleSetupTask}
+                      style={styles.secondaryActionButton}
+                    >
+                      <Icon name="edit" size={16} color={colors.primary} />
+                      <Text style={styles.secondaryActionButtonText}>
+                        Custom
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
               )}
             </View>
@@ -367,11 +598,20 @@ const styles = StyleSheet.create({
     width: '100%',
   },
 
-  secondaryActionButton: {
+  secondaryActionsRow: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: spacing[3],
-    paddingHorizontal: spacing[6],
+    gap: spacing[4],
+  },
+
+  secondaryActionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing[1],
+    paddingVertical: spacing[2],
+    paddingHorizontal: spacing[3],
   },
 
   secondaryActionButtonText: {
@@ -382,11 +622,11 @@ const styles = StyleSheet.create({
 
   skipButton: {
     paddingVertical: spacing[2],
-    paddingHorizontal: spacing[4],
+    paddingHorizontal: spacing[3],
   },
 
   skipButtonText: {
-    ...textStyles.bodySmall,
+    ...textStyles.body,
     color: colors.text.tertiary,
   },
 
@@ -425,6 +665,118 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 4,
     backgroundColor: colors.primary,
+  },
+
+  // Settings step styles
+  settingsContainer: {
+    width: '100%',
+    paddingHorizontal: spacing[2],
+  },
+
+  settingSection: {
+    marginBottom: spacing[4],
+  },
+
+  settingSectionTitle: {
+    ...textStyles.h3,
+    color: colors.text.primary,
+    marginBottom: spacing[3],
+    fontWeight: '600',
+  },
+
+  colorPreviewRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.surface,
+    borderRadius: radiusValues.box,
+    padding: spacing[3],
+    ...shadows.sm,
+  },
+
+  colorPreviewLeft: {
+    flex: 1,
+  },
+
+  editColorButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[1],
+    paddingVertical: spacing[2],
+    paddingHorizontal: spacing[3],
+  },
+
+  editColorButtonText: {
+    ...textStyles.button,
+    color: colors.primary,
+    fontWeight: '600',
+  },
+
+  colorOptionsContainer: {
+    marginTop: spacing[3],
+    backgroundColor: colors.surface,
+    borderRadius: radiusValues.box,
+    padding: spacing[3],
+    ...shadows.sm,
+  },
+
+  colorOptionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: spacing[2],
+    flexWrap: 'wrap',
+  },
+
+  colorOption: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    ...shadows.sm,
+    borderWidth: 3,
+    borderColor: 'transparent',
+  },
+
+  colorOptionSelected: {
+    borderColor: colors.text.primary,
+  },
+
+  hueBarContainer: {
+    marginTop: spacing[4],
+    alignItems: 'center',
+  },
+
+  settingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: spacing[3],
+    borderBottomWidth: 1,
+    borderBottomColor: colors.divider,
+  },
+
+  settingRowDisabled: {
+    opacity: 0.5,
+  },
+
+  settingInfo: {
+    flex: 1,
+    marginRight: spacing[3],
+  },
+
+  settingLabel: {
+    ...textStyles.body,
+    color: colors.text.primary,
+    fontWeight: '500',
+    marginBottom: spacing[1],
+  },
+
+  settingLabelDisabled: {
+    color: colors.text.tertiary,
+  },
+
+  settingDescription: {
+    ...textStyles.bodySmall,
+    color: colors.text.secondary,
   },
 });
 
