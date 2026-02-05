@@ -50,5 +50,4 @@ export type { ServiceHealthStatus } from './ServiceRegistry';
 
 // Utility imports for services that aren't part of the main business logic layer
 export { default as encryptionService } from './EncryptionService';
-export { DynamicIconService, dynamicIconService } from './DynamicIconService';
 export { WidgetDataService, widgetDataService } from './WidgetDataService';

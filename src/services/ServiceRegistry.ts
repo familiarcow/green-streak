@@ -10,7 +10,6 @@ import { SoundEffectsService } from './SoundEffectsService';
 import { ConfettiService } from './ConfettiService';
 import { createNotificationOrchestrator, NotificationOrchestrator } from './NotificationOrchestrator';
 import { createNotificationManager, NotificationManager } from './NotificationManager';
-import { DynamicIconService, dynamicIconService } from './DynamicIconService';
 import { AchievementService, createAchievementService } from './AchievementService';
 import { WidgetDataService, widgetDataService } from './WidgetDataService';
 import { repositoryFactory } from '../database/repositories/RepositoryFactory';
@@ -94,7 +93,6 @@ export class ServiceRegistry {
       this.register('sound', soundService);
       this.register('confetti', confettiService);
       this.register('orchestrator', orchestrator);
-      this.register('dynamicIcon', dynamicIconService);
       this.register('achievement', achievementService);
       this.register('widget', widgetDataService);
 
@@ -274,7 +272,6 @@ export const getToastService = (): ToastNotificationService => serviceRegistry.g
 export const getSoundService = (): SoundEffectsService => serviceRegistry.get<SoundEffectsService>('sound');
 export const getConfettiService = (): ConfettiService => serviceRegistry.get<ConfettiService>('confetti');
 export const getOrchestrator = (): NotificationOrchestrator => serviceRegistry.get<NotificationOrchestrator>('orchestrator');
-export const getDynamicIconService = (): DynamicIconService => serviceRegistry.get<DynamicIconService>('dynamicIcon');
 export const getAchievementService = (): AchievementService => serviceRegistry.get<AchievementService>('achievement');
 export const getWidgetDataService = (): WidgetDataService => serviceRegistry.get<WidgetDataService>('widget');
 

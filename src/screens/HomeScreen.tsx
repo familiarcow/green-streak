@@ -11,7 +11,6 @@ import { useTasksStore } from '../store/tasksStore';
 import { useLogsStore } from '../store/logsStore';
 import { useTaskActions, useModalManager, useDateNavigation, useAccentColor, useColorName, useDeepLinks, useWidgetSync } from '../hooks';
 import { useDateRefresh } from '../hooks/useDateRefresh';
-import { useDynamicIconLifecycle } from '../hooks/useDynamicIconLifecycle';
 import { colors, textStyles, spacing } from '../theme';
 import { radiusValues } from '../theme/utils';
 import { getTodayString } from '../utils/dateHelpers';
@@ -51,9 +50,6 @@ export const HomeScreen: React.FC = () => {
   // Accent color hooks for dynamic header
   const accentColor = useAccentColor();
   const colorName = useColorName();
-
-  // Dynamic icon lifecycle management
-  useDynamicIconLifecycle();
 
   // Handle deep links from widgets
   useDeepLinks({

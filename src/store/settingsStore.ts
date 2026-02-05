@@ -40,7 +40,6 @@ interface SettingsState extends AppSettings {
   setDebugLogging: (enabled: boolean) => void;
   setLogLevel: (level: AppSettings['currentLogLevel']) => void;
   setCalendarColor: (color: string) => void;
-  setDynamicIconEnabled: (enabled: boolean) => Promise<void>;
   exportSettings: () => string;
   resetSettings: () => Promise<void>;
 
@@ -93,7 +92,6 @@ const defaultSettings: AppSettings = {
   currentLogLevel: 'WARN',
   notificationSettings: defaultNotificationSettings,
   calendarColor: DEFAULT_CALENDAR_COLOR,
-  dynamicIconEnabled: false,
 };
 
 export const useSettingsStore = create<SettingsState>()(
@@ -241,39 +239,6 @@ export const useSettingsStore = create<SettingsState>()(
           logger.info('STATE', 'Calendar color updated', { color });
         } catch (error) {
           logger.error('STATE', 'Failed to set calendar color', { error, color });
-        }
-      },
-
-      setDynamicIconEnabled: async (enabled: boolean) => {
-        try {
-          // Import dynamically to avoid circular dependencies
-          const { getDynamicIconService } = await import('../services/ServiceRegistry');
-          const dynamicIconService = getDynamicIconService();
-
-          // Perform the icon operation BEFORE updating state
-          // This ensures state only changes if the operation succeeds
-          if (enabled) {
-            // Update icon immediately when enabled
-            const success = await dynamicIconService.updateIconFromActivity();
-            if (!success && dynamicIconService.isSupported()) {
-              // Operation failed but service is supported - this is an error
-              throw new Error('Failed to update dynamic icon');
-            }
-          } else {
-            // Reset to default icon when disabled
-            const success = await dynamicIconService.resetToDefault();
-            if (!success && dynamicIconService.isSupported()) {
-              throw new Error('Failed to reset dynamic icon');
-            }
-          }
-
-          // Only update state after successful operation
-          set({ dynamicIconEnabled: enabled });
-
-          logger.info('STATE', 'Dynamic icon setting updated', { enabled });
-        } catch (error) {
-          logger.error('STATE', 'Failed to set dynamic icon enabled', { error, enabled });
-          throw error;
         }
       },
 
@@ -465,7 +430,6 @@ export const useSettingsStore = create<SettingsState>()(
         currentLogLevel: state.currentLogLevel,
         notificationSettings: state.notificationSettings,
         calendarColor: state.calendarColor,
-        dynamicIconEnabled: state.dynamicIconEnabled,
       }),
     }
   )
@@ -484,19 +448,6 @@ export const initializeSettings = async () => {
         settingsStore.globalReminderTime,
         settingsStore.globalReminderEnabled
       );
-    }
-
-    // Update dynamic icon if enabled
-    if (settingsStore.dynamicIconEnabled) {
-      try {
-        const { getDynamicIconService } = await import('../services/ServiceRegistry');
-        const dynamicIconService = getDynamicIconService();
-        await dynamicIconService.updateIconFromActivity();
-        logger.info('STATE', 'Dynamic icon updated on initialization');
-      } catch (iconError) {
-        // Don't fail initialization if icon update fails
-        logger.warn('STATE', 'Failed to update dynamic icon on initialization', { error: iconError });
-      }
     }
 
     logger.info('STATE', 'Settings initialized');

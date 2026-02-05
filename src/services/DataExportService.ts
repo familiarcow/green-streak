@@ -81,7 +81,6 @@ class DataExportService {
         currentLogLevel: currentSettings.currentLogLevel,
         notificationSettings: currentSettings.notificationSettings,
         calendarColor: currentSettings.calendarColor,
-        dynamicIconEnabled: currentSettings.dynamicIconEnabled,
       };
       
       // Get onboarding state
@@ -361,12 +360,7 @@ class DataExportService {
           if (exportData.data.settings.calendarColor) {
             settingsStore.setCalendarColor(exportData.data.settings.calendarColor);
           }
-          
-          // Import dynamic icon setting
-          if (typeof exportData.data.settings.dynamicIconEnabled === 'boolean') {
-            await settingsStore.setDynamicIconEnabled(exportData.data.settings.dynamicIconEnabled);
-          }
-          
+
           // Import notification settings
           if (exportData.data.settings.notificationSettings) {
             await settingsStore.updateNotificationSettings(exportData.data.settings.notificationSettings);
