@@ -41,6 +41,8 @@ interface ColorPickerModalProps {
   presets?: string[];
   /** Show a live gradient preview for contribution graph use */
   showGradientPreview?: boolean;
+  /** Hide the saturation/value square picker (keep hue bar only) */
+  hideShadeSelector?: boolean;
 }
 
 export const ColorPickerModal: React.FC<ColorPickerModalProps> = ({
@@ -50,6 +52,7 @@ export const ColorPickerModal: React.FC<ColorPickerModalProps> = ({
   onSelectColor,
   presets = COLOR_PALETTE,
   showGradientPreview = false,
+  hideShadeSelector = false,
 }) => {
   // Parse initial color to HSV
   const initialHsv = hexToHsv(selectedColor) || { h: 120, s: 1, v: 0.76 };
@@ -120,7 +123,7 @@ export const ColorPickerModal: React.FC<ColorPickerModalProps> = ({
     <BaseModal
       isVisible={visible}
       onClose={handleClose}
-      height="85%"
+      height={hideShadeSelector ? "65%" : "85%"}
       closeOnBackdropPress={true}
     >
       <SafeAreaView style={styles.container} edges={['top']}>
@@ -203,16 +206,18 @@ export const ColorPickerModal: React.FC<ColorPickerModalProps> = ({
               />
             </View>
 
-            {/* Saturation/Value Picker with Preview */}
-            <View style={styles.svPickerRow}>
-              <SaturationValuePicker
-                hue={hue}
-                saturation={saturation}
-                value={value}
-                onSaturationValueChange={handleSaturationValueChange}
-                size={PICKER_SIZE}
-              />
-            </View>
+            {/* Saturation/Value Picker (hidden when hideShadeSelector) */}
+            {!hideShadeSelector && (
+              <View style={styles.svPickerRow}>
+                <SaturationValuePicker
+                  hue={hue}
+                  saturation={saturation}
+                  value={value}
+                  onSaturationValueChange={handleSaturationValueChange}
+                  size={PICKER_SIZE}
+                />
+              </View>
+            )}
 
             {/* Preview Swatch with Editable Hex */}
             <View style={styles.previewRow}>

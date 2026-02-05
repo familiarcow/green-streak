@@ -838,8 +838,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
 
         <View style={styles.footer}>
           <Text style={styles.footerText}>
-            Green Streak v{Constants.expoConfig?.version || '1.0.0'}{'\n'}
-            Privacy-first habit tracking
+            Green Streak v{Constants.expoConfig?.version || '1.0.0'}
           </Text>
         </View>
       </ScrollView>
@@ -852,6 +851,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
         onSelectColor={setCalendarColor}
         presets={CALENDAR_COLOR_PRESETS}
         showGradientPreview={true}
+        hideShadeSelector={true}
       />
     </SafeAreaView>
   );
