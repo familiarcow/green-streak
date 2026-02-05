@@ -2,7 +2,7 @@
 
 A privacy-first habit tracker for iOS that visualizes your progress with GitHub-style contribution graphs.
 
-[![App Store](https://img.shields.io/badge/App_Store-Coming_Soon-black?style=flat&logo=apple)](https://familiarcow.github.io/green-streak/)
+[![App Store](https://img.shields.io/badge/App_Store-Download-blue?style=flat&logo=apple)](https://apps.apple.com/us/app/green-streak/id6758182576)
 ![Platform](https://img.shields.io/badge/platform-iOS-lightgrey)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
@@ -16,7 +16,7 @@ Green Streak transforms daily habits into beautiful visual records. Watch your c
 
 **Your data never leaves your device.** No accounts, no cloud sync, no tracking.
 
-🌐 **Website**: [familiarcow.github.io/green-streak](https://familiarcow.github.io/green-streak/)
+🌐 **Website**: [greenstreak.app](https://greenstreak.app)
 
 ## Features
 
@@ -124,7 +124,7 @@ src/
 
 ## Privacy Policy
 
-Green Streak does not collect any personal data. All habit data is stored locally on your device and never transmitted. See our full [Privacy Policy](https://familiarcow.github.io/green-streak/privacy.html).
+Green Streak does not collect any personal data. All habit data is stored locally on your device and never transmitted. See our full [Privacy Policy](https://greenstreak.app/privacy.html).
 
 ## License
 
@@ -132,6 +132,7 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ## Links
 
-- 🌐 [Website](https://familiarcow.github.io/green-streak/)
-- 📜 [Privacy Policy](https://familiarcow.github.io/green-streak/privacy.html)
+- 🌐 [Website](https://greenstreak.app)
+- 📱 [App Store](https://apps.apple.com/us/app/green-streak/id6758182576)
+- 📜 [Privacy Policy](https://greenstreak.app/privacy.html)
 - 🐛 [Report Issues](https://github.com/familiarcow/green-streak/issues)
