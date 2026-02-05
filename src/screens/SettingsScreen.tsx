@@ -8,23 +8,14 @@ import {
   Switch,
   Alert
 } from 'react-native';
-import Animated, { 
-  useAnimatedStyle, 
-  useSharedValue, 
-  withSpring, 
-  withTiming,
-  interpolateColor,
-  Easing
-} from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { AnimatedButton } from '../components/AnimatedButton';
+import Constants from 'expo-constants';
 import { Icon } from '../components/common/Icon';
 import { ColorPickerModal } from '../components/ColorPicker/ColorPickerModal';
 import { CalendarColorPreview } from '../components/CalendarColorPreview';
 import { useSettingsStore, DEFAULT_CALENDAR_COLOR } from '../store/settingsStore';
 import { generateContributionPalette, DEFAULT_CONTRIBUTION_PALETTE, CALENDAR_COLOR_PRESETS } from '../utils/colorUtils';
 import { useAccentColor } from '../hooks';
-import { useOnboardingStore } from '../store/onboardingStore';
 import { useDataStore } from '../store/dataStore';
 import { useTasksStore } from '../store/tasksStore';
 import { useLogsStore } from '../store/logsStore';
@@ -39,24 +30,18 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
   const {
     globalReminderEnabled,
     globalReminderTime,
-    debugLoggingEnabled,
-    currentLogLevel,
     calendarColor,
     dynamicIconEnabled,
     notificationSettings,
     updateGlobalReminder,
-    setDebugLogging,
-    setLogLevel,
     setCalendarColor,
     setDynamicIconEnabled,
-    exportSettings,
     resetSettings,
     updateNotificationSettings,
     updateDailyNotification,
     updateStreakProtection,
   } = useSettingsStore();
 
-  const { hasCompletedOnboarding, resetOnboarding } = useOnboardingStore();
   const { exportData, importData, isExporting, isImporting } = useDataStore();
   const { loadTasks } = useTasksStore();
   const { loadContributionData } = useLogsStore();
@@ -144,22 +129,6 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
     }
   };
 
-  const handleExportSettings = () => {
-    try {
-      const exported = exportSettings();
-      logger.info('UI', 'Settings exported to console');
-      console.log('Green Streak Settings Export:', exported);
-      Alert.alert(
-        'Settings Exported',
-        'Your settings have been exported to the console. Check the developer logs.',
-        [{ text: 'OK' }]
-      );
-    } catch (error) {
-      logger.error('UI', 'Failed to export settings', { error });
-      Alert.alert('Error', 'Failed to export settings.');
-    }
-  };
-
   const handleResetSettings = () => {
     Alert.alert(
       'Reset Settings',
@@ -215,25 +184,6 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
     } finally {
       setIsDynamicIconLoading(false);
     }
-  };
-
-  const handleResetOnboarding = () => {
-    Alert.alert(
-      'Reset Onboarding',
-      'This will show the welcome tutorial the next time you open the app with no habits.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Reset',
-          style: 'default',
-          onPress: () => {
-            resetOnboarding();
-            logger.info('UI', 'Onboarding reset from settings');
-            Alert.alert('Onboarding Reset', 'The welcome tutorial will show again when appropriate.');
-          },
-        },
-      ]
-    );
   };
 
   const handleExportData = () => {
@@ -309,13 +259,6 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
     '07:00', '08:00', '09:00', '10:00', '11:00', '12:00',
     '13:00', '14:00', '15:00', '16:00', '17:00', '18:00',
     '19:00', '20:00', '21:00', '22:00', '23:00'
-  ];
-
-  const logLevelOptions: Array<{ value: typeof currentLogLevel; label: string }> = [
-    { value: 'DEBUG', label: 'Debug (All logs)' },
-    { value: 'INFO', label: 'Info (Important events)' },
-    { value: 'WARN', label: 'Warnings (Issues only)' },
-    { value: 'ERROR', label: 'Errors (Critical issues)' },
   ];
 
   return (
@@ -820,104 +763,51 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
           </View>
         </View>
 
-        {/* Developer Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Developer</Text>
-          
-          <View style={styles.settingItem}>
-            <View style={styles.settingInfo}>
-              <Text style={styles.settingTitle}>Debug Logging</Text>
-              <Text style={styles.settingDescription}>
-                Show detailed logs for debugging
-              </Text>
-            </View>
-            <Switch
-              value={debugLoggingEnabled}
-              onValueChange={setDebugLogging}
-              trackColor={{ false: colors.interactive.default, true: accentColor }}
-              thumbColor={colors.surface}
-              accessibilityLabel="Debug logging toggle"
-              accessibilityHint={debugLoggingEnabled ? "Double tap to disable debug logging" : "Double tap to enable debug logging"}
-            />
-          </View>
-
-          <View style={styles.settingItem}>
-            <View style={styles.settingInfo}>
-              <Text style={styles.settingTitle}>Log Level</Text>
-              <Text style={styles.settingDescription}>
-                Control which logs are shown
-              </Text>
-            </View>
-            <View style={styles.logLevelPicker}>
-              {logLevelOptions.map((option) => (
-                <TouchableOpacity
-                  key={option.value}
-                  style={[
-                    styles.logLevelOption,
-                    currentLogLevel === option.value && [styles.logLevelOptionSelected, { backgroundColor: accentColor }],
-                  ]}
-                  onPress={() => setLogLevel(option.value)}
-                >
-                  <Text style={[
-                    styles.logLevelText,
-                    currentLogLevel === option.value && styles.logLevelTextSelected,
-                  ]}>
-                    {option.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-        </View>
-
         {/* Data Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Data</Text>
-          
-          <AnimatedButton
-            title={isExporting ? "Exporting..." : "Export All Data"}
-            onPress={handleExportData}
-            variant="primary"
-            style={{ marginBottom: spacing[2] }}
-            disabled={isExporting || isImporting}
-            icon={isExporting ? 'loader' : undefined}
-          />
 
-          <AnimatedButton
-            title={isImporting ? "Importing..." : "Import Data"}
-            onPress={handleImportData}
-            variant="secondary"
-            style={{ marginBottom: spacing[2] }}
-            disabled={isExporting || isImporting}
-            icon={isImporting ? 'loader' : undefined}
-          />
+          <View style={styles.dataButtonRow}>
+            <TouchableOpacity
+              style={[styles.dataButton, (isExporting || isImporting) && styles.dataButtonDisabled]}
+              onPress={handleExportData}
+              disabled={isExporting || isImporting}
+              accessibilityRole="button"
+              accessibilityLabel="Export data"
+            >
+              <Icon name={isExporting ? 'loader' : 'send'} size={20} color={isExporting || isImporting ? colors.text.tertiary : accentColor} />
+              <Text style={[styles.dataButtonText, (isExporting || isImporting) && styles.dataButtonTextDisabled]}>
+                {isExporting ? 'Exporting...' : 'Export'}
+              </Text>
+            </TouchableOpacity>
 
-          <AnimatedButton
-            title="Export Settings"
-            onPress={handleExportSettings}
-            variant="secondary"
-            style={{ marginBottom: spacing[2] }}
-          />
+            <TouchableOpacity
+              style={[styles.dataButton, (isExporting || isImporting) && styles.dataButtonDisabled]}
+              onPress={handleImportData}
+              disabled={isExporting || isImporting}
+              accessibilityRole="button"
+              accessibilityLabel="Import data"
+            >
+              <Icon name={isImporting ? 'loader' : 'inbox'} size={20} color={isExporting || isImporting ? colors.text.tertiary : accentColor} />
+              <Text style={[styles.dataButtonText, (isExporting || isImporting) && styles.dataButtonTextDisabled]}>
+                {isImporting ? 'Importing...' : 'Import'}
+              </Text>
+            </TouchableOpacity>
+          </View>
 
-          <AnimatedButton
-            title="Reset All Settings"
+          <TouchableOpacity
+            style={styles.resetLink}
             onPress={handleResetSettings}
-            variant="destructive"
-            style={{ marginBottom: spacing[2] }}
-          />
-
-          {hasCompletedOnboarding && (
-            <AnimatedButton
-              title="Reset Onboarding"
-              onPress={handleResetOnboarding}
-              variant="secondary"
-            />
-          )}
+            accessibilityRole="button"
+            accessibilityLabel="Reset all settings"
+          >
+            <Text style={styles.resetLinkText}>Reset All Settings</Text>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.footer}>
           <Text style={styles.footerText}>
-            Green Streak v1.0.0{'\n'}
+            Green Streak v{Constants.expoConfig?.version || '1.0.0'}{'\n'}
             Privacy-first habit tracking
           </Text>
         </View>
@@ -1064,32 +954,6 @@ const styles = StyleSheet.create({
     color: colors.text.inverse,
     fontWeight: '600',
   },
-  
-  logLevelPicker: {
-    marginTop: spacing[2],
-  },
-  
-  logLevelOption: {
-    paddingVertical: spacing[2],
-    paddingHorizontal: spacing[3],
-    borderRadius: radiusValues.box,
-    marginBottom: spacing[1],
-    backgroundColor: colors.interactive.default,
-  },
-  
-  logLevelOptionSelected: {
-    backgroundColor: colors.primary,
-  },
-  
-  logLevelText: {
-    ...textStyles.bodySmall,
-    color: colors.text.secondary,
-  },
-  
-  logLevelTextSelected: {
-    color: colors.text.inverse,
-    fontWeight: '600',
-  },
 
   calendarColorPreview: {
     marginTop: spacing[2],
@@ -1119,7 +983,49 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
     textAlign: 'center',
   },
-  
+
+  dataButtonRow: {
+    flexDirection: 'row',
+    gap: spacing[3],
+    marginBottom: spacing[3],
+  },
+
+  dataButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing[2],
+    padding: spacing[3],
+    backgroundColor: colors.surface,
+    borderRadius: radiusValues.box,
+    ...shadows.sm,
+  },
+
+  dataButtonDisabled: {
+    opacity: 0.5,
+  },
+
+  dataButtonText: {
+    ...textStyles.body,
+    color: colors.text.primary,
+    fontWeight: '500',
+  },
+
+  dataButtonTextDisabled: {
+    color: colors.text.tertiary,
+  },
+
+  resetLink: {
+    alignItems: 'center',
+    paddingVertical: spacing[2],
+  },
+
+  resetLinkText: {
+    ...textStyles.bodySmall,
+    color: colors.error,
+  },
+
   subSection: {
     paddingLeft: spacing[3],
     marginTop: spacing[2],
