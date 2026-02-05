@@ -99,8 +99,11 @@ const ToastComponent: React.FC<ToastProps> = ({
   };
 
   // Gesture handler for swipe to dismiss
+  // Use activeOffsetX and failOffsetY so vertical scrolling doesn't dismiss the toast
   const gesture = Gesture.Pan()
     .enabled(swipeToDismiss ?? false)
+    .activeOffsetX([-10, 10])  // Only activate after 10px horizontal movement
+    .failOffsetY([-15, 15])    // Fail if user scrolls vertically first
     .onBegin(() => {
       'worklet';
       // Store initial position if needed

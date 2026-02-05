@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { AppSettings, NotificationSettings, DeepPartial } from '../types';
-import { getNotificationService, getNotificationManager } from '../services';
+import { getNotificationService, getNotificationManager, getSoundService } from '../services';
 import logger from '../utils/logger';
 
 /**
@@ -303,10 +303,19 @@ export const useSettingsStore = create<SettingsState>()(
           };
           
           set({ notificationSettings: newNotificationSettings });
-          
+
+          // Sync sound/haptic settings with SoundEffectsService
+          try {
+            const soundService = getSoundService();
+            soundService.setSoundEnabled(newNotificationSettings.global.soundEnabled ?? true);
+            soundService.setHapticEnabled(newNotificationSettings.global.vibrationEnabled ?? true);
+          } catch (soundError) {
+            logger.debug('STATE', 'Sound service not available for settings sync', { error: soundError });
+          }
+
           // Sync notifications with new settings
           await get().syncNotifications();
-          
+
           logger.info('STATE', 'Notification settings updated');
         } catch (error) {
           logger.error('STATE', 'Failed to update notification settings', { error });
@@ -448,6 +457,16 @@ export const initializeSettings = async () => {
         settingsStore.globalReminderTime,
         settingsStore.globalReminderEnabled
       );
+    }
+
+    // Sync sound/haptic service with current settings
+    try {
+      const soundService = getSoundService();
+      const globalSettings = settingsStore.notificationSettings?.global;
+      soundService.setSoundEnabled(globalSettings?.soundEnabled ?? true);
+      soundService.setHapticEnabled(globalSettings?.vibrationEnabled ?? true);
+    } catch (soundError) {
+      logger.debug('STATE', 'Sound service not available at init', { error: soundError });
     }
 
     logger.info('STATE', 'Settings initialized');

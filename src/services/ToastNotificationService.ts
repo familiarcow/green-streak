@@ -101,10 +101,16 @@ export class ToastNotificationService {
       this.confettiService.trigger(confettiType);
     }
 
-    // Trigger haptic feedback
-    if (effects.haptic) {
-      // Note: Haptic feedback requires expo-haptics which we'll add if needed
-      logger.debug('TOAST', 'Haptic feedback requested but not implemented');
+    // Trigger haptic feedback through sound service (which handles both)
+    if (effects.haptic && this.soundService) {
+      // The sound service's play() method handles haptics alongside sounds
+      // But if no specific sound effect is requested, just play a light impact
+      if (!effects.sound || effects.sound === 'none') {
+        this.soundService.playImpact('light').catch(error => {
+          logger.debug('TOAST', 'Haptic feedback failed', { error });
+        });
+      }
+      // If sound is also requested, haptics are already triggered in play()
     }
   }
 

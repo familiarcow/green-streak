@@ -435,7 +435,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
               ) : (
                 <View style={styles.finalButtons}>
                   <AnimatedButton
-                    title="Browse Templates"
+                    title="Browse Habit Templates"
                     onPress={handleBrowseTemplates}
                     variant="primary"
                     size="large"
