@@ -7,7 +7,7 @@ import { useToast } from '../contexts/ToastContext';
 import { getStreakMessage, isStreakMilestone, getCelebrationLevel, shouldShowStreakToast, getConfettiType } from '../utils/toastMessages';
 import { getTodayString } from '../utils/dateHelpers';
 import { UseTaskActionsReturn } from '../types';
-import { getDataService, getValidationService } from '../services';
+import { getDataService, getValidationService, getSoundService } from '../services';
 import logger from '../utils/logger';
 
 /**
@@ -23,8 +23,17 @@ export const useTaskActions = (): UseTaskActionsReturn => {
 
   const handleQuickAdd = useCallback(async (taskId: string, date?: string) => {
     try {
+      // Play immediate feedback sound
+      try {
+        const soundService = getSoundService();
+        soundService.play('button');
+      } catch (soundError) {
+        // Don't fail the operation if sound fails
+        logger.debug('UI', 'Failed to play quick add sound', { error: soundError });
+      }
+
       const targetDate = date || getTodayString();
-      
+
       // Use service layer for data operations
       const dataService = getDataService();
       const currentLog = await dataService.getLogForTaskAndDate(taskId, targetDate);
@@ -80,7 +89,7 @@ export const useTaskActions = (): UseTaskActionsReturn => {
             variant: isMilestone ? 'celebration' : 'success',
             icon,
             effects: {
-              sound: isMilestone ? 'milestone' : 'streak',
+              sound: 'celebration',
               confetti: confettiType,  // Uses the new granular confetti system
               haptic: true,
             },

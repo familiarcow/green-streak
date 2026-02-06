@@ -14,7 +14,7 @@ import { colors, textStyles, spacing, shadows } from '../../theme';
 import { radiusValues, fontSizes } from '../../theme/utils';
 import { getTodayString, formatDateString } from '../../utils/dateHelpers';
 import { getContributionColor } from '../../utils/colorUtils';
-import { useDynamicToday, useCalendarColors } from '../../hooks';
+import { useDynamicToday, useCalendarColors, useSounds } from '../../hooks';
 import { TimePeriodSelector, ViewType } from './TimePeriodSelector';
 import { MonthMarker } from './MonthMarker';
 import Icon, { IconName, ICON_MAP } from '../common/Icon';
@@ -74,6 +74,7 @@ export const LiveCalendar: React.FC<LiveCalendarProps> = ({
 }) => {
   // Use dynamic today that updates at midnight
   const todayString = useDynamicToday();
+  const { playExpand, playRandomTap, playRandomType } = useSounds();
   const [containerWidth, setContainerWidth] = useState(0);
   const [isFilterExpanded, setIsFilterExpanded] = useState(false);
 
@@ -227,12 +228,14 @@ export const LiveCalendar: React.FC<LiveCalendarProps> = ({
   const shouldShowMonthMarkers = viewType !== 'live';
 
   const handleDayPress = useCallback((date: string) => {
+    playRandomTap();
     onDayPress(date);
-  }, [onDayPress]);
+  }, [onDayPress, playRandomTap]);
 
   const handleViewTypeChange = useCallback((newViewType: ViewType) => {
+    playRandomType();
     onViewTypeChange?.(newViewType);
-  }, [onViewTypeChange]);
+  }, [onViewTypeChange, playRandomType]);
 
   // Reset date offset when view type changes
   useEffect(() => {
@@ -246,12 +249,13 @@ export const LiveCalendar: React.FC<LiveCalendarProps> = ({
   const handleToggleFilter = useCallback(() => {
     setIsFilterExpanded(prev => {
       const newExpanded = !prev;
+      playExpand(newExpanded);
       chevronRotation.value = withTiming(newExpanded ? 180 : 0, { duration: 150 });
       filterHeight.value = withTiming(newExpanded ? FILTER_TRAY_HEIGHT : 0, { duration: 150 });
       filterOpacity.value = withTiming(newExpanded ? 1 : 0, { duration: newExpanded ? 150 : 100 });
       return newExpanded;
     });
-  }, [chevronRotation, filterHeight, filterOpacity]);
+  }, [chevronRotation, filterHeight, filterOpacity, playExpand]);
 
   const handleNavigateBackward = useCallback(() => {
     onDateOffsetChange?.(dateOffset + 1);

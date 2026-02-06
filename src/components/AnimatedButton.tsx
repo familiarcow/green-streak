@@ -1,8 +1,8 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, TextStyle, ViewStyle, View } from 'react-native';
-import Animated, { 
-  useAnimatedStyle, 
-  useSharedValue, 
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
   withSpring,
   withSequence,
   withTiming,
@@ -12,7 +12,7 @@ import Animated, {
 import { colors, textStyles, spacing } from '../theme';
 import { radiusValues } from '../theme/utils';
 import { Icon, IconName } from './common/Icon';
-import { useAccentColor } from '../hooks';
+import { useAccentColor, useSounds } from '../hooks';
 
 interface AnimatedButtonProps {
   title: string;
@@ -28,6 +28,8 @@ interface AnimatedButtonProps {
   accessibilityHint?: string;
   icon?: IconName;
   iconPosition?: 'left' | 'right';
+  /** Skip the default button sound (use when playing a custom sound) */
+  skipSound?: boolean;
 }
 
 const AnimatedTouchableOpacity = Animated.createAnimatedComponent(TouchableOpacity);
@@ -46,8 +48,10 @@ export const AnimatedButton: React.FC<AnimatedButtonProps> = ({
   accessibilityHint,
   icon,
   iconPosition = 'left',
+  skipSound = false,
 }) => {
   const accentColor = useAccentColor();
+  const { playButton } = useSounds();
   const scale = useSharedValue(1);
   const opacity = useSharedValue(1);
   const rotation = useSharedValue(0);
@@ -89,13 +93,18 @@ export const AnimatedButton: React.FC<AnimatedButtonProps> = ({
 
   const handlePress = () => {
     if (disabled) return;
-    
+
+    // Play button sound (unless skipped for custom sound)
+    if (!skipSound) {
+      playButton();
+    }
+
     // Haptic-like animation
     scale.value = withSequence(
       withSpring(0.9, { damping: 15 }),
       withSpring(1, { damping: 15 })
     );
-    
+
     onPress();
   };
 

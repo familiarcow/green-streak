@@ -4,6 +4,7 @@ import { colors, textStyles, spacing } from '../../theme';
 import { TasksSectionProps } from '../../types';
 import { AnimatedButton } from '../AnimatedButton';
 import { DraggableTaskList } from '../DraggableTaskList';
+import { useSounds } from '../../hooks';
 
 export const TasksSection: React.FC<TasksSectionProps> = React.memo(({
   tasks,
@@ -11,12 +12,19 @@ export const TasksSection: React.FC<TasksSectionProps> = React.memo(({
   onAddTask,
   onReorder,
 }) => {
+  const { playRandomTap } = useSounds();
+
   // Memoize the early return check
   const shouldRender = useMemo(() => tasks.length > 0, [tasks.length]);
 
   const handleReorder = useCallback((taskIds: string[]) => {
     onReorder?.(taskIds);
   }, [onReorder]);
+
+  const handleAddTask = useCallback(() => {
+    playRandomTap();
+    onAddTask();
+  }, [onAddTask, playRandomTap]);
 
   if (!shouldRender) {
     return null;
@@ -28,9 +36,10 @@ export const TasksSection: React.FC<TasksSectionProps> = React.memo(({
         <Text style={styles.tasksSectionTitle}>Your Habits</Text>
         <AnimatedButton
           title="+ Add"
-          onPress={onAddTask}
+          onPress={handleAddTask}
           variant="secondary"
           size="small"
+          skipSound
           accessibilityLabel="Add new task"
         />
       </View>
