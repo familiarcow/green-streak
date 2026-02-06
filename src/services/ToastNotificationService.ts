@@ -1,10 +1,10 @@
-import { SoundEffectsService } from './SoundEffectsService';
+import { SoundEffectsService, SoundType } from './SoundEffectsService';
 import { ConfettiService } from './ConfettiService';
 import logger from '../utils/logger';
 
 export type ToastVariant = 'success' | 'warning' | 'info' | 'celebration' | 'error';
 export type ToastPosition = 'top' | 'bottom';
-export type SoundEffect = 'success' | 'milestone' | 'streak' | 'error' | 'none';
+export type SoundEffect = SoundType | 'none';
 
 export interface ToastEffects {
   confetti?: boolean | 'burst' | 'fireworks' | 'rain';
@@ -125,7 +125,7 @@ export class ToastNotificationService {
       variant: 'success',
       icon: '✅',
       effects: {
-        sound: 'success',
+        sound: 'celebration',
         ...effects,
       },
     });
@@ -137,7 +137,7 @@ export class ToastNotificationService {
       variant: 'error',
       icon: '❌',
       effects: {
-        sound: 'error',
+        sound: 'caution',
       },
     });
   }
@@ -148,7 +148,7 @@ export class ToastNotificationService {
       variant: 'celebration',
       icon: '🎉',
       effects: {
-        sound: 'milestone',
+        sound: 'celebration',
         confetti: 'burst',
         ...effects,
       },

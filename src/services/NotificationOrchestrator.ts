@@ -188,7 +188,7 @@ export class NotificationOrchestrator {
       variant: 'success',
       icon: '✅',
       priority: 'medium',
-      effects: { sound: 'success' },
+      effects: { sound: 'celebration' },
       ...options
     });
   }
@@ -200,7 +200,7 @@ export class NotificationOrchestrator {
       variant: 'error',
       icon: '❌',
       priority: 'high',
-      effects: { sound: 'error' },
+      effects: { sound: 'caution' },
       ...options
     });
   }
@@ -235,7 +235,7 @@ export class NotificationOrchestrator {
       icon: '🎉',
       priority: 'high',
       effects: {
-        sound: 'milestone',
+        sound: 'celebration',
         confetti: 'burst',
         haptic: true
       },
