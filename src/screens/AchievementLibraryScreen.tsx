@@ -75,10 +75,10 @@ const AchievementCard: React.FC<{ achievement: AchievementWithStatus }> = ({ ach
 
 export const AchievementLibraryScreen: React.FC<AchievementLibraryScreenProps> = ({ onClose }) => {
   const { achievements, stats, loadAchievements, loadStats, loading } = useAchievementsStore();
-  const { play } = useSounds();
+  const { playRandomTap } = useSounds();
 
   const handleClose = () => {
-    play('close');
+    playRandomTap();
     onClose();
   };
 

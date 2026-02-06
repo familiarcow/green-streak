@@ -27,10 +27,10 @@ export const TaskAnalyticsScreen: React.FC<TaskAnalyticsScreenProps> = ({
   const [loading, setLoading] = useState(true);
   const [taskContributionData, setTaskContributionData] = useState<ContributionData[]>([]);
   const { getTaskContributionData } = useLogsStore();
-  const { play } = useSounds();
+  const { playRandomTap } = useSounds();
 
   const handleClose = () => {
-    play('close');
+    playRandomTap();
     onClose();
   };
 
