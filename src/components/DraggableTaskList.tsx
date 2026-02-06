@@ -14,6 +14,7 @@ import { Task } from '../types';
 import { colors, textStyles, spacing, shadows } from '../theme';
 import { sizes, fontSizes, radiusValues } from '../theme/utils';
 import { Icon, IconName } from './common/Icon';
+import { useSounds } from '../hooks/useSounds';
 
 const ITEM_HEIGHT = 64;
 
@@ -195,6 +196,7 @@ export const DraggableTaskList: React.FC<DraggableTaskListProps> = ({
   const isDragging = useSharedValue(false);
   const [orderedTasks, setOrderedTasks] = useState(tasks);
   const lastTaskIds = useRef(tasks.map(t => t.id).join(','));
+  const { playRandomTap, play } = useSounds();
 
   // Update ordered tasks when tasks prop changes
   useEffect(() => {
@@ -206,13 +208,17 @@ export const DraggableTaskList: React.FC<DraggableTaskListProps> = ({
   }, [tasks]);
 
   const handleDragStart = useCallback((index: number) => {
-    // Could add haptic feedback here if expo-haptics is installed
-  }, []);
+    // Play sound when drag starts
+    playRandomTap();
+  }, [playRandomTap]);
 
   const handleDragEnd = useCallback((fromIndex: number, toIndex: number) => {
     if (fromIndex === toIndex) {
       return;
     }
+
+    // Play sound when drag ends with reorder
+    play('close');
 
     // Reorder tasks
     const newTasks = [...orderedTasks];
@@ -223,7 +229,7 @@ export const DraggableTaskList: React.FC<DraggableTaskListProps> = ({
     setOrderedTasks(newTasks);
     lastTaskIds.current = newTaskIds.join(',');
     onReorder(newTaskIds);
-  }, [orderedTasks, onReorder]);
+  }, [orderedTasks, onReorder, play]);
 
   if (tasks.length === 0) {
     return null;

@@ -8,6 +8,7 @@ import { radiusValues } from '../theme/utils';
 import { formatDisplayDate, getWeekDayName, formatDateString, parseDateString } from '../utils/dateHelpers';
 import { DailyLogScreenProps } from '../types';
 import { Icon } from '../components/common/Icon';
+import { useSounds } from '../hooks';
 import logger from '../utils/logger';
 
 interface TaskCompletion {
@@ -18,6 +19,7 @@ interface TaskCompletion {
 export const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ date, onClose, onDateChange }) => {
   const { tasks, loading: tasksLoading } = useTasksStore();
   const { logTaskCompletion, contributionData, loadContributionData } = useLogsStore();
+  const { play, playToggle, playRandomType, playCaution } = useSounds();
   const [completions, setCompletions] = useState<Record<string, number>>({});
   const [isInitializing, setIsInitializing] = useState(true);
   
@@ -68,17 +70,20 @@ export const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ date, onClose, o
       logger.debug('UI', 'Task completion updated', { taskId, date, count: clampedCount });
     } catch (error) {
       logger.error('UI', 'Failed to update task completion', { error, taskId, date });
+      playCaution();
     }
   };
 
   const incrementTask = (taskId: string) => {
     const currentCount = completions[taskId] || 0;
+    playToggle(true);
     updateCompletion(taskId, currentCount + 1);
   };
 
   const decrementTask = (taskId: string) => {
     const currentCount = completions[taskId] || 0;
     if (currentCount > 0) {
+      playToggle(false);
       updateCompletion(taskId, currentCount - 1);
     }
   };
@@ -90,6 +95,7 @@ export const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ date, onClose, o
   
   const navigateDate = (direction: 'prev' | 'next') => {
     if (onDateChange) {
+      playRandomType();
       const currentDate = parseDateString(date);
       const newDate = new Date(currentDate);
       newDate.setDate(currentDate.getDate() + (direction === 'next' ? 1 : -1));
@@ -136,8 +142,11 @@ export const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ date, onClose, o
         </View>
         
         <View style={styles.headerRight}>
-          <TouchableOpacity 
-            onPress={onClose} 
+          <TouchableOpacity
+            onPress={() => {
+              playRandomType();
+              onClose();
+            }}
             style={styles.closeButton}
             accessibilityRole="button"
             accessibilityLabel="Close daily log"

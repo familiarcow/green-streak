@@ -18,8 +18,8 @@ import { ColorPickerModal } from '../components/ColorPicker';
 import { useTasksStore } from '../store/tasksStore';
 import { useAchievementsStore } from '../store/achievementsStore';
 import { useSettingsStore } from '../store/settingsStore';
-import { useAccentColor } from '../hooks';
-import { colors, textStyles, spacing, shadows } from '../theme';
+import { useAccentColor, useSounds } from '../hooks';
+import { colors, textStyles, spacing, shadows, glassStyles } from '../theme';
 import { radiusValues } from '../theme/utils';
 import { COLOR_PALETTE } from '../database/schema';
 import { EditTaskModalProps } from '../types';
@@ -54,10 +54,12 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
   const { checkForAchievements } = useAchievementsStore();
   const { notificationSettings, updateNotificationSettings } = useSettingsStore();
   const accentColor = useAccentColor();
+  const { play, playToggle, playRandomTap, playCaution, playCelebration } = useSounds();
   const isEditing = !!existingTask;
 
   // Handle reminder toggle - auto-enable global notifications if needed
   const handleReminderToggle = useCallback(async (enabled: boolean) => {
+    playToggle(enabled);
     setReminderEnabled(enabled);
 
     // If enabling a reminder and global notifications are off, enable them
@@ -71,7 +73,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
         logger.error('UI', 'Failed to auto-enable global notifications', { error });
       }
     }
-  }, [notificationSettings, updateNotificationSettings]);
+  }, [notificationSettings, updateNotificationSettings, playToggle]);
 
   // Handle template selection - populate form with template data
   const handleSelectTemplate = useCallback((template: HabitTemplate) => {
@@ -212,11 +214,15 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
         }
       }
 
+      // Play success sound only after successful save
+      playCelebration();
+
       onTaskAdded();
       onClose();
     } catch (error) {
       const action = isEditing ? 'update' : 'create';
       logger.error('UI', `Failed to ${action} task`, { error, name });
+      playCaution();
       Alert.alert('Error', `Failed to ${action} task. Please try again.`);
     }
   };
@@ -255,8 +261,11 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity 
-          onPress={onClose} 
+        <TouchableOpacity
+          onPress={() => {
+            playCaution();
+            onClose();
+          }}
           style={styles.cancelButton}
           accessibilityRole="button"
           accessibilityLabel={isEditing ? "Cancel editing habit" : "Cancel adding habit"}
@@ -270,6 +279,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
           onPress={handleSave}
           variant="primary"
           size="medium"
+          skipSound
         />
       </View>
 
@@ -279,7 +289,10 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
         {!isEditing && (
           <TouchableOpacity
             style={[styles.templateButton, { borderColor: accentColor }]}
-            onPress={() => setShowTemplateCatalog(true)}
+            onPress={() => {
+              playRandomTap();
+              setShowTemplateCatalog(true);
+            }}
             activeOpacity={0.7}
             accessibilityRole="button"
             accessibilityLabel="Browse habit templates"
@@ -335,7 +348,10 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                     styles.iconOption,
                     selectedIcon === icon && [styles.selectedIconOption, { borderColor: accentColor }],
                   ]}
-                  onPress={() => setSelectedIcon(icon)}
+                  onPress={() => {
+                    playRandomTap();
+                    setSelectedIcon(icon);
+                  }}
                   accessibilityRole="button"
                   accessibilityLabel={`Select ${icon} icon`}
                   accessibilityHint="Double tap to select this icon for your habit"
@@ -353,7 +369,10 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                       styles.moreIconsButton,
                       isExtraIconSelected && [styles.moreIconsButtonSelected, { borderColor: accentColor }],
                     ]}
-                    onPress={() => setShowIconPicker(true)}
+                    onPress={() => {
+                      playRandomTap();
+                      setShowIconPicker(true);
+                    }}
                     accessibilityRole="button"
                     accessibilityLabel={isExtraIconSelected ? `Selected ${selectedIcon} icon, tap to change` : "Browse more icons"}
                     accessibilityHint="Double tap to open the full icon library"
@@ -385,7 +404,10 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                     { backgroundColor: color },
                     selectedColor.toUpperCase() === color.toUpperCase() && styles.selectedColorOption,
                   ]}
-                  onPress={() => setSelectedColor(color)}
+                  onPress={() => {
+                    playRandomTap();
+                    setSelectedColor(color);
+                  }}
                   accessibilityRole="button"
                   accessibilityLabel={`Select color ${index + 1}`}
                   accessibilityHint="Double tap to select this color for your habit"
@@ -406,7 +428,10 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                       isCustomColorSelected && { backgroundColor: selectedColor, borderStyle: 'solid' },
                       isCustomColorSelected && styles.selectedColorOption,
                     ]}
-                    onPress={() => setShowColorPicker(true)}
+                    onPress={() => {
+                      playRandomTap();
+                      setShowColorPicker(true);
+                    }}
                     accessibilityRole="button"
                     accessibilityLabel={isCustomColorSelected ? `Custom color ${selectedColor}, tap to change` : "Select custom color"}
                     accessibilityHint="Double tap to open the color picker"
@@ -425,8 +450,8 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
         {/* Reminder Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Reminder</Text>
-          
-          <View style={styles.settingItem}>
+
+          <View style={[styles.settingItem, glassStyles.card]}>
             <View style={styles.settingInfo}>
               <Text style={styles.settingTitle}>Enable Reminder</Text>
               <Text style={styles.settingDescription}>
@@ -456,6 +481,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                         reminderTime === time && !showCustomTimeInput && [styles.timeOptionSelected, { backgroundColor: accentColor, borderColor: accentColor }],
                       ]}
                       onPress={() => {
+                        playRandomTap();
                         setReminderTime(time);
                         setShowCustomTimeInput(false);
                         setCustomTime('');
@@ -476,6 +502,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                       showCustomTimeInput && [styles.timeOptionSelected, { backgroundColor: accentColor, borderColor: accentColor }],
                     ]}
                     onPress={() => {
+                      playRandomTap();
                       setShowCustomTimeInput(true);
                       if (customTime) {
                         setReminderTime(customTime);
@@ -526,7 +553,10 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                         styles.frequencyOption,
                         reminderFrequency === freq.value && [styles.frequencyOptionSelected, { backgroundColor: accentColor, borderColor: accentColor }],
                       ]}
-                      onPress={() => setReminderFrequency(freq.value as 'daily' | 'weekly')}
+                      onPress={() => {
+                        playRandomTap();
+                        setReminderFrequency(freq.value as 'daily' | 'weekly');
+                      }}
                     >
                       <Text style={[
                         styles.frequencyOptionText,
@@ -559,8 +589,8 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
         {/* Streak Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Streaks</Text>
-          
-          <View style={styles.settingItem}>
+
+          <View style={[styles.settingItem, glassStyles.card]}>
             <View style={styles.settingInfo}>
               <Text style={styles.settingTitle}>Track Streaks</Text>
               <Text style={styles.settingDescription}>
@@ -569,7 +599,10 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
             </View>
             <Switch
               value={streakEnabled}
-              onValueChange={setStreakEnabled}
+              onValueChange={(enabled) => {
+                playToggle(enabled);
+                setStreakEnabled(enabled);
+              }}
               trackColor={{ false: colors.interactive.default, true: accentColor }}
               thumbColor={colors.surface}
               accessibilityLabel="Streak tracking"
@@ -579,7 +612,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
 
           {streakEnabled && (
             <>
-              <View style={styles.settingItem}>
+              <View style={[styles.settingItem, glassStyles.cardSubtle]}>
                 <View style={styles.settingInfo}>
                   <Text style={styles.settingTitle}>Skip Weekends</Text>
                   <Text style={styles.settingDescription}>
@@ -588,7 +621,10 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                 </View>
                 <Switch
                   value={streakSkipWeekends}
-                  onValueChange={setStreakSkipWeekends}
+                  onValueChange={(enabled) => {
+                    playToggle(enabled);
+                    setStreakSkipWeekends(enabled);
+                  }}
                   trackColor={{ false: colors.interactive.default, true: accentColor }}
                   thumbColor={colors.surface}
                   accessibilityLabel="Skip weekends"
@@ -596,7 +632,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                 />
               </View>
 
-              <View style={styles.settingItem}>
+              <View style={[styles.settingItem, glassStyles.cardSubtle]}>
                 <View style={styles.settingInfo}>
                   <Text style={styles.settingTitle}>Minimum Daily Count</Text>
                   <Text style={styles.settingDescription}>
@@ -606,7 +642,12 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                 <View style={styles.countSelector}>
                   <TouchableOpacity
                     style={[styles.countButton, { backgroundColor: accentColor }]}
-                    onPress={() => setStreakMinimumCount(Math.max(1, streakMinimumCount - 1))}
+                    onPress={() => {
+                      if (streakMinimumCount > 1) {
+                        playToggle(false);
+                        setStreakMinimumCount(streakMinimumCount - 1);
+                      }
+                    }}
                     accessibilityRole="button"
                     accessibilityLabel="Decrease minimum count"
                   >
@@ -615,7 +656,12 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                   <Text style={styles.countValue}>{streakMinimumCount}</Text>
                   <TouchableOpacity
                     style={[styles.countButton, { backgroundColor: accentColor }]}
-                    onPress={() => setStreakMinimumCount(Math.min(10, streakMinimumCount + 1))}
+                    onPress={() => {
+                      if (streakMinimumCount < 10) {
+                        playToggle(true);
+                        setStreakMinimumCount(streakMinimumCount + 1);
+                      }
+                    }}
                     accessibilityRole="button"
                     accessibilityLabel="Increase minimum count"
                   >
@@ -631,7 +677,10 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
           <View style={styles.deleteSection}>
             <TouchableOpacity
               style={styles.deleteButton}
-              onPress={handleDelete}
+              onPress={() => {
+                playCaution();
+                handleDelete();
+              }}
               accessibilityRole="button"
               accessibilityLabel="Delete habit"
               accessibilityHint="Double tap to permanently delete this habit"

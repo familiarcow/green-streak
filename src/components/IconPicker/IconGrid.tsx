@@ -17,6 +17,7 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 import { Icon, IconName } from '../common/Icon';
 import { colors, spacing, textStyles } from '../../theme';
 import { radiusValues } from '../../theme/utils';
+import { useSounds } from '../../hooks/useSounds';
 
 interface IconGridProps {
   icons: IconName[];
@@ -33,6 +34,13 @@ export const IconGrid: React.FC<IconGridProps> = React.memo(({
   selectedIcon,
   onSelectIcon,
 }) => {
+  const { playRandomTap } = useSounds();
+
+  const handleSelectIcon = useCallback((icon: IconName) => {
+    playRandomTap();
+    onSelectIcon(icon);
+  }, [onSelectIcon, playRandomTap]);
+
   const renderIcon = useCallback(
     ({ item, index }: { item: IconName; index: number }) => {
       const isSelected = selectedIcon === item;
@@ -46,7 +54,7 @@ export const IconGrid: React.FC<IconGridProps> = React.memo(({
               styles.iconButton,
               isSelected && styles.iconButtonSelected,
             ]}
-            onPress={() => onSelectIcon(item)}
+            onPress={() => handleSelectIcon(item)}
             accessibilityRole="button"
             accessibilityLabel={`Select ${item} icon`}
             accessibilityState={{ selected: isSelected }}
@@ -60,7 +68,7 @@ export const IconGrid: React.FC<IconGridProps> = React.memo(({
         </Animated.View>
       );
     },
-    [selectedIcon, onSelectIcon]
+    [selectedIcon, handleSelectIcon]
   );
 
   const renderEmptyState = useCallback(

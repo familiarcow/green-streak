@@ -8,6 +8,7 @@ import { AnimatedButton } from '../components/AnimatedButton';
 import { AnimatedLoader } from '../components/AnimatedLoader';
 import { useLogsStore } from '../store/logsStore';
 import { colors, textStyles, spacing, shadows } from '../theme';
+import { useSounds } from '../hooks/useSounds';
 import { radiusValues } from '../theme/utils';
 import { formatDisplayDate, getTodayString } from '../utils/dateHelpers';
 import logger from '../utils/logger';
@@ -26,6 +27,12 @@ export const TaskAnalyticsScreen: React.FC<TaskAnalyticsScreenProps> = ({
   const [loading, setLoading] = useState(true);
   const [taskContributionData, setTaskContributionData] = useState<ContributionData[]>([]);
   const { getTaskContributionData } = useLogsStore();
+  const { play } = useSounds();
+
+  const handleClose = () => {
+    play('close');
+    onClose();
+  };
 
   useEffect(() => {
     const loadTaskData = async () => {
@@ -163,7 +170,7 @@ export const TaskAnalyticsScreen: React.FC<TaskAnalyticsScreenProps> = ({
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+        <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
           <Text style={styles.closeButtonText}>Close</Text>
         </TouchableOpacity>
         <View style={styles.taskHeader}>

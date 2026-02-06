@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, StyleSheet, Modal, Pressable, Animated, Dimensions } from 'react-native';
 import { colors, spacing } from '../../theme';
+import { useSounds } from '../../hooks/useSounds';
 
 /**
  * Base modal props interface following the proven architecture pattern
@@ -32,10 +33,13 @@ export const BaseModal: React.FC<BaseModalProps> = ({
   height = '85%',
   minHeight = 400,
 }) => {
+  // Sound effects
+  const { play } = useSounds();
+
   // Animation values
   const backgroundOpacity = useRef(new Animated.Value(0)).current;
   const contentTranslateY = useRef(new Animated.Value(Dimensions.get('window').height)).current;
-  
+
   // State to track when modal should be rendered (for exit animation)
   const [isModalVisible, setIsModalVisible] = useState(false);
   const isAnimating = useRef(false);
@@ -46,11 +50,14 @@ export const BaseModal: React.FC<BaseModalProps> = ({
       // Show the modal first
       setIsModalVisible(true);
       isAnimating.current = true;
-      
+
+      // Play open sound
+      play('open');
+
       // Reset values
       backgroundOpacity.setValue(0);
       contentTranslateY.setValue(Dimensions.get('window').height);
-      
+
       // Animate in - background fades, content slides up
       Animated.parallel([
         Animated.timing(backgroundOpacity, {
@@ -70,13 +77,16 @@ export const BaseModal: React.FC<BaseModalProps> = ({
       // Animate out
       animateOut();
     }
-  }, [isVisible, isModalVisible, backgroundOpacity, contentTranslateY]);
+  }, [isVisible, isModalVisible, backgroundOpacity, contentTranslateY, play]);
 
   // Animate out function
   const animateOut = () => {
     if (isAnimating.current) return;
     isAnimating.current = true;
-    
+
+    // Play close sound
+    play('close');
+
     Animated.parallel([
       Animated.timing(backgroundOpacity, {
         toValue: 0,

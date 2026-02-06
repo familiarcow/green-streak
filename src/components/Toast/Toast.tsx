@@ -13,6 +13,8 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { colors, textStyles, spacing, shadows } from '../../theme';
 import { radiusValues } from '../../theme/utils';
 import { Toast as ToastType } from '../../services/ToastNotificationService';
+import { getSoundService } from '../../services';
+import { SoundType } from '../../services/SoundEffectsService';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -62,6 +64,22 @@ const getVariantStyles = (variant: ToastType['variant']) => {
   }
 };
 
+// Map toast variant to sound type
+const getVariantSound = (variant: ToastType['variant']): SoundType | null => {
+  switch (variant) {
+    case 'success':
+    case 'celebration':
+      return 'celebration';
+    case 'error':
+    case 'warning':
+      return 'caution';
+    case 'info':
+      return 'button';
+    default:
+      return null;
+  }
+};
+
 const ToastComponent: React.FC<ToastProps> = ({
   toast,
   position,
@@ -78,8 +96,15 @@ const ToastComponent: React.FC<ToastProps> = ({
 
   const variantStyles = getVariantStyles(toast.variant);
 
-  // Entry animation
+  // Entry animation and sound
   useEffect(() => {
+    // Play sound based on toast variant
+    const soundType = getVariantSound(toast.variant);
+    if (soundType) {
+      const soundService = getSoundService();
+      soundService.play(soundType);
+    }
+
     translateY.value = withSpring(0, {
       damping: 15,
       stiffness: 100,

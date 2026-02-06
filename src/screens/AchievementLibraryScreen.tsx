@@ -5,6 +5,7 @@ import { Icon } from '../components/common/Icon';
 import { colors, textStyles, spacing } from '../theme';
 import { radiusValues } from '../theme/utils';
 import { RARITY_COLORS, CATEGORY_NAMES } from '../theme/achievements';
+import { useSounds } from '../hooks/useSounds';
 import { AchievementCategory, AchievementWithStatus } from '../types/achievements';
 
 interface AchievementLibraryScreenProps {
@@ -74,6 +75,12 @@ const AchievementCard: React.FC<{ achievement: AchievementWithStatus }> = ({ ach
 
 export const AchievementLibraryScreen: React.FC<AchievementLibraryScreenProps> = ({ onClose }) => {
   const { achievements, stats, loadAchievements, loadStats, loading } = useAchievementsStore();
+  const { play } = useSounds();
+
+  const handleClose = () => {
+    play('close');
+    onClose();
+  };
 
   useEffect(() => {
     loadAchievements();
@@ -127,7 +134,7 @@ export const AchievementLibraryScreen: React.FC<AchievementLibraryScreenProps> =
           </Text>
           <TouchableOpacity
             style={styles.closeButton}
-            onPress={onClose}
+            onPress={handleClose}
             accessible={true}
             accessibilityRole="button"
             accessibilityLabel="Close"

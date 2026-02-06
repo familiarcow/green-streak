@@ -12,6 +12,7 @@ import { colors, textStyles, spacing, shadows } from '../../theme';
 import { radiusValues, fontSizes } from '../../theme/utils';
 import { formatDisplayDate, getTodayString, formatDateString } from '../../utils/dateHelpers';
 import { Icon } from './Icon';
+import { useSounds } from '../../hooks/useSounds';
 
 interface DatePickerModalProps {
   visible: boolean;
@@ -36,6 +37,8 @@ export const DatePickerModal: React.FC<DatePickerModalProps> = ({
     return date;
   });
 
+  const { playButton, playCaution, playRandomTap } = useSounds();
+
   const handleDateChange = useCallback((event: any, selectedDate?: Date) => {
     if (selectedDate) {
       // Ensure the selected date doesn't exceed the maximum date
@@ -53,27 +56,30 @@ export const DatePickerModal: React.FC<DatePickerModalProps> = ({
   }, [maximumDate, minimumDate]);
 
   const handleConfirm = useCallback(() => {
+    playButton();
     const dateString = formatDateString(tempDate);
     onDateSelect(dateString);
     onClose();
-  }, [tempDate, onDateSelect, onClose]);
+  }, [tempDate, onDateSelect, onClose, playButton]);
 
   const handleCancel = useCallback(() => {
+    playCaution();
     // Reset temp date to current selection
     const date = new Date(selectedDate);
     date.setHours(12, 0, 0, 0);
     setTempDate(date);
     onClose();
-  }, [selectedDate, onClose]);
+  }, [selectedDate, onClose, playCaution]);
 
   const handleToday = useCallback(() => {
+    playRandomTap();
     const today = new Date();
     today.setHours(12, 0, 0, 0);
     setTempDate(today);
     const dateString = getTodayString();
     onDateSelect(dateString);
     onClose();
-  }, [onDateSelect, onClose]);
+  }, [onDateSelect, onClose, playRandomTap]);
 
   if (Platform.OS === 'android') {
     // Android uses a different modal pattern

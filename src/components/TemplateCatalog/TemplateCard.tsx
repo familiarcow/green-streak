@@ -11,10 +11,17 @@ import { colors, textStyles, spacing } from '../../theme';
 import { radiusValues } from '../../theme/utils';
 import { TemplateCardProps } from '../../types/templates';
 import { getCategoryInfo } from '../../data/habitTemplates';
+import { useSounds } from '../../hooks/useSounds';
 
 export const TemplateCard: React.FC<TemplateCardProps> = React.memo(
   ({ template, onPress, isSelected = false }) => {
     const categoryInfo = getCategoryInfo(template.category);
+    const { playRandomTap } = useSounds();
+
+    const handlePress = () => {
+      playRandomTap();
+      onPress(template);
+    };
 
     return (
       <TouchableOpacity
@@ -23,7 +30,7 @@ export const TemplateCard: React.FC<TemplateCardProps> = React.memo(
           isSelected && styles.containerSelected,
           { borderLeftColor: template.color },
         ]}
-        onPress={() => onPress(template)}
+        onPress={handlePress}
         activeOpacity={0.7}
         accessible={true}
         accessibilityRole="button"

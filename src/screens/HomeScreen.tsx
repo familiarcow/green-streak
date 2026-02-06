@@ -9,7 +9,7 @@ import { TodayCard, EmptyStateSection, TasksSection } from '../components/HomeSc
 import { BaseModal } from '../components/modals';
 import { useTasksStore } from '../store/tasksStore';
 import { useLogsStore } from '../store/logsStore';
-import { useTaskActions, useModalManager, useDateNavigation, useAccentColor, useColorName, useDeepLinks, useWidgetSync } from '../hooks';
+import { useTaskActions, useModalManager, useDateNavigation, useAccentColor, useColorName, useDeepLinks, useWidgetSync, useSounds } from '../hooks';
 import { useDateRefresh } from '../hooks/useDateRefresh';
 import { colors, textStyles, spacing } from '../theme';
 import { radiusValues } from '../theme/utils';
@@ -50,6 +50,9 @@ export const HomeScreen: React.FC = () => {
   // Accent color hooks for dynamic header
   const accentColor = useAccentColor();
   const colorName = useColorName();
+
+  // Sound effects
+  const { playRandomTap } = useSounds();
 
   // Handle deep links from widgets
   useDeepLinks({
@@ -164,7 +167,10 @@ export const HomeScreen: React.FC = () => {
             <View style={styles.headerActions}>
               <TouchableOpacity
                 style={styles.headerButton}
-                onPress={openAchievementLibrary}
+                onPress={() => {
+                  playRandomTap();
+                  openAchievementLibrary();
+                }}
                 accessible={true}
                 accessibilityRole="button"
                 accessibilityLabel="Achievements"
@@ -173,7 +179,10 @@ export const HomeScreen: React.FC = () => {
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.headerButton}
-                onPress={openSettings}
+                onPress={() => {
+                  playRandomTap();
+                  openSettings();
+                }}
                 accessible={true}
                 accessibilityRole="button"
                 accessibilityLabel="Settings"

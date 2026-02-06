@@ -27,6 +27,7 @@ import { radiusValues } from '../../theme/utils';
 import { COLOR_PALETTE } from '../../database/schema';
 import { hexToHsv, hsvToHex, isValidHex, generateContributionPalette } from '../../utils/colorUtils';
 import { CalendarColorPreview } from '../CalendarColorPreview';
+import { useSounds } from '../../hooks/useSounds';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const PICKER_SIZE = Math.min(SCREEN_WIDTH - spacing[8] * 2, 280);
@@ -61,6 +62,8 @@ export const ColorPickerModal: React.FC<ColorPickerModalProps> = ({
   const [saturation, setSaturation] = useState(initialHsv.s);
   const [value, setValue] = useState(initialHsv.v);
   const [currentColor, setCurrentColor] = useState(selectedColor);
+
+  const { playRandomTap } = useSounds();
 
   // Reset state when modal opens with new color
   useEffect(() => {
@@ -101,6 +104,7 @@ export const ColorPickerModal: React.FC<ColorPickerModalProps> = ({
   }, []);
 
   const handlePresetSelect = useCallback((color: string) => {
+    playRandomTap();
     const hsv = hexToHsv(color);
     if (hsv) {
       setHue(hsv.h);
@@ -108,7 +112,7 @@ export const ColorPickerModal: React.FC<ColorPickerModalProps> = ({
       setValue(hsv.v);
       setCurrentColor(color);
     }
-  }, []);
+  }, [playRandomTap]);
 
   const handleSelect = useCallback(() => {
     onSelectColor(currentColor);

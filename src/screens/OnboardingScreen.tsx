@@ -30,6 +30,7 @@ import { colors, textStyles, spacing, shadows } from '../theme';
 import { radiusValues } from '../theme/utils';
 import { HabitTemplate } from '../types/templates';
 import { useSettingsStore, DEFAULT_CALENDAR_COLOR } from '../store/settingsStore';
+import { useSounds } from '../hooks';
 import { CALENDAR_COLOR_PRESETS, generateContributionPalette, hexToHsv, hsvToHex } from '../utils/colorUtils';
 import notificationService from '../services/NotificationService';
 import logger from '../utils/logger';
@@ -95,6 +96,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [dailyRemindersEnabled, setDailyRemindersEnabled] = useState(false);
   const [streakProtectionEnabled, setStreakProtectionEnabled] = useState(false);
+  const [soundEffectsEnabled, setSoundEffectsEnabled] = useState(true);
 
   // Handle hue change from slider
   const handleHueChange = useCallback((newHue: number) => {
@@ -114,7 +116,10 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
   }, []);
 
   // Settings store
-  const { setCalendarColor, updateNotificationSettings } = useSettingsStore();
+  const { setCalendarColor, updateNotificationSettings, setSoundEffectsEnabled: saveSoundEffectsEnabled } = useSettingsStore();
+
+  // Sound effects
+  const { playToggle, playExpand, playRandomTap, play } = useSounds();
 
   const handleNext = () => {
     if (currentStep < onboardingSteps.length - 1) {
@@ -153,6 +158,9 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
       // Save calendar color
       setCalendarColor(selectedColor);
 
+      // Save sound effects setting
+      saveSoundEffectsEnabled(soundEffectsEnabled);
+
       // Request notification permissions if any notification setting is enabled
       if (notificationsEnabled || dailyRemindersEnabled || streakProtectionEnabled) {
         const hasPermission = await notificationService.requestPermissions();
@@ -176,6 +184,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
 
       logger.info('UI', 'Onboarding settings saved', {
         calendarColor: selectedColor,
+        soundEffectsEnabled,
         notificationsEnabled,
         dailyRemindersEnabled,
         streakProtectionEnabled,
@@ -183,7 +192,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
     } catch (error) {
       logger.error('UI', 'Failed to save onboarding settings', { error });
     }
-  }, [selectedColor, notificationsEnabled, dailyRemindersEnabled, streakProtectionEnabled, setCalendarColor, updateNotificationSettings]);
+  }, [selectedColor, soundEffectsEnabled, notificationsEnabled, dailyRemindersEnabled, streakProtectionEnabled, setCalendarColor, saveSoundEffectsEnabled, updateNotificationSettings]);
 
   const handleSetupTask = async () => {
     logger.info('UI', 'User chose to set up first task during onboarding');
@@ -211,6 +220,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
 
   // Handle master notifications toggle
   const handleNotificationsToggle = useCallback(async (enabled: boolean) => {
+    playToggle(enabled);
     if (enabled) {
       const hasPermission = await notificationService.requestPermissions();
       if (!hasPermission) {
@@ -228,7 +238,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
       setDailyRemindersEnabled(false);
       setStreakProtectionEnabled(false);
     }
-  }, []);
+  }, [playToggle]);
 
   const animatedIndicatorStyle = useAnimatedStyle(() => ({
     transform: [{ 
@@ -246,7 +256,13 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
           {currentStep + 1} of {onboardingSteps.length}
         </Text>
         {currentStep > 0 && (
-          <TouchableOpacity onPress={handleBack} style={styles.backButton}>
+          <TouchableOpacity
+            onPress={() => {
+              play('close');
+              handleBack();
+            }}
+            style={styles.backButton}
+          >
             <Text style={styles.backButtonText}>Back</Text>
           </TouchableOpacity>
         )}
@@ -319,7 +335,10 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
                       </View>
                       <TouchableOpacity
                         style={styles.editColorButton}
-                        onPress={() => setColorPickerExpanded(!colorPickerExpanded)}
+                        onPress={() => {
+                          playExpand(!colorPickerExpanded);
+                          setColorPickerExpanded(!colorPickerExpanded);
+                        }}
                         accessibilityLabel={colorPickerExpanded ? "Close color picker" : "Edit color"}
                       >
                         <Text style={styles.editColorButtonText}>
@@ -348,7 +367,10 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
                                 { backgroundColor: color },
                                 selectedColor.toUpperCase() === color.toUpperCase() && styles.colorOptionSelected,
                               ]}
-                              onPress={() => handlePresetSelect(color)}
+                              onPress={() => {
+                                playRandomTap();
+                                handlePresetSelect(color);
+                              }}
                               accessibilityLabel={`Select ${color} color`}
                             />
                           ))}
@@ -395,7 +417,10 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
                       </View>
                       <Switch
                         value={dailyRemindersEnabled}
-                        onValueChange={setDailyRemindersEnabled}
+                        onValueChange={(enabled) => {
+                          playToggle(enabled);
+                          setDailyRemindersEnabled(enabled);
+                        }}
                         disabled={!notificationsEnabled}
                         trackColor={{ false: colors.interactive.default, true: colors.primary }}
                         thumbColor={colors.surface}
@@ -413,8 +438,43 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
                       </View>
                       <Switch
                         value={streakProtectionEnabled}
-                        onValueChange={setStreakProtectionEnabled}
+                        onValueChange={(enabled) => {
+                          playToggle(enabled);
+                          setStreakProtectionEnabled(enabled);
+                        }}
                         disabled={!notificationsEnabled}
+                        trackColor={{ false: colors.interactive.default, true: colors.primary }}
+                        thumbColor={colors.surface}
+                      />
+                    </View>
+                  </View>
+
+                  {/* Sound Effects Section */}
+                  <View style={styles.settingSection}>
+                    <Text style={styles.settingSectionTitle}>Sound Effects</Text>
+
+                    <View style={styles.settingRow}>
+                      <View style={styles.settingInfo}>
+                        <Text style={styles.settingLabel}>Enable Sound Effects</Text>
+                        <Text style={styles.settingDescription}>
+                          Play sounds on actions
+                        </Text>
+                      </View>
+                      <Switch
+                        value={soundEffectsEnabled}
+                        onValueChange={(enabled) => {
+                          if (enabled) {
+                            // Turning ON: save first, then play sound
+                            saveSoundEffectsEnabled(enabled);
+                            setSoundEffectsEnabled(enabled);
+                            playToggle(enabled);
+                          } else {
+                            // Turning OFF: play sound first (while still enabled), then save
+                            playToggle(enabled);
+                            saveSoundEffectsEnabled(enabled);
+                            setSoundEffectsEnabled(enabled);
+                          }
+                        }}
                         trackColor={{ false: colors.interactive.default, true: colors.primary }}
                         thumbColor={colors.surface}
                       />
@@ -443,13 +503,19 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
                   />
                   <View style={styles.secondaryActionsRow}>
                     <TouchableOpacity
-                      onPress={handleSkipSetup}
+                      onPress={() => {
+                        playRandomTap();
+                        handleSkipSetup();
+                      }}
                       style={styles.skipButton}
                     >
                       <Text style={styles.skipButtonText}>Skip</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
-                      onPress={handleSetupTask}
+                      onPress={() => {
+                        playRandomTap();
+                        handleSetupTask();
+                      }}
                       style={styles.secondaryActionButton}
                     >
                       <Icon name="edit" size={16} color={colors.primary} />

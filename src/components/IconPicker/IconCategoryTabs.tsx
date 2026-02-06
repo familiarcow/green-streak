@@ -9,6 +9,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-nati
 import { Icon } from '../common/Icon';
 import { colors, textStyles, spacing } from '../../theme';
 import { IconCategory } from '../../data/iconCategories';
+import { useSounds } from '../../hooks/useSounds';
 
 interface IconCategoryTabsProps {
   categories: IconCategory[];
@@ -18,6 +19,13 @@ interface IconCategoryTabsProps {
 
 export const IconCategoryTabs: React.FC<IconCategoryTabsProps> = React.memo(
   ({ categories, selectedCategory, onSelectCategory }) => {
+    const { playRandomType } = useSounds();
+
+    const handleSelectCategory = (categoryId: string) => {
+      playRandomType();
+      onSelectCategory(categoryId);
+    };
+
     return (
       <View style={styles.container}>
         <ScrollView
@@ -35,7 +43,7 @@ export const IconCategoryTabs: React.FC<IconCategoryTabsProps> = React.memo(
                   isSelected && styles.tabSelected,
                   isSelected && { backgroundColor: `${category.color}15`, borderColor: category.color },
                 ]}
-                onPress={() => onSelectCategory(category.id)}
+                onPress={() => handleSelectCategory(category.id)}
                 activeOpacity={0.7}
                 accessible={true}
                 accessibilityRole="tab"
