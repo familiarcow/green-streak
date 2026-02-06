@@ -15,7 +15,7 @@ import { ColorPickerModal } from '../components/ColorPicker/ColorPickerModal';
 import { CalendarColorPreview } from '../components/CalendarColorPreview';
 import { useSettingsStore, DEFAULT_CALENDAR_COLOR } from '../store/settingsStore';
 import { generateContributionPalette, DEFAULT_CONTRIBUTION_PALETTE, CALENDAR_COLOR_PRESETS } from '../utils/colorUtils';
-import { useAccentColor } from '../hooks';
+import { useAccentColor, useSounds } from '../hooks';
 import { useDataStore } from '../store/dataStore';
 import { useTasksStore } from '../store/tasksStore';
 import { useLogsStore } from '../store/logsStore';
@@ -32,15 +32,17 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
     globalReminderTime,
     calendarColor,
     notificationSettings,
+    soundEffectsEnabled,
     updateGlobalReminder,
     setCalendarColor,
+    setSoundEffectsEnabled,
     resetSettings,
     updateNotificationSettings,
     updateDailyNotification,
     updateStreakProtection,
   } = useSettingsStore();
 
-  const { exportData, importData, isExporting, isImporting } = useDataStore();
+  const { exportData, importData, clearAllData, isExporting, isImporting, isClearing } = useDataStore();
   const { tasks, loadTasks, updateTask } = useTasksStore();
   const { loadContributionData } = useLogsStore();
 
@@ -51,19 +53,24 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [notificationPermissions, setNotificationPermissions] = useState<'unknown' | 'granted' | 'denied' | 'undetermined'>('unknown');
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    general: true,
     notifications: true,
-    display: true,
     data: false,
   });
   const [showCalendarColorPicker, setShowCalendarColorPicker] = useState(false);
 
   // Toggle section expansion
   const toggleSection = (section: string) => {
+    const willExpand = !expandedSections[section];
+    playExpand(willExpand);
     setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
   };
 
   // Get accent color for UI elements
   const accentColor = useAccentColor();
+
+  // Sound effects
+  const { playToggle, playExpand, playCaution } = useSounds();
 
   // Get the current calendar color palette for preview
   const currentCalendarColor = calendarColor || DEFAULT_CALENDAR_COLOR;
@@ -136,6 +143,59 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
               logger.error('UI', 'Failed to reset settings', { error });
               Alert.alert('Error', 'Failed to reset settings.');
             }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleClearAllData = () => {
+    playCaution();
+    Alert.alert(
+      'Clear All Data',
+      'This will permanently delete ALL your data:\n\n• All habits\n• All completion history\n• All achievements\n• All settings\n\nYou will need to set up the app again from scratch.\n\nThis action cannot be undone!',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'I Understand, Continue',
+          style: 'destructive',
+          onPress: () => {
+            // Second confirmation
+            Alert.alert(
+              'Final Warning',
+              'Are you absolutely sure? All your habit data, streaks, and progress will be permanently lost.',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Delete Everything',
+                  style: 'destructive',
+                  onPress: async () => {
+                    try {
+                      const result = await clearAllData();
+                      if (result.success) {
+                        logger.info('UI', 'All data cleared, triggering app restart');
+                        Alert.alert(
+                          'Data Cleared',
+                          'All data has been deleted. The app will now restart.',
+                          [{
+                            text: 'OK',
+                            onPress: () => {
+                              // Close settings and the app will show onboarding
+                              onClose();
+                            }
+                          }]
+                        );
+                      } else {
+                        Alert.alert('Error', result.error || 'Failed to clear data. Please try again.');
+                      }
+                    } catch (error) {
+                      logger.error('UI', 'Failed to clear all data', { error });
+                      Alert.alert('Error', 'Failed to clear data. Please try again.');
+                    }
+                  },
+                },
+              ]
+            );
           },
         },
       ]
@@ -233,7 +293,79 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
       </View>
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        
+
+        {/* General Section (formerly Display) */}
+        <View style={styles.section}>
+          <TouchableOpacity
+            style={styles.sectionHeader}
+            onPress={() => toggleSection('general')}
+            accessibilityRole="button"
+            accessibilityLabel={`General section, ${expandedSections.general ? 'expanded' : 'collapsed'}`}
+          >
+            <Text style={styles.sectionTitle}>General</Text>
+            <Icon
+              name={expandedSections.general ? 'chevron-up' : 'chevron-down'}
+              size={20}
+              color={colors.text.secondary}
+            />
+          </TouchableOpacity>
+
+          {expandedSections.general && (
+            <>
+              {/* Calendar Color Setting */}
+              <View style={[styles.settingItem, glassStyles.card]}>
+                <View style={styles.settingInfo}>
+                  <Text style={styles.settingTitle}>Calendar Color</Text>
+                  <Text style={styles.settingDescription}>
+                    Customize the contribution graph colors
+                  </Text>
+                  <View style={styles.calendarColorPreview}>
+                    <CalendarColorPreview palette={calendarPalette} size={20} />
+                  </View>
+                </View>
+                <TouchableOpacity
+                  style={styles.changeColorButton}
+                  onPress={() => setShowCalendarColorPicker(true)}
+                  accessibilityRole="button"
+                  accessibilityLabel="Change calendar color"
+                  accessibilityHint="Double tap to open color picker"
+                >
+                  <View style={[styles.colorSwatch, { backgroundColor: currentCalendarColor }]} />
+                  <Icon name="chevron-right" size={16} color={colors.text.secondary} />
+                </TouchableOpacity>
+              </View>
+
+              {/* Sound Effects Setting */}
+              <View style={[styles.settingItem, glassStyles.card]}>
+                <View style={styles.settingInfo}>
+                  <Text style={styles.settingTitle}>Sound Effects</Text>
+                  <Text style={styles.settingDescription}>
+                    Play sounds on actions
+                  </Text>
+                </View>
+                <Switch
+                  value={soundEffectsEnabled ?? true}
+                  onValueChange={(enabled) => {
+                    if (enabled) {
+                      // Turning ON: save first so sound plays
+                      setSoundEffectsEnabled(enabled);
+                      playToggle(enabled);
+                    } else {
+                      // Turning OFF: play first while still enabled
+                      playToggle(enabled);
+                      setSoundEffectsEnabled(enabled);
+                    }
+                  }}
+                  trackColor={{ false: colors.interactive.default, true: accentColor }}
+                  thumbColor={colors.surface}
+                  accessibilityLabel="Sound effects toggle"
+                  accessibilityHint={soundEffectsEnabled ? "Double tap to disable sound effects" : "Double tap to enable sound effects"}
+                />
+              </View>
+            </>
+          )}
+        </View>
+
         {/* Notifications Section */}
         <View style={styles.section}>
           <TouchableOpacity
@@ -271,6 +403,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
                 <Switch
                   value={notificationSettings?.global?.enabled ?? false}
                   onValueChange={(enabled) => {
+                    playToggle(enabled);
                     updateNotificationSettings({
                       global: { ...notificationSettings?.global, enabled }
                     });
@@ -297,6 +430,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
                   <Switch
                     value={notificationSettings?.daily?.enabled ?? false}
                     onValueChange={(enabled) => {
+                      playToggle(enabled);
                       updateDailyNotification({ enabled });
                     }}
                     trackColor={{ false: colors.interactive.default, true: accentColor }}
@@ -327,6 +461,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
                       <Switch
                         value={notificationSettings?.daily?.smartMode ?? true}
                         onValueChange={(smartMode) => {
+                          playToggle(smartMode);
                           updateDailyNotification({ smartMode });
                         }}
                         trackColor={{ false: colors.interactive.default, true: accentColor }}
@@ -344,6 +479,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
                       <Switch
                         value={notificationSettings?.daily?.includeMotivation ?? false}
                         onValueChange={(includeMotivation) => {
+                          playToggle(includeMotivation);
                           updateDailyNotification({ includeMotivation });
                         }}
                         trackColor={{ false: colors.interactive.default, true: accentColor }}
@@ -366,6 +502,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
                   <Switch
                     value={notificationSettings?.streaks?.protectionEnabled ?? false}
                     onValueChange={(protectionEnabled) => {
+                      playToggle(protectionEnabled);
                       updateStreakProtection({ protectionEnabled });
                     }}
                     trackColor={{ false: colors.interactive.default, true: accentColor }}
@@ -424,6 +561,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
                       <Switch
                         value={notificationSettings?.streaks?.priorityBasedAlerts ?? true}
                         onValueChange={(priorityBasedAlerts) => {
+                          playToggle(priorityBasedAlerts);
                           updateStreakProtection({ priorityBasedAlerts });
                         }}
                         trackColor={{ false: colors.interactive.default, true: accentColor }}
@@ -446,6 +584,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
                   <Switch
                     value={notificationSettings?.achievements?.enabled ?? true}
                     onValueChange={(enabled) => {
+                      playToggle(enabled);
                       updateNotificationSettings({
                         achievements: { ...notificationSettings?.achievements, enabled }
                       });
@@ -467,6 +606,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
                       <Switch
                         value={notificationSettings?.achievements?.weeklyRecapEnabled ?? false}
                         onValueChange={(weeklyRecapEnabled) => {
+                          playToggle(weeklyRecapEnabled);
                           updateNotificationSettings({
                             achievements: { ...notificationSettings?.achievements, weeklyRecapEnabled }
                           });
@@ -525,7 +665,10 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
               <View style={styles.subSection}>
                 <TouchableOpacity
                   style={[styles.settingItem, glassStyles.card]}
-                  onPress={() => setExpandedSections({...expandedSections, advanced: !expandedSections.advanced})}
+                  onPress={() => {
+                    playExpand(!expandedSections.advanced);
+                    setExpandedSections({...expandedSections, advanced: !expandedSections.advanced});
+                  }}
                 >
                   <View style={styles.settingInfo}>
                     <Text style={styles.settingTitle}>Advanced Settings</Text>
@@ -582,6 +725,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
                       <Switch
                         value={notificationSettings?.global?.quietHours?.enabled ?? false}
                         onValueChange={(enabled) => {
+                          playToggle(enabled);
                           updateNotificationSettings({
                             global: {
                               ...notificationSettings?.global,
@@ -614,6 +758,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
                       <Switch
                         value={notificationSettings?.global?.soundEnabled ?? true}
                         onValueChange={(soundEnabled) => {
+                          playToggle(soundEnabled);
                           updateNotificationSettings({
                             global: { ...notificationSettings?.global, soundEnabled }
                           });
@@ -633,6 +778,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
                       <Switch
                         value={notificationSettings?.global?.vibrationEnabled ?? true}
                         onValueChange={(vibrationEnabled) => {
+                          playToggle(vibrationEnabled);
                           updateNotificationSettings({
                             global: { ...notificationSettings?.global, vibrationEnabled }
                           });
@@ -709,6 +855,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
                     <Switch
                       value={habit.reminderEnabled}
                       onValueChange={(enabled) => {
+                        playToggle(enabled);
                         updateTask(habit.id, { reminderEnabled: enabled })
                           .then(() => {
                             logger.info('UI', 'Habit reminder toggled from settings', {
@@ -730,50 +877,6 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
               </View>
             </View>
           )}
-            </>
-          )}
-        </View>
-
-        {/* Display Section */}
-        <View style={styles.section}>
-          <TouchableOpacity
-            style={styles.sectionHeader}
-            onPress={() => toggleSection('display')}
-            accessibilityRole="button"
-            accessibilityLabel={`Display section, ${expandedSections.display ? 'expanded' : 'collapsed'}`}
-          >
-            <Text style={styles.sectionTitle}>Display</Text>
-            <Icon
-              name={expandedSections.display ? 'chevron-up' : 'chevron-down'}
-              size={20}
-              color={colors.text.secondary}
-            />
-          </TouchableOpacity>
-
-          {expandedSections.display && (
-            <>
-              {/* Calendar Color Setting */}
-              <View style={[styles.settingItem, glassStyles.card]}>
-                <View style={styles.settingInfo}>
-                  <Text style={styles.settingTitle}>Calendar Color</Text>
-                  <Text style={styles.settingDescription}>
-                    Customize the contribution graph colors
-                  </Text>
-                  <View style={styles.calendarColorPreview}>
-                    <CalendarColorPreview palette={calendarPalette} size={20} />
-                  </View>
-                </View>
-                <TouchableOpacity
-                  style={styles.changeColorButton}
-                  onPress={() => setShowCalendarColorPicker(true)}
-                  accessibilityRole="button"
-                  accessibilityLabel="Change calendar color"
-                  accessibilityHint="Double tap to open color picker"
-                >
-                  <View style={[styles.colorSwatch, { backgroundColor: currentCalendarColor }]} />
-                  <Icon name="chevron-right" size={16} color={colors.text.secondary} />
-                </TouchableOpacity>
-              </View>
             </>
           )}
         </View>
@@ -824,14 +927,28 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
                 </TouchableOpacity>
               </View>
 
-              <TouchableOpacity
-                style={styles.resetLink}
-                onPress={handleResetSettings}
-                accessibilityRole="button"
-                accessibilityLabel="Reset all settings"
-              >
-                <Text style={styles.resetLinkText}>Reset All Settings</Text>
-              </TouchableOpacity>
+              <View style={styles.resetLinksRow}>
+                <TouchableOpacity
+                  style={styles.resetLink}
+                  onPress={handleResetSettings}
+                  accessibilityRole="button"
+                  accessibilityLabel="Reset all settings"
+                >
+                  <Text style={styles.resetLinkText}>Reset All Settings</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.resetLink}
+                  onPress={handleClearAllData}
+                  disabled={isClearing || isExporting || isImporting}
+                  accessibilityRole="button"
+                  accessibilityLabel="Clear all data"
+                >
+                  <Text style={[styles.resetLinkText, (isClearing || isExporting || isImporting) && styles.resetLinkTextDisabled]}>
+                    {isClearing ? 'Clearing...' : 'Clear All Data'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </>
           )}
         </View>
@@ -1045,14 +1162,24 @@ const styles = StyleSheet.create({
     color: colors.text.tertiary,
   },
 
+  resetLinksRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: spacing[4],
+  },
+
   resetLink: {
-    alignItems: 'center',
     paddingVertical: spacing[2],
+    paddingHorizontal: spacing[2],
   },
 
   resetLinkText: {
     ...textStyles.bodySmall,
     color: colors.error,
+  },
+
+  resetLinkTextDisabled: {
+    color: colors.text.tertiary,
   },
 
   habitRemindersCard: {
