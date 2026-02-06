@@ -77,3 +77,7 @@ temp/
 # Local development
 .playwright-mcp/
 tasks/
+
+# expo-apple-targets generated files
+targets/**/generated.entitlements
+targets/**/Info.plist

@@ -15,8 +15,14 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.green-streak.app",
+      "appleTeamId": "974SWJKYUP",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
+      },
+      "entitlements": {
+        "com.apple.security.application-groups": [
+          "group.com.greenstreak.shared"
+        ]
       },
       "buildNumber": "6"
     },
@@ -34,11 +40,29 @@
     },
     "plugins": [
       "expo-sqlite",
+      "@bacons/apple-targets",
       "./plugins/withWidgetExtension"
     ],
     "extra": {
       "eas": {
-        "projectId": "8a77c913-c0fc-4d68-b875-067cc3ea8cca"
+        "projectId": "8a77c913-c0fc-4d68-b875-067cc3ea8cca",
+        "build": {
+          "experimental": {
+            "ios": {
+              "appExtensions": [
+                {
+                  "targetName": "GreenStreakWidgets",
+                  "bundleIdentifier": "com.green-streak.app.GreenStreakWidgets",
+                  "entitlements": {
+                    "com.apple.security.application-groups": [
+                      "group.com.greenstreak.shared"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        }
       }
     }
   }
