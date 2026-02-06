@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -30,8 +30,6 @@ import { colors, textStyles, spacing, shadows } from '../theme';
 import { radiusValues } from '../theme/utils';
 import { HabitTemplate } from '../types/templates';
 import { useSettingsStore, DEFAULT_CALENDAR_COLOR } from '../store/settingsStore';
-import { useTasksStore } from '../store/tasksStore';
-import { useAchievementsStore } from '../store/achievementsStore';
 import { useSounds } from '../hooks';
 import { CALENDAR_COLOR_PRESETS, generateContributionPalette, hexToHsv, hsvToHex } from '../utils/colorUtils';
 import notificationService from '../services/NotificationService';
@@ -121,11 +119,8 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
   const { setCalendarColor, updateNotificationSettings, setSoundEffectsEnabled: saveSoundEffectsEnabled } = useSettingsStore();
 
   // Sound effects
-  const { playToggle, playExpand, playRandomTap, play, playCelebration, playCaution } = useSounds();
+  const { playToggle, playExpand, playRandomTap, play } = useSounds();
 
-  // Task creation for quick add
-  const { createTask } = useTasksStore();
-  const { checkForAchievements } = useAchievementsStore();
 
   const handleNext = () => {
     if (currentStep < onboardingSteps.length - 1) {
@@ -217,52 +212,6 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
     await saveOnboardingSettings();
     onComplete(true, template);
   }, [onComplete, saveOnboardingSettings]);
-
-  // Handle quick add from template - creates task directly and completes onboarding
-  const handleQuickAddTemplate = useCallback(async (template: HabitTemplate) => {
-    logger.info('UI', 'User quick adding template during onboarding', { templateId: template.id });
-
-    try {
-      await saveOnboardingSettings();
-
-      const { suggestedSettings } = template;
-      const taskData = {
-        name: template.name,
-        description: template.description,
-        icon: template.icon,
-        color: template.color,
-        isMultiCompletion: false,
-        reminderEnabled: !!suggestedSettings.reminderTime,
-        reminderTime: suggestedSettings.reminderTime,
-        reminderFrequency: suggestedSettings.reminderFrequency || 'daily',
-        streakEnabled: suggestedSettings.streakEnabled,
-        streakSkipWeekends: suggestedSettings.streakSkipWeekends || false,
-        streakMinimumCount: suggestedSettings.streakMinimumCount || 1,
-      };
-
-      const newTask = await createTask(taskData);
-      logger.info('UI', 'Task created from template during onboarding (quick add)', { taskId: newTask.id });
-
-      playCelebration();
-
-      // Check for task creation achievements
-      try {
-        await checkForAchievements({
-          trigger: 'task_created',
-          taskId: newTask.id,
-        });
-      } catch (error) {
-        logger.warn('UI', 'Failed to check achievements after quick add', { error });
-      }
-
-      // Don't manually close the modal - calling onComplete will unmount OnboardingScreen
-      // which will unmount the modal. Calling both causes a race condition.
-      onComplete(false); // false because task is already created, no need to open EditTask
-    } catch (error) {
-      logger.error('UI', 'Failed to quick add template during onboarding', { error });
-      playCaution();
-    }
-  }, [saveOnboardingSettings, createTask, checkForAchievements, playCelebration, playCaution, onComplete]);
 
   const handleSkipSetup = async () => {
     logger.info('UI', 'User chose to explore app without setting up task');
@@ -603,7 +552,6 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
         visible={showTemplateCatalog}
         onClose={() => setShowTemplateCatalog(false)}
         onSelectTemplate={handleSelectTemplate}
-        onQuickAdd={handleQuickAddTemplate}
       />
     </SafeAreaView>
   );

@@ -49,10 +49,10 @@ export interface HabitTemplate {
 export interface TemplateCatalogModalProps {
   visible: boolean;
   onClose: () => void;
-  /** Called when user taps "Customize" - opens EditHabit with template */
+  /** Called after modal close animation completes - use to safely unmount parent */
+  onCloseComplete?: () => void;
+  /** Called when user selects a template - opens EditHabit with template data */
   onSelectTemplate: (template: HabitTemplate) => void;
-  /** Called when user taps "Add Habit" - adds directly without EditHabit */
-  onQuickAdd?: (template: HabitTemplate) => void;
 }
 
 /**
@@ -61,19 +61,6 @@ export interface TemplateCatalogModalProps {
 export interface TemplateCardProps {
   template: HabitTemplate;
   onPress: (template: HabitTemplate) => void;
-  isSelected?: boolean;
-}
-
-/**
- * Template preview props
- */
-export interface TemplatePreviewProps {
-  template: HabitTemplate;
-  onCustomize: () => void;
-  onQuickAdd: () => void;
-  onClose: () => void;
-  /** When true, hides the header (used when embedded in parent modal) */
-  embedded?: boolean;
 }
 
 /**

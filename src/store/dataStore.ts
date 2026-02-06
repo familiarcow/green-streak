@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import DataExportService, { ImportResult } from '../services/DataExportService';
 import { getDatabase } from '../database';
-import { getNotificationService } from '../services';
+import { getNotificationService, getAchievementService } from '../services';
 import logger from '../utils/logger';
 
 interface DataState {
@@ -177,6 +177,15 @@ export const useDataStore = create<DataState>((set, get) => ({
 
         // Clear achievements in memory
         useAchievementsStore.setState({ achievements: [], stats: null, loading: false });
+
+        // Invalidate AchievementService cache
+        try {
+          const achievementService = getAchievementService();
+          achievementService.invalidateCache();
+          logger.debug('DATA', 'AchievementService cache invalidated');
+        } catch (cacheError) {
+          logger.warn('DATA', 'Failed to invalidate achievement cache', { error: cacheError });
+        }
 
         // Clear streaks in memory
         useStreaksStore.setState({ streaks: [], loading: false });

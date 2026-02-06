@@ -9,6 +9,8 @@ import { useSounds } from '../../hooks/useSounds';
 export interface BaseModalProps {
   isVisible: boolean;
   onClose: () => void;
+  /** Called after close animation completes - use this to safely unmount parent */
+  onCloseComplete?: () => void;
   children: React.ReactNode;
   closeOnBackdropPress?: boolean;
   animationType?: 'slide' | 'none';
@@ -26,6 +28,7 @@ export interface BaseModalProps {
 export const BaseModal: React.FC<BaseModalProps> = ({
   isVisible,
   onClose,
+  onCloseComplete,
   children,
   closeOnBackdropPress = true,
   animationType = 'slide',
@@ -43,6 +46,8 @@ export const BaseModal: React.FC<BaseModalProps> = ({
   // State to track when modal should be rendered (for exit animation)
   const [isModalVisible, setIsModalVisible] = useState(false);
   const isAnimating = useRef(false);
+  // Track if modal was ever visible (to detect close transition)
+  const wasVisible = useRef(false);
 
   // Animate in when modal becomes visible
   useEffect(() => {
@@ -103,6 +108,18 @@ export const BaseModal: React.FC<BaseModalProps> = ({
       setIsModalVisible(false);
     });
   };
+
+  // Event-driven: Call onCloseComplete when modal finishes closing
+  // This fires after React commits the state update (isModalVisible: true -> false)
+  useEffect(() => {
+    if (isModalVisible) {
+      wasVisible.current = true;
+    } else if (wasVisible.current) {
+      // Modal just closed - was visible, now isn't
+      wasVisible.current = false;
+      onCloseComplete?.();
+    }
+  }, [isModalVisible, onCloseComplete]);
 
   // Handle backdrop press
   const handleBackdropPress = () => {

@@ -11,7 +11,6 @@ import { Icon } from '../common/Icon';
 import { colors, textStyles, spacing } from '../../theme';
 import { radiusValues } from '../../theme/utils';
 import { TemplateCardProps } from '../../types/templates';
-import { useSounds } from '../../hooks/useSounds';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_GAP = spacing[3];
@@ -20,26 +19,15 @@ const CARD_PADDING = spacing[4];
 const CARD_WIDTH = (SCREEN_WIDTH - CARD_PADDING * 2 - CARD_GAP) / 2;
 
 export const TemplateCard: React.FC<TemplateCardProps> = React.memo(
-  ({ template, onPress, isSelected = false }) => {
-    const { playRandomTap } = useSounds();
-
-    const handlePress = () => {
-      playRandomTap();
-      onPress(template);
-    };
-
+  ({ template, onPress }) => {
     return (
       <TouchableOpacity
-        style={[
-          styles.container,
-          isSelected && styles.containerSelected,
-        ]}
-        onPress={handlePress}
+        style={styles.container}
+        onPress={() => onPress(template)}
         activeOpacity={0.7}
         accessible={true}
         accessibilityRole="button"
         accessibilityLabel={`${template.name} template`}
-        accessibilityState={{ selected: isSelected }}
       >
         {/* Icon Container with colored background */}
         <View style={[styles.iconContainer, { backgroundColor: `${template.color}15` }]}>
@@ -75,11 +63,6 @@ const styles = StyleSheet.create({
     elevation: 2,
     overflow: 'hidden',
     position: 'relative',
-  },
-  containerSelected: {
-    backgroundColor: colors.accent.light,
-    borderWidth: 2,
-    borderColor: colors.primary,
   },
   iconContainer: {
     width: 64,

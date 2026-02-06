@@ -75,53 +75,6 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
     }
   }, [notificationSettings, updateNotificationSettings, playToggle]);
 
-  // Handle quick add from template - creates task directly without customization
-  const handleQuickAddTemplate = useCallback(async (template: HabitTemplate) => {
-    logger.debug('UI', 'Quick adding template', { templateId: template.id, name: template.name });
-
-    try {
-      const { suggestedSettings } = template;
-
-      const taskData = {
-        name: template.name,
-        description: template.description,
-        icon: template.icon,
-        color: template.color,
-        isMultiCompletion: false,
-        reminderEnabled: !!suggestedSettings.reminderTime,
-        reminderTime: suggestedSettings.reminderTime,
-        reminderFrequency: suggestedSettings.reminderFrequency || 'daily',
-        streakEnabled: suggestedSettings.streakEnabled,
-        streakSkipWeekends: suggestedSettings.streakSkipWeekends || false,
-        streakMinimumCount: suggestedSettings.streakMinimumCount || 1,
-      };
-
-      const newTask = await createTask(taskData);
-      logger.info('UI', 'Task created from template (quick add)', { taskId: newTask.id, name: newTask.name });
-
-      // Play success sound
-      playCelebration();
-
-      // Check for task creation achievements
-      try {
-        await checkForAchievements({
-          trigger: 'task_created',
-          taskId: newTask.id,
-        });
-      } catch (error) {
-        logger.warn('UI', 'Failed to check achievements after quick add', { error });
-      }
-
-      // Close template catalog - onTaskAdded will close the edit modal
-      setShowTemplateCatalog(false);
-      onTaskAdded();
-    } catch (error) {
-      logger.error('UI', 'Failed to quick add template', { error, templateId: template.id });
-      playCaution();
-      Alert.alert('Error', 'Failed to add habit. Please try again.');
-    }
-  }, [createTask, checkForAchievements, playCelebration, playCaution, onTaskAdded, onClose]);
-
   // Handle template selection - populate form with template data
   const handleSelectTemplate = useCallback((template: HabitTemplate) => {
     logger.debug('UI', 'Template selected', { templateId: template.id, name: template.name });
@@ -744,7 +697,6 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
         visible={showTemplateCatalog}
         onClose={() => setShowTemplateCatalog(false)}
         onSelectTemplate={handleSelectTemplate}
-        onQuickAdd={handleQuickAddTemplate}
       />
 
       {/* Icon Picker Modal */}
