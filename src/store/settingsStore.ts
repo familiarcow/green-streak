@@ -40,6 +40,7 @@ interface SettingsState extends AppSettings {
   setDebugLogging: (enabled: boolean) => void;
   setLogLevel: (level: AppSettings['currentLogLevel']) => void;
   setCalendarColor: (color: string) => void;
+  setSoundEffectsEnabled: (enabled: boolean) => void;
   exportSettings: () => string;
   resetSettings: () => Promise<void>;
 
@@ -92,6 +93,7 @@ const defaultSettings: AppSettings = {
   currentLogLevel: 'WARN',
   notificationSettings: defaultNotificationSettings,
   calendarColor: DEFAULT_CALENDAR_COLOR,
+  soundEffectsEnabled: true,
 };
 
 export const useSettingsStore = create<SettingsState>()(
@@ -239,6 +241,24 @@ export const useSettingsStore = create<SettingsState>()(
           logger.info('STATE', 'Calendar color updated', { color });
         } catch (error) {
           logger.error('STATE', 'Failed to set calendar color', { error, color });
+        }
+      },
+
+      setSoundEffectsEnabled: (enabled: boolean) => {
+        try {
+          set({ soundEffectsEnabled: enabled });
+
+          // Sync with SoundEffectsService
+          try {
+            const soundService = getSoundService();
+            soundService.setSoundEnabled(enabled);
+          } catch (soundError) {
+            logger.debug('STATE', 'Sound service not available for settings sync', { error: soundError });
+          }
+
+          logger.info('STATE', 'Sound effects enabled updated', { enabled });
+        } catch (error) {
+          logger.error('STATE', 'Failed to set sound effects enabled', { error, enabled });
         }
       },
 
@@ -439,6 +459,7 @@ export const useSettingsStore = create<SettingsState>()(
         currentLogLevel: state.currentLogLevel,
         notificationSettings: state.notificationSettings,
         calendarColor: state.calendarColor,
+        soundEffectsEnabled: state.soundEffectsEnabled,
       }),
     }
   )
@@ -463,6 +484,7 @@ export const initializeSettings = async () => {
     try {
       const soundService = getSoundService();
       const globalSettings = settingsStore.notificationSettings?.global;
+      // Sync notification sounds and haptics
       soundService.setSoundEnabled(globalSettings?.soundEnabled ?? true);
       soundService.setHapticEnabled(globalSettings?.vibrationEnabled ?? true);
     } catch (soundError) {

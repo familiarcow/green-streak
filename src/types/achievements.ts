@@ -21,7 +21,7 @@ export type AchievementCategory =
 export type ConfettiType = false | 'burst' | 'fireworks' | 'rain';
 
 // Sound effect types for achievements
-export type AchievementSoundType = 'success' | 'milestone' | 'streak' | 'none';
+export type AchievementSoundType = 'celebration' | 'achievement' | 'none';
 
 // Achievement trigger types
 export type AchievementTrigger =

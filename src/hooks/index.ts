@@ -15,3 +15,4 @@ export { useAccentColor } from './useAccentColor';
 export { useColorName } from './useColorName';
 export { useWidgetSync } from './useWidgetSync';
 export { useDeepLinks } from './useDeepLinks';
+export { useSounds } from './useSounds';

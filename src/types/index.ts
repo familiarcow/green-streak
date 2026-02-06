@@ -80,6 +80,7 @@ export interface AppSettings {
   currentLogLevel: LogLevel;
   notificationSettings?: NotificationSettings; // Smart notification settings
   calendarColor?: string; // Custom calendar/contribution graph color (default: #22c55e)
+  soundEffectsEnabled?: boolean; // Enable/disable in-app sound effects (default: true)
 }
 
 // Re-export notification types
