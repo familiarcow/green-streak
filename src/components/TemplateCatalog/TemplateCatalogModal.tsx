@@ -33,6 +33,7 @@ export const TemplateCatalogModal: React.FC<TemplateCatalogModalProps> = ({
   visible,
   onClose,
   onSelectTemplate,
+  onQuickAdd,
 }) => {
   const {
     searchQuery,
@@ -70,9 +71,14 @@ export const TemplateCatalogModal: React.FC<TemplateCatalogModalProps> = ({
       setShowPreview(false);
       setSelectedTemplate(null);
       clearFilters();
-      onSelectTemplate(template);
+      // Use onQuickAdd if provided, otherwise fall back to onSelectTemplate
+      if (onQuickAdd) {
+        onQuickAdd(template);
+      } else {
+        onSelectTemplate(template);
+      }
     }
-  }, [selectedTemplate, onSelectTemplate, clearFilters]);
+  }, [selectedTemplate, onSelectTemplate, onQuickAdd, clearFilters]);
 
   const handleClosePreview = useCallback(() => {
     setShowPreview(false);

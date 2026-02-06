@@ -49,7 +49,10 @@ export interface HabitTemplate {
 export interface TemplateCatalogModalProps {
   visible: boolean;
   onClose: () => void;
+  /** Called when user taps "Customize" - opens EditHabit with template */
   onSelectTemplate: (template: HabitTemplate) => void;
+  /** Called when user taps "Add Habit" - adds directly without EditHabit */
+  onQuickAdd?: (template: HabitTemplate) => void;
 }
 
 /**
