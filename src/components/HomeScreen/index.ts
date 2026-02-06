@@ -5,3 +5,4 @@ export { default as EmptyStateSection } from './EmptyStateSection';
 export { default as TasksSection } from './TasksSection';
 export { StreakBadge } from './StreakBadge';
 export { StreaksSection } from './StreaksSection';
+export { AppFeedbackCard } from './AppFeedbackCard';

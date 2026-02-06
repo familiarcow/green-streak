@@ -1,15 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ScrollView, 
-  TouchableOpacity, 
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
   Switch,
-  Alert
+  Alert,
+  Linking
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Constants from 'expo-constants';
+import * as StoreReview from 'expo-store-review';
 import { Icon } from '../components/common/Icon';
 import { ColorPickerModal } from '../components/ColorPicker/ColorPickerModal';
 import { CalendarColorPreview } from '../components/CalendarColorPreview';
@@ -276,6 +278,47 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
     '13:00', '14:00', '15:00', '16:00', '17:00', '18:00',
     '19:00', '20:00', '21:00', '22:00', '23:00'
   ];
+
+  // Support section handlers
+  const handleRateApp = useCallback(async () => {
+    try {
+      const isAvailable = await StoreReview.isAvailableAsync();
+      if (isAvailable) {
+        await StoreReview.requestReview();
+        logger.info('UI', 'Store review requested from settings');
+      } else {
+        const storeUrl = StoreReview.storeUrl();
+        if (storeUrl) {
+          await Linking.openURL(storeUrl);
+        } else {
+          Alert.alert('Not Available', 'Store reviews are not available on this device.');
+        }
+      }
+    } catch (error) {
+      logger.error('UI', 'Failed to open store review', { error });
+      Alert.alert('Error', 'Could not open the App Store. Please try again later.');
+    }
+  }, []);
+
+  const handleSendFeedback = useCallback(async () => {
+    const email = 'familiarcow@proton.me';
+    const subject = 'Green Streak Feedback';
+    const body = `Hi! I'd like to share some feedback about Green Streak:\n\n`;
+    const mailtoUrl = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+
+    try {
+      const canOpen = await Linking.canOpenURL(mailtoUrl);
+      if (canOpen) {
+        await Linking.openURL(mailtoUrl);
+        logger.info('UI', 'Feedback email opened from settings');
+      } else {
+        Alert.alert('Send Feedback', `Please email your feedback to:\n\n${email}`, [{ text: 'OK' }]);
+      }
+    } catch (error) {
+      logger.error('UI', 'Failed to open email', { error });
+      Alert.alert('Send Feedback', `Please email your feedback to:\n\n${email}`, [{ text: 'OK' }]);
+    }
+  }, []);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -953,6 +996,35 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
           )}
         </View>
 
+        {/* Support Section */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Support</Text>
+          </View>
+
+          <View style={styles.supportButtonRow}>
+            <TouchableOpacity
+              style={styles.supportButton}
+              onPress={handleRateApp}
+              accessibilityRole="button"
+              accessibilityLabel="Rate the app"
+            >
+              <Icon name="star" size={20} color={accentColor} />
+              <Text style={styles.supportButtonText}>Rate the App</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.supportButton}
+              onPress={handleSendFeedback}
+              accessibilityRole="button"
+              accessibilityLabel="Send feedback"
+            >
+              <Icon name="mail" size={20} color={accentColor} />
+              <Text style={styles.supportButtonText}>Send Feedback</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
         <View style={styles.footer}>
           <Text style={styles.footerText}>
             Green Streak v{Constants.expoConfig?.version || '1.0.0'}
@@ -1301,6 +1373,29 @@ const styles = StyleSheet.create({
   
   fadeIn: {
     opacity: 1,
+  },
+
+  supportButtonRow: {
+    flexDirection: 'row',
+    gap: spacing[3],
+  },
+
+  supportButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing[2],
+    padding: spacing[3],
+    backgroundColor: colors.surface,
+    borderRadius: radiusValues.box,
+    ...shadows.sm,
+  },
+
+  supportButtonText: {
+    ...textStyles.body,
+    color: colors.text.primary,
+    fontWeight: '500',
   },
 });
 

@@ -119,6 +119,8 @@ export const ICON_CATEGORY_MAP: Record<IconName, string> = {
   smile: 'social',
   handshake: 'social',
   music: 'social',
+  'thumbs-up': 'social',
+  'thumbs-down': 'social',
   // Other icons
   star: 'other',
   flag: 'other',

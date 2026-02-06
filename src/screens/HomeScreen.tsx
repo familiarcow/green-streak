@@ -5,7 +5,7 @@ import { ContributionGraph } from '../components/ContributionGraph';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { ScreenErrorBoundary } from '../components/ScreenErrorBoundary';
 import { Icon } from '../components/common/Icon';
-import { TodayCard, EmptyStateSection, TasksSection } from '../components/HomeScreen';
+import { TodayCard, EmptyStateSection, TasksSection, AppFeedbackCard } from '../components/HomeScreen';
 import { BaseModal } from '../components/modals';
 import { useTasksStore } from '../store/tasksStore';
 import { useLogsStore } from '../store/logsStore';
@@ -106,9 +106,15 @@ export const HomeScreen: React.FC = () => {
     [contributionData, selectedDate]
   );
 
-  const isLoading = useMemo(() => 
-    tasksLoading || logsLoading, 
+  const isLoading = useMemo(() =>
+    tasksLoading || logsLoading,
     [tasksLoading, logsLoading]
+  );
+
+  // Count days with activity for rating prompt
+  const activeDaysCount = useMemo(() =>
+    contributionData.filter(d => d.count > 0).length,
+    [contributionData]
   );
 
   // Event handlers
@@ -214,6 +220,11 @@ export const HomeScreen: React.FC = () => {
               onViewMore={handleDailyLogPress}
               onDateChange={handleDateChange}
             />
+          </ErrorBoundary>
+
+          {/* App Feedback Card - shown after 3+ days of activity */}
+          <ErrorBoundary>
+            <AppFeedbackCard activeDaysCount={activeDaysCount} />
           </ErrorBoundary>
 
           {/* Empty State */}

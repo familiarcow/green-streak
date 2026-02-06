@@ -33,7 +33,13 @@ const normalizeTime = (time: string): string => {
 // Default signature green for calendar
 export const DEFAULT_CALENDAR_COLOR = '#22c55e';
 
-interface SettingsState extends AppSettings {
+// Rating prompt state (not part of AppSettings, local to this store)
+interface RatingPromptState {
+  ratingPromptDismissedAt?: string;
+  ratingPromptDismissedPermanently: boolean;
+}
+
+interface SettingsState extends AppSettings, RatingPromptState {
   // Actions
   loadSettings: () => Promise<void>;
   updateGlobalReminder: (enabled: boolean, time?: string) => Promise<void>;
@@ -49,6 +55,11 @@ interface SettingsState extends AppSettings {
   updateDailyNotification: (settings: Partial<NotificationSettings['daily']>) => Promise<void>;
   updateStreakProtection: (settings: Partial<NotificationSettings['streaks']>) => Promise<void>;
   syncNotifications: () => Promise<void>;
+
+  // Rating prompt actions
+  dismissRatingPrompt: (permanently: boolean) => void;
+  shouldShowRatingPrompt: (activeDaysCount: number) => boolean;
+  resetRatingPrompt: () => void;
 }
 
 const defaultNotificationSettings: NotificationSettings = {
@@ -84,7 +95,7 @@ const defaultNotificationSettings: NotificationSettings = {
   },
 };
 
-const defaultSettings: AppSettings = {
+const defaultSettings: AppSettings & RatingPromptState = {
   // Legacy fields (deprecated - use notificationSettings.daily instead)
   // Kept for backward compatibility, will be migrated on load
   globalReminderEnabled: false,
@@ -94,6 +105,9 @@ const defaultSettings: AppSettings = {
   notificationSettings: defaultNotificationSettings,
   calendarColor: DEFAULT_CALENDAR_COLOR,
   soundEffectsEnabled: true,
+  // Rating prompt state
+  ratingPromptDismissedAt: undefined,
+  ratingPromptDismissedPermanently: false,
 };
 
 export const useSettingsStore = create<SettingsState>()(
@@ -449,6 +463,52 @@ export const useSettingsStore = create<SettingsState>()(
           throw error;
         }
       },
+
+      dismissRatingPrompt: (permanently: boolean) => {
+        if (permanently) {
+          set({ ratingPromptDismissedPermanently: true });
+          logger.info('STATE', 'Rating prompt dismissed permanently');
+        } else {
+          set({ ratingPromptDismissedAt: new Date().toISOString() });
+          logger.info('STATE', 'Rating prompt dismissed temporarily (5 days)');
+        }
+      },
+
+      shouldShowRatingPrompt: (activeDaysCount: number) => {
+        const state = get();
+
+        // Never show if permanently dismissed
+        if (state.ratingPromptDismissedPermanently) {
+          return false;
+        }
+
+        // Need at least 3 active days
+        if (activeDaysCount < 3) {
+          return false;
+        }
+
+        // Check if temporarily dismissed less than 5 days ago
+        if (state.ratingPromptDismissedAt) {
+          const dismissedDate = new Date(state.ratingPromptDismissedAt);
+          const now = new Date();
+          const daysSinceDismissed = Math.floor(
+            (now.getTime() - dismissedDate.getTime()) / (1000 * 60 * 60 * 24)
+          );
+          if (daysSinceDismissed < 5) {
+            return false;
+          }
+        }
+
+        return true;
+      },
+
+      resetRatingPrompt: () => {
+        set({
+          ratingPromptDismissedAt: undefined,
+          ratingPromptDismissedPermanently: false,
+        });
+        logger.info('STATE', 'Rating prompt reset');
+      },
     }),
     {
       name: 'green-streak-settings',
@@ -460,6 +520,8 @@ export const useSettingsStore = create<SettingsState>()(
         notificationSettings: state.notificationSettings,
         calendarColor: state.calendarColor,
         soundEffectsEnabled: state.soundEffectsEnabled,
+        ratingPromptDismissedAt: state.ratingPromptDismissedAt,
+        ratingPromptDismissedPermanently: state.ratingPromptDismissedPermanently,
       }),
     }
   )

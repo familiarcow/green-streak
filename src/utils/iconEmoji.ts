@@ -102,6 +102,8 @@ export const ICON_TO_EMOJI: Record<IconName, string> = {
   'smile': '😊',
   'handshake': '🤝',
   'music': '🎵',
+  'thumbs-up': '👍',
+  'thumbs-down': '👎',
   // Other icons
   'star': '⭐',
   'flag': '🚩',
