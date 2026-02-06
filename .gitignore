@@ -73,3 +73,7 @@ yarn-error.*
 # Temporary folders
 tmp/
 temp/
+
+# Local development
+.playwright-mcp/
+tasks/
