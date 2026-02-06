@@ -24,27 +24,27 @@ export const RARITY_COLORS: Record<AchievementRarity, string> = {
 export const RARITY_CELEBRATIONS: Record<AchievementRarity, AchievementCelebration> = {
   common: {
     confetti: false,
-    sound: 'success',
+    sound: 'achievement',
     toastDuration: 3000,
   },
   uncommon: {
     confetti: false,
-    sound: 'success',
+    sound: 'achievement',
     toastDuration: 3500,
   },
   rare: {
     confetti: 'burst',
-    sound: 'milestone',
+    sound: 'achievement',
     toastDuration: 4000,
   },
   epic: {
     confetti: 'fireworks',
-    sound: 'milestone',
+    sound: 'achievement',
     toastDuration: 5000,
   },
   legendary: {
     confetti: 'rain',
-    sound: 'milestone',
+    sound: 'achievement',
     toastDuration: 6000,
   },
 };

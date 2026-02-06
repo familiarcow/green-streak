@@ -255,7 +255,8 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
         logger.warn('UI', 'Failed to check achievements after quick add', { error });
       }
 
-      setShowTemplateCatalog(false);
+      // Don't manually close the modal - calling onComplete will unmount OnboardingScreen
+      // which will unmount the modal. Calling both causes a race condition.
       onComplete(false); // false because task is already created, no need to open EditTask
     } catch (error) {
       logger.error('UI', 'Failed to quick add template during onboarding', { error });
