@@ -1,21 +1,26 @@
 /**
  * TemplateCard Component
  *
- * Displays a single habit template in the catalog grid.
+ * Displays a single habit template in a grid layout.
+ * Features a large centered icon with the template name below.
  */
 
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
 import { Icon } from '../common/Icon';
 import { colors, textStyles, spacing } from '../../theme';
 import { radiusValues } from '../../theme/utils';
 import { TemplateCardProps } from '../../types/templates';
-import { getCategoryInfo } from '../../data/habitTemplates';
 import { useSounds } from '../../hooks/useSounds';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const CARD_GAP = spacing[3];
+const CARD_PADDING = spacing[4];
+// Calculate card width for 2-column grid with gaps
+const CARD_WIDTH = (SCREEN_WIDTH - CARD_PADDING * 2 - CARD_GAP) / 2;
 
 export const TemplateCard: React.FC<TemplateCardProps> = React.memo(
   ({ template, onPress, isSelected = false }) => {
-    const categoryInfo = getCategoryInfo(template.category);
     const { playRandomTap } = useSounds();
 
     const handlePress = () => {
@@ -28,38 +33,26 @@ export const TemplateCard: React.FC<TemplateCardProps> = React.memo(
         style={[
           styles.container,
           isSelected && styles.containerSelected,
-          { borderLeftColor: template.color },
         ]}
         onPress={handlePress}
         activeOpacity={0.7}
         accessible={true}
         accessibilityRole="button"
-        accessibilityLabel={`${template.name} template. ${template.description}`}
+        accessibilityLabel={`${template.name} template`}
         accessibilityState={{ selected: isSelected }}
       >
-        {/* Icon */}
-        <View style={[styles.iconContainer, { backgroundColor: `${template.color}20` }]}>
-          <Icon name={template.icon} size={24} color={template.color} />
+        {/* Icon Container with colored background */}
+        <View style={[styles.iconContainer, { backgroundColor: `${template.color}15` }]}>
+          <Icon name={template.icon} size={32} color={template.color} />
         </View>
 
-        {/* Content */}
-        <View style={styles.content}>
-          <Text style={styles.name} numberOfLines={1}>
-            {template.name}
-          </Text>
-          <Text style={styles.description} numberOfLines={2}>
-            {template.description}
-          </Text>
+        {/* Template Name */}
+        <Text style={styles.name} numberOfLines={2}>
+          {template.name}
+        </Text>
 
-          {/* Category Badge */}
-          {categoryInfo && (
-            <View style={[styles.categoryBadge, { backgroundColor: `${categoryInfo.color}15` }]}>
-              <Text style={[styles.categoryText, { color: categoryInfo.color }]}>
-                {categoryInfo.name}
-              </Text>
-            </View>
-          )}
-        </View>
+        {/* Color accent bar at bottom */}
+        <View style={[styles.accentBar, { backgroundColor: template.color }]} />
       </TouchableOpacity>
     );
   }
@@ -67,56 +60,50 @@ export const TemplateCard: React.FC<TemplateCardProps> = React.memo(
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
+    width: CARD_WIDTH,
     backgroundColor: colors.surface,
     borderRadius: radiusValues.box,
-    padding: spacing[3],
-    marginBottom: spacing[3],
-    borderLeftWidth: 4,
+    padding: spacing[4],
+    marginBottom: CARD_GAP,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 120,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
+    overflow: 'hidden',
+    position: 'relative',
   },
   containerSelected: {
     backgroundColor: colors.accent.light,
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: colors.primary,
   },
   iconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: radiusValues.box,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: spacing[3],
-  },
-  content: {
-    flex: 1,
-    justifyContent: 'center',
+    marginBottom: spacing[3],
   },
   name: {
     ...textStyles.body,
     fontWeight: '600',
     color: colors.text.primary,
-    marginBottom: spacing[1],
+    textAlign: 'center',
+    lineHeight: 20,
   },
-  description: {
-    ...textStyles.bodySmall,
-    color: colors.text.secondary,
-    lineHeight: 18,
-    marginBottom: spacing[2],
-  },
-  categoryBadge: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: spacing[2],
-    paddingVertical: spacing[1] / 2,
-    borderRadius: spacing[1],
-  },
-  categoryText: {
-    fontSize: 11,
-    fontWeight: '500',
+  accentBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 3,
+    borderBottomLeftRadius: radiusValues.box,
+    borderBottomRightRadius: radiusValues.box,
   },
 });
 

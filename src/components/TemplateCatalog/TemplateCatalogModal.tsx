@@ -202,6 +202,8 @@ export const TemplateCatalogModal: React.FC<TemplateCatalogModalProps> = ({
                 data={filteredTemplates}
                 renderItem={renderTemplate}
                 keyExtractor={(item) => item.id}
+                numColumns={2}
+                columnWrapperStyle={styles.gridRow}
                 contentContainerStyle={styles.listContent}
                 showsVerticalScrollIndicator={false}
                 ListEmptyComponent={renderEmptyState}
@@ -297,6 +299,9 @@ const styles = StyleSheet.create({
   listContent: {
     paddingHorizontal: spacing[4],
     paddingBottom: spacing[4],
+  },
+  gridRow: {
+    justifyContent: 'space-between',
   },
   emptyState: {
     alignItems: 'center',
