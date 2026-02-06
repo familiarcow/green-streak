@@ -77,10 +77,20 @@ export const useDataStore = create<DataState>((set, get) => ({
       const result = await DataExportService.importData();
       
       if (result.success) {
-        set({ 
+        set({
           lastImportDate: new Date().toISOString(),
           isImporting: false,
         });
+
+        // Invalidate achievement cache since imported data may differ
+        try {
+          const achievementService = getAchievementService();
+          achievementService.invalidateCache();
+          logger.debug('DATA', 'AchievementService cache invalidated after import');
+        } catch (cacheError) {
+          logger.warn('DATA', 'Failed to invalidate achievement cache after import', { error: cacheError });
+        }
+
         logger.info('DATA', 'Data import completed successfully');
       } else {
         set({ isImporting: false });
