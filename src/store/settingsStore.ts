@@ -47,6 +47,7 @@ interface SettingsState extends AppSettings, RatingPromptState {
   setLogLevel: (level: AppSettings['currentLogLevel']) => void;
   setCalendarColor: (color: string) => void;
   setSoundEffectsEnabled: (enabled: boolean) => void;
+  setUse24HourFormat: (enabled: boolean) => void;
   exportSettings: () => string;
   resetSettings: () => Promise<void>;
 
@@ -105,6 +106,7 @@ const defaultSettings: AppSettings & RatingPromptState = {
   notificationSettings: defaultNotificationSettings,
   calendarColor: DEFAULT_CALENDAR_COLOR,
   soundEffectsEnabled: true,
+  use24HourFormat: false,
   // Rating prompt state
   ratingPromptDismissedAt: undefined,
   ratingPromptDismissedPermanently: false,
@@ -273,6 +275,15 @@ export const useSettingsStore = create<SettingsState>()(
           logger.info('STATE', 'Sound effects enabled updated', { enabled });
         } catch (error) {
           logger.error('STATE', 'Failed to set sound effects enabled', { error, enabled });
+        }
+      },
+
+      setUse24HourFormat: (enabled: boolean) => {
+        try {
+          set({ use24HourFormat: enabled });
+          logger.info('STATE', '24-hour format updated', { enabled });
+        } catch (error) {
+          logger.error('STATE', 'Failed to set 24-hour format', { error, enabled });
         }
       },
 
@@ -520,6 +531,7 @@ export const useSettingsStore = create<SettingsState>()(
         notificationSettings: state.notificationSettings,
         calendarColor: state.calendarColor,
         soundEffectsEnabled: state.soundEffectsEnabled,
+        use24HourFormat: state.use24HourFormat,
         ratingPromptDismissedAt: state.ratingPromptDismissedAt,
         ratingPromptDismissedPermanently: state.ratingPromptDismissedPermanently,
       }),
