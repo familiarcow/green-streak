@@ -26,6 +26,23 @@ When implementing features, always prefer using existing reusable components ove
 - Always import colors, typography, and spacing from `src/theme/`
 - Never use hardcoded color values - use `colors.primary`, `colors.text.secondary`, etc.
 
+### Liquid Glass Styling
+- **Always use `glassStyles` from `src/theme/glass.ts`** for cards, containers, and interactive elements
+- Available glass variants:
+  - `glassStyles.card` - Main glass card with prominent frosted effect (use for primary containers)
+  - `glassStyles.cardSubtle` - Subtle glass for nested elements within cards
+  - `glassStyles.button` - Glass effect for interactive buttons
+  - `glassStyles.buttonActive` - Active/selected state for buttons
+  - `glassStyles.overlay` - Glass overlay for modal backgrounds
+  - `glassStyles.shimmer` - Shimmer effect for loading states
+- **Switch/Toggle styling**: Use consistent track and thumb colors:
+  ```tsx
+  trackColor={{ false: colors.interactive.default, true: accentColor }}
+  thumbColor={colors.surface}
+  ```
+- **Never use plain opaque backgrounds** for settings cards or modal content - always apply glass effects
+- Glass effects create the "liquid" appearance through semi-transparent overlays (5-20% opacity) and subtle borders
+
 ## Architecture Patterns
 
 - Follow the layered architecture documented in `dev-docs/architecture.md`
