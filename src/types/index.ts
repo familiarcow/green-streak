@@ -37,6 +37,7 @@ export interface Task {
   reminderEnabled: boolean;
   reminderTime?: string;
   reminderFrequency?: 'daily' | 'weekly';
+  reminderDayOfWeek?: number; // 0 = Sunday, 1 = Monday, ... 6 = Saturday (for weekly reminders)
   reminderText?: string; // Custom notification body text
   streakEnabled?: boolean;
   streakSkipWeekends?: boolean;
@@ -81,6 +82,7 @@ export interface AppSettings {
   notificationSettings?: NotificationSettings; // Smart notification settings
   calendarColor?: string; // Custom calendar/contribution graph color (default: #22c55e)
   soundEffectsEnabled?: boolean; // Enable/disable in-app sound effects (default: true)
+  use24HourFormat?: boolean; // Use 24-hour time format instead of 12-hour AM/PM (default: false)
 }
 
 // Re-export notification types

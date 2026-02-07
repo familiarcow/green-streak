@@ -257,9 +257,13 @@ class NotificationService {
       const [hours, minutes] = time.split(':').map(Number);
       const identifier = `task-reminder-${task.id}`;
 
+      // For weekly frequency, use the task's reminderDayOfWeek (0=Sunday, 6=Saturday)
+      // expo-notifications CalendarTriggerInput uses 1=Sunday, 7=Saturday, so we need to add 1
+      const expoWeekday = ((task.reminderDayOfWeek ?? 1) + 1) % 7 || 7; // Convert 0-6 to 1-7
+
       const trigger: Notifications.NotificationTriggerInput = frequency === 'weekly' ? {
         type: 'calendar',
-        weekday: 1, // Monday
+        weekday: expoWeekday,
         hour: hours,
         minute: minutes,
         repeats: true,
@@ -295,6 +299,7 @@ class NotificationService {
         expoId,
         time,
         frequency,
+        ...(frequency === 'weekly' && { weekday: expoWeekday, dayOfWeek: task.reminderDayOfWeek }),
       });
 
       return expoId;

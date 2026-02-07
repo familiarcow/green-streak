@@ -69,9 +69,9 @@ export class TaskRepository implements ITaskRepository {
         INSERT INTO tasks (
           id, name, description, icon, color, is_multi_completion,
           created_at, reminder_enabled, reminder_time, reminder_frequency,
-          reminder_text, streak_enabled, streak_skip_weekends, streak_skip_days,
-          streak_minimum_count, sort_order
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          reminder_day_of_week, reminder_text, streak_enabled, streak_skip_weekends,
+          streak_skip_days, streak_minimum_count, sort_order
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
 
       await db.runAsync(
@@ -86,6 +86,7 @@ export class TaskRepository implements ITaskRepository {
         task.reminderEnabled ? 1 : 0,
         task.reminderTime || null,
         task.reminderFrequency || null,
+        task.reminderDayOfWeek ?? 1,
         task.reminderText || null,
         task.streakEnabled !== false ? 1 : 0,
         task.streakSkipWeekends ? 1 : 0,
@@ -154,8 +155,8 @@ export class TaskRepository implements ITaskRepository {
         UPDATE tasks SET
           name = ?, description = ?, icon = ?, color = ?,
           is_multi_completion = ?, reminder_enabled = ?,
-          reminder_time = ?, reminder_frequency = ?, reminder_text = ?,
-          streak_enabled = ?, streak_skip_weekends = ?,
+          reminder_time = ?, reminder_frequency = ?, reminder_day_of_week = ?,
+          reminder_text = ?, streak_enabled = ?, streak_skip_weekends = ?,
           streak_skip_days = ?, streak_minimum_count = ?
         WHERE id = ?
       `;
@@ -170,6 +171,7 @@ export class TaskRepository implements ITaskRepository {
         updatedTask.reminderEnabled ? 1 : 0,
         updatedTask.reminderTime || null,
         updatedTask.reminderFrequency || null,
+        updatedTask.reminderDayOfWeek ?? 1,
         updatedTask.reminderText || null,
         updatedTask.streakEnabled !== false ? 1 : 0,
         updatedTask.streakSkipWeekends ? 1 : 0,
@@ -248,6 +250,7 @@ export class TaskRepository implements ITaskRepository {
       reminderEnabled: Boolean(row.reminder_enabled),
       reminderTime: row.reminder_time,
       reminderFrequency: row.reminder_frequency,
+      reminderDayOfWeek: row.reminder_day_of_week ?? 1,
       reminderText: row.reminder_text,
       streakEnabled: row.streak_enabled !== null ? Boolean(row.streak_enabled) : true,
       streakSkipWeekends: Boolean(row.streak_skip_weekends),
