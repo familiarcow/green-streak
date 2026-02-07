@@ -37,6 +37,7 @@ export interface HabitTemplate {
   suggestedSettings: {
     reminderTime?: string;
     reminderFrequency?: 'daily' | 'weekly';
+    reminderText?: string;
     streakEnabled: boolean;
     streakSkipWeekends?: boolean;
     streakMinimumCount?: number;

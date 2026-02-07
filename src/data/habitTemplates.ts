@@ -71,6 +71,9 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     category: 'health-fitness',
     tags: ['exercise', 'workout', 'fitness', 'health', 'gym'],
     suggestedSettings: {
+      reminderTime: '07:00',
+      reminderFrequency: 'daily',
+      reminderText: "Your body's ready to move",
       streakEnabled: true,
       streakSkipWeekends: false,
       streakMinimumCount: 1,
@@ -85,6 +88,9 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     category: 'health-fitness',
     tags: ['water', 'hydration', 'health', 'drink'],
     suggestedSettings: {
+      reminderTime: '12:00',
+      reminderFrequency: 'daily',
+      reminderText: 'Stay hydrated',
       streakEnabled: true,
       streakSkipWeekends: false,
       streakMinimumCount: 1,
@@ -99,6 +105,9 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     category: 'health-fitness',
     tags: ['vitamins', 'supplements', 'health', 'medicine'],
     suggestedSettings: {
+      reminderTime: '08:00',
+      reminderFrequency: 'daily',
+      reminderText: 'Fuel for the day',
       streakEnabled: true,
       streakSkipWeekends: false,
       streakMinimumCount: 1,
@@ -113,6 +122,9 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     category: 'health-fitness',
     tags: ['walk', 'exercise', 'outdoors', 'steps'],
     suggestedSettings: {
+      reminderTime: '12:00',
+      reminderFrequency: 'daily',
+      reminderText: 'Fresh air awaits',
       streakEnabled: true,
       streakSkipWeekends: false,
       streakMinimumCount: 1,
@@ -127,6 +139,9 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     category: 'health-fitness',
     tags: ['stretch', 'flexibility', 'exercise', 'yoga', 'mobility'],
     suggestedSettings: {
+      reminderTime: '12:00',
+      reminderFrequency: 'daily',
+      reminderText: 'Time to loosen up',
       streakEnabled: true,
       streakSkipWeekends: true,
       streakMinimumCount: 1,
@@ -141,6 +156,9 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     category: 'health-fitness',
     tags: ['food', 'diet', 'nutrition', 'healthy', 'eating'],
     suggestedSettings: {
+      reminderTime: '12:00',
+      reminderFrequency: 'daily',
+      reminderText: 'Nourish yourself',
       streakEnabled: true,
       streakSkipWeekends: false,
       streakMinimumCount: 1,
@@ -155,6 +173,9 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     category: 'health-fitness',
     tags: ['sleep', 'rest', 'health', 'recovery', 'night'],
     suggestedSettings: {
+      reminderTime: '21:00',
+      reminderFrequency: 'daily',
+      reminderText: 'Wind down time',
       streakEnabled: true,
       streakSkipWeekends: false,
       streakMinimumCount: 1,
@@ -169,6 +190,9 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     category: 'health-fitness',
     tags: ['food', 'junk', 'snacks', 'health', 'avoid'],
     suggestedSettings: {
+      reminderTime: '18:00',
+      reminderFrequency: 'daily',
+      reminderText: "You've got this",
       streakEnabled: true,
       streakSkipWeekends: false,
       streakMinimumCount: 1,
@@ -187,6 +211,9 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     category: 'mindfulness',
     tags: ['meditation', 'mindfulness', 'calm', 'focus', 'zen'],
     suggestedSettings: {
+      reminderTime: '07:00',
+      reminderFrequency: 'daily',
+      reminderText: 'A moment of calm awaits',
       streakEnabled: true,
       streakSkipWeekends: false,
       streakMinimumCount: 1,
@@ -201,6 +228,9 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     category: 'mindfulness',
     tags: ['gratitude', 'journal', 'writing', 'positivity', 'reflection'],
     suggestedSettings: {
+      reminderTime: '21:00',
+      reminderFrequency: 'daily',
+      reminderText: 'What made today good?',
       streakEnabled: true,
       streakSkipWeekends: false,
       streakMinimumCount: 1,
@@ -215,6 +245,9 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     category: 'mindfulness',
     tags: ['breathing', 'stress', 'relax', 'mindfulness', 'calm'],
     suggestedSettings: {
+      reminderTime: '12:00',
+      reminderFrequency: 'daily',
+      reminderText: 'Pause and breathe',
       streakEnabled: true,
       streakSkipWeekends: true,
       streakMinimumCount: 1,
@@ -229,6 +262,9 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     category: 'mindfulness',
     tags: ['digital', 'screen', 'detox', 'break', 'technology'],
     suggestedSettings: {
+      reminderTime: '20:00',
+      reminderFrequency: 'daily',
+      reminderText: 'Unplug for a bit',
       streakEnabled: true,
       streakSkipWeekends: false,
       streakMinimumCount: 1,
@@ -243,6 +279,9 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     category: 'mindfulness',
     tags: ['reflection', 'review', 'mindfulness', 'journaling'],
     suggestedSettings: {
+      reminderTime: '21:00',
+      reminderFrequency: 'daily',
+      reminderText: 'How was your day?',
       streakEnabled: true,
       streakSkipWeekends: false,
       streakMinimumCount: 1,
@@ -257,6 +296,9 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     category: 'mindfulness',
     tags: ['walk', 'mindfulness', 'outdoors', 'awareness', 'nature'],
     suggestedSettings: {
+      reminderTime: '12:00',
+      reminderFrequency: 'daily',
+      reminderText: 'Walk with intention',
       streakEnabled: true,
       streakSkipWeekends: true,
       streakMinimumCount: 1,
@@ -271,6 +313,9 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     category: 'mindfulness',
     tags: ['social', 'media', 'limit', 'detox', 'focus'],
     suggestedSettings: {
+      reminderTime: '09:00',
+      reminderFrequency: 'daily',
+      reminderText: 'Stay present today',
       streakEnabled: true,
       streakSkipWeekends: false,
       streakMinimumCount: 1,
@@ -285,6 +330,9 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     category: 'mindfulness',
     tags: ['affirmation', 'positive', 'self-care', 'motivation', 'mindset'],
     suggestedSettings: {
+      reminderTime: '08:00',
+      reminderFrequency: 'daily',
+      reminderText: "You've got this",
       streakEnabled: true,
       streakSkipWeekends: false,
       streakMinimumCount: 1,
@@ -303,6 +351,9 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     category: 'productivity',
     tags: ['reading', 'books', 'learning', 'knowledge', 'education'],
     suggestedSettings: {
+      reminderTime: '21:00',
+      reminderFrequency: 'daily',
+      reminderText: 'Your book is waiting',
       streakEnabled: true,
       streakSkipWeekends: false,
       streakMinimumCount: 1,
@@ -317,6 +368,9 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     category: 'productivity',
     tags: ['learning', 'skill', 'education', 'growth', 'development'],
     suggestedSettings: {
+      reminderTime: '19:00',
+      reminderFrequency: 'daily',
+      reminderText: 'Curiosity time',
       streakEnabled: true,
       streakSkipWeekends: true,
       streakMinimumCount: 1,
@@ -331,6 +385,9 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     category: 'productivity',
     tags: ['planning', 'tasks', 'organization', 'productivity', 'tomorrow'],
     suggestedSettings: {
+      reminderTime: '21:00',
+      reminderFrequency: 'daily',
+      reminderText: 'Set yourself up for success',
       streakEnabled: true,
       streakSkipWeekends: true,
       streakMinimumCount: 1,
@@ -345,6 +402,9 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     category: 'productivity',
     tags: ['procrastination', 'focus', 'productivity', 'tasks', 'action'],
     suggestedSettings: {
+      reminderTime: '09:00',
+      reminderFrequency: 'daily',
+      reminderText: 'One step at a time',
       streakEnabled: true,
       streakSkipWeekends: true,
       streakMinimumCount: 1,
@@ -359,6 +419,9 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     category: 'productivity',
     tags: ['focus', 'deep work', 'concentration', 'productivity', 'work'],
     suggestedSettings: {
+      reminderTime: '10:00',
+      reminderFrequency: 'daily',
+      reminderText: 'Deep work mode',
       streakEnabled: true,
       streakSkipWeekends: true,
       streakMinimumCount: 1,
@@ -373,6 +436,9 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     category: 'productivity',
     tags: ['email', 'inbox', 'organization', 'productivity', 'communication'],
     suggestedSettings: {
+      reminderTime: '17:00',
+      reminderFrequency: 'daily',
+      reminderText: 'Clear the inbox',
       streakEnabled: true,
       streakSkipWeekends: true,
       streakMinimumCount: 1,
@@ -387,6 +453,9 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     category: 'productivity',
     tags: ['goals', 'review', 'progress', 'tracking', 'achievement'],
     suggestedSettings: {
+      reminderTime: '20:00',
+      reminderFrequency: 'daily',
+      reminderText: 'Check in with your goals',
       streakEnabled: true,
       streakSkipWeekends: false,
       streakMinimumCount: 1,
@@ -401,6 +470,9 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     category: 'productivity',
     tags: ['practice', 'skill', 'improvement', 'mastery', 'learning'],
     suggestedSettings: {
+      reminderTime: '19:00',
+      reminderFrequency: 'daily',
+      reminderText: 'Time to level up',
       streakEnabled: true,
       streakSkipWeekends: true,
       streakMinimumCount: 1,
@@ -419,6 +491,9 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     category: 'lifestyle',
     tags: ['family', 'call', 'connection', 'relationships', 'communication'],
     suggestedSettings: {
+      reminderTime: '19:00',
+      reminderFrequency: 'daily',
+      reminderText: 'Someone would love to hear from you',
       streakEnabled: true,
       streakSkipWeekends: false,
       streakMinimumCount: 1,
@@ -433,6 +508,9 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     category: 'lifestyle',
     tags: ['cleaning', 'organization', 'home', 'tidy', 'space'],
     suggestedSettings: {
+      reminderTime: '10:00',
+      reminderFrequency: 'daily',
+      reminderText: 'A tidy space, a clear mind',
       streakEnabled: true,
       streakSkipWeekends: false,
       streakMinimumCount: 1,
@@ -447,6 +525,9 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     category: 'lifestyle',
     tags: ['music', 'practice', 'instrument', 'hobby', 'creativity'],
     suggestedSettings: {
+      reminderTime: '18:00',
+      reminderFrequency: 'daily',
+      reminderText: 'Make some music',
       streakEnabled: true,
       streakSkipWeekends: true,
       streakMinimumCount: 1,
@@ -461,6 +542,9 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     category: 'lifestyle',
     tags: ['morning', 'routine', 'ritual', 'start', 'day'],
     suggestedSettings: {
+      reminderTime: '07:00',
+      reminderFrequency: 'daily',
+      reminderText: 'Start the day right',
       streakEnabled: true,
       streakSkipWeekends: false,
       streakMinimumCount: 1,
@@ -475,6 +559,9 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     category: 'lifestyle',
     tags: ['skincare', 'routine', 'self-care', 'beauty', 'health'],
     suggestedSettings: {
+      reminderTime: '21:00',
+      reminderFrequency: 'daily',
+      reminderText: 'Take care of yourself',
       streakEnabled: true,
       streakSkipWeekends: false,
       streakMinimumCount: 1,
@@ -489,6 +576,9 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     category: 'lifestyle',
     tags: ['budget', 'money', 'finance', 'spending', 'tracking'],
     suggestedSettings: {
+      reminderTime: '20:00',
+      reminderFrequency: 'daily',
+      reminderText: 'Quick money check-in',
       streakEnabled: true,
       streakSkipWeekends: true,
       streakMinimumCount: 1,
@@ -503,6 +593,9 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     category: 'lifestyle',
     tags: ['alcohol', 'sober', 'health', 'lifestyle', 'avoid'],
     suggestedSettings: {
+      reminderTime: '18:00',
+      reminderFrequency: 'daily',
+      reminderText: 'Clear head tonight',
       streakEnabled: true,
       streakSkipWeekends: false,
       streakMinimumCount: 1,
@@ -517,6 +610,9 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     category: 'lifestyle',
     tags: ['cooking', 'food', 'home', 'health', 'savings'],
     suggestedSettings: {
+      reminderTime: '18:00',
+      reminderFrequency: 'daily',
+      reminderText: 'Time to cook something good',
       streakEnabled: true,
       streakSkipWeekends: false,
       streakMinimumCount: 1,
@@ -531,6 +627,9 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     category: 'lifestyle',
     tags: ['smoking', 'quit', 'health', 'stop', 'cigarettes', 'tobacco'],
     suggestedSettings: {
+      reminderTime: '09:00',
+      reminderFrequency: 'daily',
+      reminderText: 'Breathe easy today',
       streakEnabled: true,
       streakSkipWeekends: false,
       streakMinimumCount: 1,
@@ -545,6 +644,9 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     category: 'lifestyle',
     tags: ['drugs', 'quit', 'health', 'stop', 'sober', 'clean'],
     suggestedSettings: {
+      reminderTime: '18:00',
+      reminderFrequency: 'daily',
+      reminderText: 'Stay sharp',
       streakEnabled: true,
       streakSkipWeekends: false,
       streakMinimumCount: 1,
@@ -559,6 +661,9 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     category: 'lifestyle',
     tags: ['adult', 'quit', 'health', 'stop', 'nofap', 'mental health'],
     suggestedSettings: {
+      reminderTime: '21:00',
+      reminderFrequency: 'daily',
+      reminderText: 'Stay focused',
       streakEnabled: true,
       streakSkipWeekends: false,
       streakMinimumCount: 1,
@@ -573,6 +678,9 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     category: 'lifestyle',
     tags: ['friend', 'call', 'connection', 'social', 'relationships'],
     suggestedSettings: {
+      reminderTime: '19:00',
+      reminderFrequency: 'daily',
+      reminderText: 'Reach out to someone',
       streakEnabled: true,
       streakSkipWeekends: false,
       streakMinimumCount: 1,
@@ -587,6 +695,9 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     category: 'lifestyle',
     tags: ['talk', 'conversation', 'social', 'connection', 'communication'],
     suggestedSettings: {
+      reminderTime: '19:00',
+      reminderFrequency: 'daily',
+      reminderText: 'Connection time',
       streakEnabled: true,
       streakSkipWeekends: false,
       streakMinimumCount: 1,
