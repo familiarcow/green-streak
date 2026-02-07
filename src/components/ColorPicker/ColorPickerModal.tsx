@@ -63,7 +63,7 @@ export const ColorPickerModal: React.FC<ColorPickerModalProps> = ({
   const [value, setValue] = useState(initialHsv.v);
   const [currentColor, setCurrentColor] = useState(selectedColor);
 
-  const { playRandomTap } = useSounds();
+  const { playRandomTap, playRandomType } = useSounds();
 
   // Reset state when modal opens with new color
   useEffect(() => {
@@ -205,6 +205,7 @@ export const ColorPickerModal: React.FC<ColorPickerModalProps> = ({
               <HueBar
                 hue={hue}
                 onHueChange={handleHueChange}
+                onDragSound={playRandomType}
                 width={HUE_BAR_WIDTH}
                 height={32}
               />
@@ -218,6 +219,7 @@ export const ColorPickerModal: React.FC<ColorPickerModalProps> = ({
                   saturation={saturation}
                   value={value}
                   onSaturationValueChange={handleSaturationValueChange}
+                  onDragSound={playRandomType}
                   size={PICKER_SIZE}
                 />
               </View>

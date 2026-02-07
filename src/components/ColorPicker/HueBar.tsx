@@ -5,7 +5,7 @@
  * Displays a rainbow gradient and allows dragging to select.
  */
 
-import React from 'react';
+import React, { useCallback } from 'react';
 import { View, StyleSheet } from 'react-native';
 import Svg, { Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
 import Animated, {
@@ -19,21 +19,32 @@ import { colors, shadows, spacing } from '../../theme';
 interface HueBarProps {
   hue: number;
   onHueChange: (hue: number) => void;
+  onDragSound?: () => void;
   width?: number;
   height?: number;
   testID?: string;
 }
+
+const SOUND_THROTTLE_MS = 80;
 
 const THUMB_SIZE = 24;
 
 export const HueBar: React.FC<HueBarProps> = ({
   hue,
   onHueChange,
+  onDragSound,
   width = 280,
   height = 32,
   testID,
 }) => {
   const thumbPosition = useSharedValue((hue / 360) * width);
+  const lastSoundTime = useSharedValue(0);
+
+  const playDragSound = React.useCallback(() => {
+    if (onDragSound) {
+      onDragSound();
+    }
+  }, [onDragSound]);
 
   // Update thumb when hue prop changes externally
   // Note: thumbPosition is a stable Reanimated shared value ref, not a dependency
@@ -42,11 +53,11 @@ export const HueBar: React.FC<HueBarProps> = ({
     thumbPosition.value = (hue / 360) * width;
   }, [hue, width]);
 
-  const updateHue = (x: number) => {
+  const updateHue = useCallback((x: number) => {
     const clampedX = Math.max(0, Math.min(width, x));
     const newHue = (clampedX / width) * 360;
     onHueChange(newHue);
-  };
+  }, [width, onHueChange]);
 
   const gesture = Gesture.Pan()
     .onBegin((event) => {
@@ -54,12 +65,24 @@ export const HueBar: React.FC<HueBarProps> = ({
       const newX = Math.max(0, Math.min(width, event.x));
       thumbPosition.value = newX;
       runOnJS(updateHue)(event.x);
+      // Play sound on drag start
+      const now = Date.now();
+      if (now - lastSoundTime.value > SOUND_THROTTLE_MS) {
+        lastSoundTime.value = now;
+        runOnJS(playDragSound)();
+      }
     })
     .onUpdate((event) => {
       'worklet';
       const newX = Math.max(0, Math.min(width, event.x));
       thumbPosition.value = newX;
       runOnJS(updateHue)(event.x);
+      // Play throttled sound during drag
+      const now = Date.now();
+      if (now - lastSoundTime.value > SOUND_THROTTLE_MS) {
+        lastSoundTime.value = now;
+        runOnJS(playDragSound)();
+      }
     });
 
   const thumbAnimatedStyle = useAnimatedStyle(() => ({

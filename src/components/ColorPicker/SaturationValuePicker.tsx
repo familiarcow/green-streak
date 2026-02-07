@@ -5,7 +5,7 @@
  * Shows a gradient from the base hue color.
  */
 
-import React from 'react';
+import React, { useCallback } from 'react';
 import { View, StyleSheet } from 'react-native';
 import Svg, { Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
 import Animated, {
@@ -22,9 +22,12 @@ interface SaturationValuePickerProps {
   saturation: number;
   value: number;
   onSaturationValueChange: (saturation: number, value: number) => void;
+  onDragSound?: () => void;
   size?: number;
   testID?: string;
 }
+
+const SOUND_THROTTLE_MS = 80;
 
 const THUMB_SIZE = 28;
 
@@ -33,11 +36,19 @@ export const SaturationValuePicker: React.FC<SaturationValuePickerProps> = ({
   saturation,
   value,
   onSaturationValueChange,
+  onDragSound,
   size = 240,
   testID,
 }) => {
   const thumbX = useSharedValue(saturation * size);
   const thumbY = useSharedValue((1 - value) * size);
+  const lastSoundTime = useSharedValue(0);
+
+  const playDragSound = React.useCallback(() => {
+    if (onDragSound) {
+      onDragSound();
+    }
+  }, [onDragSound]);
 
   // Update thumb when props change externally
   // Note: thumbX/thumbY are stable Reanimated shared value refs, not dependencies
@@ -47,13 +58,13 @@ export const SaturationValuePicker: React.FC<SaturationValuePickerProps> = ({
     thumbY.value = (1 - value) * size;
   }, [saturation, value, size]);
 
-  const updateSaturationValue = (x: number, y: number) => {
+  const updateSaturationValue = useCallback((x: number, y: number) => {
     const clampedX = Math.max(0, Math.min(size, x));
     const clampedY = Math.max(0, Math.min(size, y));
     const newSaturation = clampedX / size;
     const newValue = 1 - clampedY / size;
     onSaturationValueChange(newSaturation, newValue);
-  };
+  }, [size, onSaturationValueChange]);
 
   const gesture = Gesture.Pan()
     .onBegin((event) => {
@@ -63,6 +74,12 @@ export const SaturationValuePicker: React.FC<SaturationValuePickerProps> = ({
       thumbX.value = newX;
       thumbY.value = newY;
       runOnJS(updateSaturationValue)(event.x, event.y);
+      // Play sound on drag start
+      const now = Date.now();
+      if (now - lastSoundTime.value > SOUND_THROTTLE_MS) {
+        lastSoundTime.value = now;
+        runOnJS(playDragSound)();
+      }
     })
     .onUpdate((event) => {
       'worklet';
@@ -71,6 +88,12 @@ export const SaturationValuePicker: React.FC<SaturationValuePickerProps> = ({
       thumbX.value = newX;
       thumbY.value = newY;
       runOnJS(updateSaturationValue)(event.x, event.y);
+      // Play throttled sound during drag
+      const now = Date.now();
+      if (now - lastSoundTime.value > SOUND_THROTTLE_MS) {
+        lastSoundTime.value = now;
+        runOnJS(playDragSound)();
+      }
     });
 
   const thumbAnimatedStyle = useAnimatedStyle(() => ({
