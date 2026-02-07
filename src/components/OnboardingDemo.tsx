@@ -258,27 +258,6 @@ export const OnboardingDemo: React.FC = () => {
         ))}
       </Animated.View>
 
-      {/* Time period selector (static, just for visuals) */}
-      <View style={styles.periodSelector}>
-        <View style={[styles.periodButton, styles.periodButtonActive]}>
-          <Text style={[styles.periodText, styles.periodTextActive]}>Live</Text>
-        </View>
-        <View style={styles.periodButton}>
-          <Text style={styles.periodText}>2M</Text>
-        </View>
-        <View style={styles.periodButton}>
-          <Text style={styles.periodText}>4M</Text>
-        </View>
-        <View style={styles.periodButton}>
-          <Text style={styles.periodText}>6M</Text>
-        </View>
-        <View style={styles.periodButton}>
-          <Text style={styles.periodText}>1Y</Text>
-        </View>
-        <View style={styles.periodButton}>
-          <Text style={styles.periodText}>All</Text>
-        </View>
-      </View>
     </View>
   );
 };
@@ -352,46 +331,6 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
 
-  periodSelector: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: spacing[3],
-    backgroundColor: colors.background,
-    borderRadius: radiusValues.xl,
-    padding: 3,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignSelf: 'center',
-  },
-
-  periodButton: {
-    paddingHorizontal: spacing[2],
-    paddingVertical: spacing[1],
-    borderRadius: radiusValues.lg,
-    minWidth: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  periodButtonActive: {
-    backgroundColor: '#FFD700',
-    shadowColor: '#FFD700',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-
-  periodText: {
-    ...textStyles.caption,
-    color: colors.text.secondary,
-    fontSize: fontSizes.tiny,
-    fontWeight: '600',
-  },
-
-  periodTextActive: {
-    color: colors.text.primary,
-  },
 });
 
 export default OnboardingDemo;
