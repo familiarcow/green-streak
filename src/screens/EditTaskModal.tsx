@@ -8,13 +8,20 @@ import {
   TextInput,
   Alert,
   Switch,
+  Image,
 } from 'react-native';
+import Animated, {
+  FadeIn,
+  FadeOut,
+  LinearTransition,
+} from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AnimatedButton } from '../components/AnimatedButton';
 import { Icon, IconName } from '../components/common/Icon';
 import { TemplateCatalogModal } from '../components/TemplateCatalog';
 import { IconPickerModal } from '../components/IconPicker';
 import { ColorPickerModal } from '../components/ColorPicker';
+import { TimePickerModal } from '../components/TimePicker';
 import { useTasksStore } from '../store/tasksStore';
 import { useAchievementsStore } from '../store/achievementsStore';
 import { useSettingsStore } from '../store/settingsStore';
@@ -26,6 +33,8 @@ import { EditTaskModalProps } from '../types';
 import { HabitTemplate } from '../types/templates';
 import { StreakRulesEngine } from '../services/StreakRulesEngine';
 import logger from '../utils/logger';
+import { formatTimeDisplay, getTimeOfDay } from '../utils/timeHelpers';
+import { getIconEmoji } from '../utils/iconEmoji';
 
 export const EditTaskModal: React.FC<EditTaskModalProps> = ({
   onClose,
@@ -39,20 +48,21 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
   const [selectedIcon, setSelectedIcon] = useState<IconName>('checkCircle');
   const [reminderEnabled, setReminderEnabled] = useState(false);
   const [reminderTime, setReminderTime] = useState('20:00');
-  const [customTime, setCustomTime] = useState('');
-  const [showCustomTimeInput, setShowCustomTimeInput] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [reminderFrequency, setReminderFrequency] = useState<'daily' | 'weekly'>('daily');
+  const [reminderDayOfWeek, setReminderDayOfWeek] = useState(1); // Default Monday (1)
   const [reminderText, setReminderText] = useState('');
   const [streakEnabled, setStreakEnabled] = useState(true);
   const [streakSkipWeekends, setStreakSkipWeekends] = useState(false);
   const [streakMinimumCount, setStreakMinimumCount] = useState(1);
   const [showTemplateCatalog, setShowTemplateCatalog] = useState(false);
   const [showIconPicker, setShowIconPicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [isEditingNotification, setIsEditingNotification] = useState(false);
 
   const { createTask, updateTask, deleteTask } = useTasksStore();
   const { checkForAchievements } = useAchievementsStore();
-  const { notificationSettings, updateNotificationSettings } = useSettingsStore();
+  const { notificationSettings, updateNotificationSettings, use24HourFormat } = useSettingsStore();
   const accentColor = useAccentColor();
   const { play, playToggle, playRandomTap, playCaution, playCelebration } = useSounds();
   const isEditing = !!existingTask;
@@ -91,6 +101,9 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
       setReminderEnabled(true);
       setReminderTime(suggestedSettings.reminderTime);
       setReminderFrequency(suggestedSettings.reminderFrequency || 'daily');
+      if (suggestedSettings.reminderText) {
+        setReminderText(suggestedSettings.reminderText);
+      }
     }
     setStreakEnabled(suggestedSettings.streakEnabled);
     if (suggestedSettings.streakSkipWeekends !== undefined) {
@@ -112,15 +125,9 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
       setSelectedColor(existingTask.color);
       setSelectedIcon(existingTask.icon as IconName);
       setReminderEnabled(existingTask.reminderEnabled || false);
-      const time = existingTask.reminderTime || '20:00';
-      setReminderTime(time);
-      // Check if time is a preset or custom
-      const presetTimes = ['06:00', '07:00', '08:00', '09:00', '12:00', '18:00', '19:00', '20:00', '21:00', '22:00'];
-      if (!presetTimes.includes(time)) {
-        setCustomTime(time);
-        setShowCustomTimeInput(true);
-      }
+      setReminderTime(existingTask.reminderTime || '20:00');
       setReminderFrequency((existingTask.reminderFrequency as 'daily' | 'weekly') || 'daily');
+      setReminderDayOfWeek(existingTask.reminderDayOfWeek ?? 1);
       setReminderText(existingTask.reminderText || '');
       setStreakEnabled(existingTask.streakEnabled !== false);
       setStreakSkipWeekends(existingTask.streakSkipWeekends || false);
@@ -173,6 +180,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
         reminderEnabled,
         reminderTime: reminderEnabled ? reminderTime : undefined,
         reminderFrequency: reminderEnabled ? reminderFrequency : undefined,
+        reminderDayOfWeek: reminderEnabled && reminderFrequency === 'weekly' ? reminderDayOfWeek : undefined,
         reminderText: reminderEnabled && reminderText.trim() ? reminderText.trim() : undefined,
         streakEnabled,
         streakSkipWeekends: streakEnabled ? streakSkipWeekends : false,
@@ -449,228 +457,287 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
 
         {/* Reminder Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Reminder</Text>
-
-          <View style={[styles.settingItem, glassStyles.card]}>
-            <View style={styles.settingInfo}>
-              <Text style={styles.settingTitle}>Enable Reminder</Text>
-              <Text style={styles.settingDescription}>
-                Get notified to complete this habit
-              </Text>
+          <View style={[styles.toggleSection, glassStyles.card]}>
+            <View style={styles.toggleSectionHeader}>
+              <Text style={styles.toggleSectionTitle}>Remind Me</Text>
+              <Switch
+                value={reminderEnabled}
+                onValueChange={handleReminderToggle}
+                trackColor={{ false: colors.interactive.default, true: accentColor }}
+                thumbColor={colors.surface}
+                accessibilityLabel="Reminder setting"
+                accessibilityHint={`${reminderEnabled ? 'Disable' : 'Enable'} reminders for this habit`}
+              />
             </View>
-            <Switch
-              value={reminderEnabled}
-              onValueChange={handleReminderToggle}
-              trackColor={{ false: colors.interactive.default, true: accentColor }}
-              thumbColor={colors.surface}
-              accessibilityLabel="Reminder setting"
-              accessibilityHint={`${reminderEnabled ? 'Disable' : 'Enable'} reminders for this habit`}
-            />
-          </View>
 
-          {reminderEnabled && (
-            <View style={styles.reminderSettings}>
-              <View style={styles.reminderRow}>
-                <Text style={styles.reminderLabel}>Time:</Text>
-                <View style={styles.timeOptions}>
-                  {['06:00', '07:00', '08:00', '09:00', '12:00', '18:00', '19:00', '20:00', '21:00', '22:00'].map((time) => (
-                    <TouchableOpacity
-                      key={time}
-                      style={[
-                        styles.timeOption,
-                        reminderTime === time && !showCustomTimeInput && [styles.timeOptionSelected, { backgroundColor: accentColor, borderColor: accentColor }],
-                      ]}
-                      onPress={() => {
-                        playRandomTap();
-                        setReminderTime(time);
-                        setShowCustomTimeInput(false);
-                        setCustomTime('');
-                      }}
-                    >
-                      <Text style={[
-                        styles.timeOptionText,
-                        reminderTime === time && !showCustomTimeInput && styles.timeOptionTextSelected,
-                      ]}>
-                        {time}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                  <TouchableOpacity
-                    style={[
-                      styles.timeOption,
-                      styles.customTimeOption,
-                      showCustomTimeInput && [styles.timeOptionSelected, { backgroundColor: accentColor, borderColor: accentColor }],
-                    ]}
-                    onPress={() => {
-                      playRandomTap();
-                      setShowCustomTimeInput(true);
-                      if (customTime) {
-                        setReminderTime(customTime);
-                      }
-                    }}
+            {reminderEnabled && (
+              <View style={styles.toggleSectionContent}>
+                {/* Animated Schedule Selector */}
+                <View style={styles.reminderRow}>
+                  <Text style={styles.reminderLabel}>Schedule:</Text>
+                  <Animated.View
+                    style={styles.scheduleSelector}
+                    layout={LinearTransition.duration(200)}
                   >
-                    <Text style={[
-                      styles.timeOptionText,
-                      showCustomTimeInput && styles.timeOptionTextSelected,
-                    ]}>
-                      Custom
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-                
-                {showCustomTimeInput && (
-                  <View style={styles.customTimeContainer}>
-                    <Text style={styles.customTimeLabel}>Enter custom time (HH:MM):</Text>
-                    <TextInput
-                      style={styles.customTimeInput}
-                      value={customTime}
-                      onChangeText={(text) => {
-                        setCustomTime(text);
-                        // Validate and set reminder time if valid format
-                        if (/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(text)) {
-                          setReminderTime(text);
-                        }
-                      }}
-                      placeholder="20:00"
-                      placeholderTextColor={colors.text.tertiary}
-                      keyboardType="numeric"
-                      maxLength={5}
-                    />
-                  </View>
-                )}
-              </View>
-
-              <View style={styles.reminderRow}>
-                <Text style={styles.reminderLabel}>Frequency:</Text>
-                <View style={styles.frequencyOptions}>
-                  {[
-                    { value: 'daily', label: 'Daily' },
-                    { value: 'weekly', label: 'Weekly' },
-                  ].map((freq) => (
+                    {/* Daily button - always visible */}
                     <TouchableOpacity
-                      key={freq.value}
                       style={[
-                        styles.frequencyOption,
-                        reminderFrequency === freq.value && [styles.frequencyOptionSelected, { backgroundColor: accentColor, borderColor: accentColor }],
+                        styles.scheduleButton,
+                        reminderFrequency === 'daily' && [styles.scheduleOptionSelected, { backgroundColor: accentColor, borderColor: accentColor }],
                       ]}
                       onPress={() => {
                         playRandomTap();
-                        setReminderFrequency(freq.value as 'daily' | 'weekly');
+                        setReminderFrequency('daily');
                       }}
+                      accessibilityRole="button"
+                      accessibilityLabel="Daily"
+                      accessibilityState={{ selected: reminderFrequency === 'daily' }}
                     >
                       <Text style={[
-                        styles.frequencyOptionText,
-                        reminderFrequency === freq.value && styles.frequencyOptionTextSelected,
+                        styles.scheduleButtonText,
+                        reminderFrequency === 'daily' && styles.scheduleOptionTextSelected,
                       ]}>
-                        {freq.label}
+                        Daily
                       </Text>
                     </TouchableOpacity>
-                  ))}
+
+                    {/* Weekly button OR expanded day buttons */}
+                    {reminderFrequency === 'daily' ? (
+                      // Collapsed: Show "Weekly" button
+                      <Animated.View
+                        key="weekly-button"
+                        entering={FadeIn.delay(120).duration(150)}
+                        exiting={FadeOut.duration(80)}
+                      >
+                        <TouchableOpacity
+                          style={styles.scheduleButton}
+                          onPress={() => {
+                            playRandomTap();
+                            setReminderFrequency('weekly');
+                          }}
+                          accessibilityRole="button"
+                          accessibilityLabel="Weekly"
+                        >
+                          <Text style={styles.scheduleButtonText}>Weekly</Text>
+                        </TouchableOpacity>
+                      </Animated.View>
+                    ) : (
+                      // Expanded: Show day buttons with staggered animation
+                      <>
+                        {[
+                          { value: 0, label: 'S', full: 'Sunday' },
+                          { value: 1, label: 'M', full: 'Monday' },
+                          { value: 2, label: 'T', full: 'Tuesday' },
+                          { value: 3, label: 'W', full: 'Wednesday' },
+                          { value: 4, label: 'T', full: 'Thursday' },
+                          { value: 5, label: 'F', full: 'Friday' },
+                          { value: 6, label: 'S', full: 'Saturday' },
+                        ].map((day, index) => {
+                          const isSelected = reminderDayOfWeek === day.value;
+                          const exitDelay = (6 - index) * 20;
+                          return (
+                            <Animated.View
+                              key={`day-${day.value}`}
+                              entering={FadeIn.delay(index * 25).duration(120)}
+                              exiting={FadeOut.delay(exitDelay).duration(80)}
+                              style={styles.scheduleDayWrapper}
+                            >
+                              <TouchableOpacity
+                                style={[
+                                  styles.scheduleDayOption,
+                                  isSelected && [styles.scheduleOptionSelected, { backgroundColor: accentColor, borderColor: accentColor }],
+                                ]}
+                                onPress={() => {
+                                  playRandomTap();
+                                  setReminderDayOfWeek(day.value);
+                                }}
+                                accessibilityRole="button"
+                                accessibilityLabel={day.full}
+                                accessibilityState={{ selected: isSelected }}
+                              >
+                                <Text style={[
+                                  styles.scheduleDayText,
+                                  isSelected && styles.scheduleOptionTextSelected,
+                                ]}>
+                                  {day.label}
+                                </Text>
+                              </TouchableOpacity>
+                            </Animated.View>
+                          );
+                        })}
+                      </>
+                    )}
+                  </Animated.View>
+                </View>
+
+                {/* Notification Preview */}
+                <View style={styles.notificationPreviewContainer}>
+                  <Text style={styles.reminderLabel}>Notification Preview:</Text>
+                  <View style={styles.notificationBanner}>
+                    {/* App icon - actual Green Streak logo */}
+                    <Image
+                      source={require('../../assets/icon.png')}
+                      style={styles.notificationAppIcon}
+                    />
+
+                    {/* Content */}
+                    <View style={styles.notificationContent}>
+                      {/* Header row: App name + scheduled time */}
+                      <View style={styles.notificationHeader}>
+                        <Text style={styles.notificationAppName}>GREEN STREAK</Text>
+                        <TouchableOpacity
+                          style={styles.notificationTimeButton}
+                          onPress={() => {
+                            playRandomTap();
+                            setShowTimePicker(true);
+                          }}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Scheduled for ${formatTimeDisplay(reminderTime, use24HourFormat ?? false)}, tap to change`}
+                        >
+                          <Text style={styles.notificationTime}>
+                            {formatTimeDisplay(reminderTime, use24HourFormat ?? false)}
+                          </Text>
+                          <Icon name="pencil" size={12} color="rgba(0, 0, 0, 0.35)" />
+                        </TouchableOpacity>
+                      </View>
+
+                      {/* Notification title: emoji + habit name */}
+                      <Text style={styles.notificationTitle} numberOfLines={1}>
+                        {getIconEmoji(selectedIcon)} {name || 'Your Habit'}
+                      </Text>
+
+                      {/* Notification body (editable) */}
+                      {isEditingNotification ? (
+                        <TextInput
+                          style={styles.notificationBodyInput}
+                          value={reminderText}
+                          onChangeText={setReminderText}
+                          placeholder={`Time for your ${(name || 'habit').toLowerCase()} habit!`}
+                          placeholderTextColor="rgba(0, 0, 0, 0.4)"
+                          maxLength={100}
+                          autoFocus
+                          accessibilityLabel="Custom notification text"
+                          accessibilityHint="Enter custom text for the notification message"
+                        />
+                      ) : (
+                        <TouchableOpacity
+                          style={styles.notificationBodyButton}
+                          onPress={() => {
+                            playRandomTap();
+                            setIsEditingNotification(true);
+                          }}
+                          accessibilityRole="button"
+                          accessibilityLabel="Edit notification text"
+                        >
+                          <Text style={styles.notificationBody} numberOfLines={2}>
+                            {reminderText || `Time for your ${(name || 'habit').toLowerCase()} habit!`}
+                          </Text>
+                          <Icon name="pencil" size={14} color="rgba(0, 0, 0, 0.35)" />
+                        </TouchableOpacity>
+                      )}
+                    </View>
+
+                    {/* Checkmark button when editing */}
+                    {isEditingNotification && (
+                      <TouchableOpacity
+                        style={styles.notificationEditButton}
+                        onPress={() => {
+                          playRandomTap();
+                          setIsEditingNotification(false);
+                        }}
+                        accessibilityRole="button"
+                        accessibilityLabel="Confirm notification text"
+                      >
+                        <Icon name="check" size={18} color="rgba(0, 0, 0, 0.4)" />
+                      </TouchableOpacity>
+                    )}
+                  </View>
                 </View>
               </View>
-
-              <View style={styles.reminderRow}>
-                <Text style={styles.reminderLabel}>Notification Text:</Text>
-                <TextInput
-                  style={[styles.textInput, styles.reminderTextInput]}
-                  value={reminderText}
-                  onChangeText={setReminderText}
-                  placeholder="Time for your habit!"
-                  placeholderTextColor={colors.text.tertiary}
-                  maxLength={100}
-                  accessibilityLabel="Custom notification text"
-                  accessibilityHint="Enter custom text for the notification message"
-                />
-              </View>
-            </View>
-          )}
+            )}
+          </View>
         </View>
 
         {/* Streak Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Streaks</Text>
-
-          <View style={[styles.settingItem, glassStyles.card]}>
-            <View style={styles.settingInfo}>
-              <Text style={styles.settingTitle}>Track Streaks</Text>
-              <Text style={styles.settingDescription}>
-                Track consecutive days of completion
-              </Text>
+          <View style={[styles.toggleSection, glassStyles.card]}>
+            <View style={styles.toggleSectionHeader}>
+              <Text style={styles.toggleSectionTitle}>Streaks</Text>
+              <Switch
+                value={streakEnabled}
+                onValueChange={(enabled) => {
+                  playToggle(enabled);
+                  setStreakEnabled(enabled);
+                }}
+                trackColor={{ false: colors.interactive.default, true: accentColor }}
+                thumbColor={colors.surface}
+                accessibilityLabel="Streak tracking"
+                accessibilityHint={`${streakEnabled ? 'Disable' : 'Enable'} streak tracking for this habit`}
+              />
             </View>
-            <Switch
-              value={streakEnabled}
-              onValueChange={(enabled) => {
-                playToggle(enabled);
-                setStreakEnabled(enabled);
-              }}
-              trackColor={{ false: colors.interactive.default, true: accentColor }}
-              thumbColor={colors.surface}
-              accessibilityLabel="Streak tracking"
-              accessibilityHint={`${streakEnabled ? 'Disable' : 'Enable'} streak tracking for this habit`}
-            />
+
+            {streakEnabled && (
+              <View style={styles.toggleSectionContent}>
+                <View style={styles.streakSettingRow}>
+                  <View style={styles.settingInfo}>
+                    <Text style={styles.settingTitle}>Skip Weekends</Text>
+                    <Text style={styles.settingDescription}>
+                      Don't break streak on weekends
+                    </Text>
+                  </View>
+                  <Switch
+                    value={streakSkipWeekends}
+                    onValueChange={(enabled) => {
+                      playToggle(enabled);
+                      setStreakSkipWeekends(enabled);
+                    }}
+                    trackColor={{ false: colors.interactive.default, true: accentColor }}
+                    thumbColor={colors.surface}
+                    accessibilityLabel="Skip weekends"
+                    accessibilityHint={`${streakSkipWeekends ? 'Disable' : 'Enable'} weekend skipping`}
+                  />
+                </View>
+
+                <View style={styles.streakSettingRowLast}>
+                  <View style={styles.settingInfo}>
+                    <Text style={styles.settingTitle}>Minimum Daily Count</Text>
+                    <Text style={styles.settingDescription}>
+                      Completions needed to maintain streak
+                    </Text>
+                  </View>
+                  <View style={styles.countSelector}>
+                    <TouchableOpacity
+                      style={[styles.countButton, { backgroundColor: accentColor }]}
+                      onPress={() => {
+                        if (streakMinimumCount > 1) {
+                          playToggle(false);
+                          setStreakMinimumCount(streakMinimumCount - 1);
+                        }
+                      }}
+                      accessibilityRole="button"
+                      accessibilityLabel="Decrease minimum count"
+                    >
+                      <Text style={styles.countButtonText}>-</Text>
+                    </TouchableOpacity>
+                    <Text style={styles.countValue}>{streakMinimumCount}</Text>
+                    <TouchableOpacity
+                      style={[styles.countButton, { backgroundColor: accentColor }]}
+                      onPress={() => {
+                        if (streakMinimumCount < 10) {
+                          playToggle(true);
+                          setStreakMinimumCount(streakMinimumCount + 1);
+                        }
+                      }}
+                      accessibilityRole="button"
+                      accessibilityLabel="Increase minimum count"
+                    >
+                      <Text style={styles.countButtonText}>+</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+            )}
           </View>
-
-          {streakEnabled && (
-            <>
-              <View style={[styles.settingItem, glassStyles.cardSubtle]}>
-                <View style={styles.settingInfo}>
-                  <Text style={styles.settingTitle}>Skip Weekends</Text>
-                  <Text style={styles.settingDescription}>
-                    Don't break streak on weekends
-                  </Text>
-                </View>
-                <Switch
-                  value={streakSkipWeekends}
-                  onValueChange={(enabled) => {
-                    playToggle(enabled);
-                    setStreakSkipWeekends(enabled);
-                  }}
-                  trackColor={{ false: colors.interactive.default, true: accentColor }}
-                  thumbColor={colors.surface}
-                  accessibilityLabel="Skip weekends"
-                  accessibilityHint={`${streakSkipWeekends ? 'Disable' : 'Enable'} weekend skipping`}
-                />
-              </View>
-
-              <View style={[styles.settingItem, glassStyles.cardSubtle]}>
-                <View style={styles.settingInfo}>
-                  <Text style={styles.settingTitle}>Minimum Daily Count</Text>
-                  <Text style={styles.settingDescription}>
-                    Completions needed to maintain streak
-                  </Text>
-                </View>
-                <View style={styles.countSelector}>
-                  <TouchableOpacity
-                    style={[styles.countButton, { backgroundColor: accentColor }]}
-                    onPress={() => {
-                      if (streakMinimumCount > 1) {
-                        playToggle(false);
-                        setStreakMinimumCount(streakMinimumCount - 1);
-                      }
-                    }}
-                    accessibilityRole="button"
-                    accessibilityLabel="Decrease minimum count"
-                  >
-                    <Text style={styles.countButtonText}>-</Text>
-                  </TouchableOpacity>
-                  <Text style={styles.countValue}>{streakMinimumCount}</Text>
-                  <TouchableOpacity
-                    style={[styles.countButton, { backgroundColor: accentColor }]}
-                    onPress={() => {
-                      if (streakMinimumCount < 10) {
-                        playToggle(true);
-                        setStreakMinimumCount(streakMinimumCount + 1);
-                      }
-                    }}
-                    accessibilityRole="button"
-                    accessibilityLabel="Increase minimum count"
-                  >
-                    <Text style={styles.countButtonText}>+</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </>
-          )}
         </View>
 
         {isEditing && (
@@ -714,6 +781,14 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
         onClose={() => setShowColorPicker(false)}
         selectedColor={selectedColor}
         onSelectColor={setSelectedColor}
+      />
+
+      {/* Time Picker Modal */}
+      <TimePickerModal
+        visible={showTimePicker}
+        onClose={() => setShowTimePicker(false)}
+        selectedTime={reminderTime}
+        onSelectTime={setReminderTime}
       />
     </SafeAreaView>
   );
@@ -784,6 +859,32 @@ const styles = StyleSheet.create({
     ...textStyles.h3,
     color: colors.text.primary,
     marginBottom: spacing[3],
+  },
+
+  toggleSectionTitle: {
+    ...textStyles.h3,
+    color: colors.text.primary,
+  },
+
+  toggleSection: {
+    // Container for entire toggle section - glass card applied via glassStyles.card
+    borderRadius: radiusValues.box,
+    overflow: 'hidden',
+  },
+
+  toggleSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: spacing[3],
+    paddingHorizontal: spacing[4],
+  },
+
+  toggleSectionContent: {
+    paddingHorizontal: spacing[4],
+    paddingBottom: spacing[4],
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.1)',
   },
   
   settingItem: {
@@ -904,15 +1005,112 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   
-  reminderSettings: {
-    marginTop: spacing[3],
-    padding: spacing[3],
-    backgroundColor: colors.accent.light,
-    borderRadius: radiusValues.box,
-  },
-
   reminderRow: {
     marginBottom: spacing[3],
+  },
+
+  notificationPreviewContainer: {
+    // Container for notification preview section
+  },
+
+  notificationBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: spacing[3],
+    paddingRight: spacing[2],
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    gap: spacing[3],
+    // iOS-style shadow
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+
+  notificationAppIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 10, // iOS squircle-ish
+  },
+
+  notificationContent: {
+    flex: 1,
+  },
+
+  notificationHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
+    marginBottom: 2,
+  },
+
+  notificationAppName: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: 'rgba(0, 0, 0, 0.5)',
+    letterSpacing: 0.3,
+  },
+
+  notificationTimeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+
+  notificationTime: {
+    fontSize: 13,
+    color: 'rgba(0, 0, 0, 0.35)',
+  },
+
+  notificationTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: 'rgba(0, 0, 0, 0.9)',
+    marginBottom: 2,
+  },
+
+  notificationBody: {
+    fontSize: 15,
+    color: 'rgba(0, 0, 0, 0.6)',
+    lineHeight: 20,
+    flex: 1,
+  },
+
+  notificationBodyButton: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing[2],
+  },
+
+  notificationBodyInput: {
+    fontSize: 15,
+    color: 'rgba(0, 0, 0, 0.6)',
+    lineHeight: 20,
+    padding: 0,
+    margin: 0,
+  },
+
+  notificationEditButton: {
+    padding: spacing[2],
+    marginTop: spacing[1],
+  },
+
+  streakSettingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: spacing[3],
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+  },
+
+  streakSettingRowLast: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: spacing[3],
   },
 
   reminderLabel: {
@@ -922,82 +1120,35 @@ const styles = StyleSheet.create({
     marginBottom: spacing[2],
   },
 
-  timeOptions: {
+  // Animated Schedule Selector styles
+  scheduleSelector: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
+    alignItems: 'center',
     gap: spacing[2],
   },
 
-  timeOption: {
+  scheduleButton: {
     paddingVertical: spacing[2],
-    paddingHorizontal: spacing[3],
+    paddingHorizontal: spacing[4],
     borderRadius: radiusValues.box,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
   },
 
-  timeOptionSelected: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-
-  timeOptionText: {
+  scheduleButtonText: {
     ...textStyles.bodySmall,
     color: colors.text.primary,
+    fontWeight: '500',
   },
 
-  timeOptionTextSelected: {
-    color: colors.text.inverse,
-    fontWeight: '600',
+  scheduleDayWrapper: {
+    flex: 1,
   },
 
-  customTimeOption: {
-    borderWidth: 2,
-    borderStyle: 'dashed',
-    borderColor: colors.border,
-  },
-
-  customTimeContainer: {
-    marginTop: spacing[3],
-    padding: spacing[3],
-    backgroundColor: colors.accent.light,
-    borderRadius: radiusValues.box,
-  },
-
-  customTimeLabel: {
-    ...textStyles.bodySmall,
-    color: colors.text.primary,
-    marginBottom: spacing[2],
-  },
-
-  customTimeInput: {
-    ...textStyles.body,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radiusValues.box,
-    padding: spacing[3],
-    color: colors.text.primary,
-    textAlign: 'center',
-    fontFamily: 'monospace',
-    fontSize: 18,
-    fontWeight: '600',
-  },
-
-  reminderTextInput: {
-    marginTop: spacing[2],
-  },
-
-  frequencyOptions: {
-    flexDirection: 'row',
-    gap: spacing[2],
-  },
-
-  frequencyOption: {
+  scheduleDayOption: {
     flex: 1,
     paddingVertical: spacing[2],
-    paddingHorizontal: spacing[3],
     borderRadius: radiusValues.box,
     backgroundColor: colors.surface,
     borderWidth: 1,
@@ -1005,17 +1156,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
-  frequencyOptionSelected: {
+  scheduleDayText: {
+    ...textStyles.bodySmall,
+    color: colors.text.primary,
+    fontWeight: '500',
+  },
+
+  scheduleOptionSelected: {
     backgroundColor: colors.primary,
     borderColor: colors.primary,
   },
 
-  frequencyOptionText: {
-    ...textStyles.bodySmall,
-    color: colors.text.primary,
-  },
-
-  frequencyOptionTextSelected: {
+  scheduleOptionTextSelected: {
     color: colors.text.inverse,
     fontWeight: '600',
   },
