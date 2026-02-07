@@ -25,6 +25,7 @@ import notificationService from '../services/NotificationService';
 import { colors, textStyles, spacing, shadows, glassStyles } from '../theme';
 import { radiusValues } from '../theme/utils';
 import logger from '../utils/logger';
+import { formatTimeDisplay } from '../utils/timeHelpers';
 
 import { SettingsScreenProps } from '../types';
 
@@ -35,9 +36,11 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
     calendarColor,
     notificationSettings,
     soundEffectsEnabled,
+    use24HourFormat,
     updateGlobalReminder,
     setCalendarColor,
     setSoundEffectsEnabled,
+    setUse24HourFormat,
     resetSettings,
     updateNotificationSettings,
     updateDailyNotification,
@@ -405,6 +408,27 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
                   accessibilityHint={soundEffectsEnabled ? "Double tap to disable sound effects" : "Double tap to enable sound effects"}
                 />
               </View>
+
+              {/* 24-Hour Format Setting */}
+              <View style={[styles.settingItem, glassStyles.card]}>
+                <View style={styles.settingInfo}>
+                  <Text style={styles.settingTitle}>24-Hour Format</Text>
+                  <Text style={styles.settingDescription}>
+                    Use 24-hour time (14:00) instead of 12-hour (2:00 PM)
+                  </Text>
+                </View>
+                <Switch
+                  value={use24HourFormat ?? false}
+                  onValueChange={(enabled) => {
+                    playToggle(enabled);
+                    setUse24HourFormat(enabled);
+                  }}
+                  trackColor={{ false: colors.interactive.default, true: accentColor }}
+                  thumbColor={colors.surface}
+                  accessibilityLabel="24-hour format toggle"
+                  accessibilityHint={use24HourFormat ? "Double tap to use 12-hour format" : "Double tap to use 24-hour format"}
+                />
+              </View>
             </>
           )}
         </View>
@@ -488,7 +512,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
                         <Text style={styles.settingSubtitle}>Time</Text>
                         <TouchableOpacity onPress={() => setShowTimePicker(!showTimePicker)}>
                           <Text style={[styles.timeDisplay, { color: accentColor }]}>
-                            {notificationSettings?.daily?.time || '20:00'}
+                            {formatTimeDisplay(notificationSettings?.daily?.time || '20:00', use24HourFormat ?? false)}
                           </Text>
                         </TouchableOpacity>
                       </View>
@@ -560,7 +584,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
                         <Text style={styles.settingSubtitle}>Protection Time</Text>
                         <TouchableOpacity onPress={() => setExpandedSections({...expandedSections, streakTime: true})}>
                           <Text style={[styles.timeDisplay, { color: accentColor }]}>
-                            {notificationSettings?.streaks?.protectionTime || '21:00'}
+                            {formatTimeDisplay(notificationSettings?.streaks?.protectionTime || '21:00', use24HourFormat ?? false)}
                           </Text>
                         </TouchableOpacity>
                       </View>
@@ -891,7 +915,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
                       </View>
                       {habit.reminderTime && (
                         <Text style={styles.habitReminderTime}>
-                          {habit.reminderTime} • {habit.reminderFrequency || 'daily'}
+                          {formatTimeDisplay(habit.reminderTime, use24HourFormat ?? false)} • {habit.reminderFrequency || 'daily'}
                         </Text>
                       )}
                     </View>

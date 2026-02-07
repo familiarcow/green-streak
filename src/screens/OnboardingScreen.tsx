@@ -97,6 +97,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
   const [dailyRemindersEnabled, setDailyRemindersEnabled] = useState(false);
   const [streakProtectionEnabled, setStreakProtectionEnabled] = useState(false);
   const [soundEffectsEnabled, setSoundEffectsEnabled] = useState(true);
+  const [use24HourFormat, setUse24HourFormat] = useState(false);
 
   // Handle hue change from slider
   const handleHueChange = useCallback((newHue: number) => {
@@ -116,10 +117,10 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
   }, []);
 
   // Settings store
-  const { setCalendarColor, updateNotificationSettings, setSoundEffectsEnabled: saveSoundEffectsEnabled } = useSettingsStore();
+  const { setCalendarColor, updateNotificationSettings, setSoundEffectsEnabled: saveSoundEffectsEnabled, setUse24HourFormat: saveUse24HourFormat } = useSettingsStore();
 
   // Sound effects
-  const { playToggle, playExpand, playRandomTap, play } = useSounds();
+  const { playToggle, playExpand, playRandomTap, playRandomType, play } = useSounds();
 
 
   const handleNext = () => {
@@ -162,6 +163,9 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
       // Save sound effects setting
       saveSoundEffectsEnabled(soundEffectsEnabled);
 
+      // Save 24-hour format setting
+      saveUse24HourFormat(use24HourFormat);
+
       // Request notification permissions if any notification setting is enabled
       if (notificationsEnabled || dailyRemindersEnabled || streakProtectionEnabled) {
         const hasPermission = await notificationService.requestPermissions();
@@ -186,6 +190,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
       logger.info('UI', 'Onboarding settings saved', {
         calendarColor: selectedColor,
         soundEffectsEnabled,
+        use24HourFormat,
         notificationsEnabled,
         dailyRemindersEnabled,
         streakProtectionEnabled,
@@ -193,7 +198,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
     } catch (error) {
       logger.error('UI', 'Failed to save onboarding settings', { error });
     }
-  }, [selectedColor, soundEffectsEnabled, notificationsEnabled, dailyRemindersEnabled, streakProtectionEnabled, setCalendarColor, saveSoundEffectsEnabled, updateNotificationSettings]);
+  }, [selectedColor, soundEffectsEnabled, use24HourFormat, notificationsEnabled, dailyRemindersEnabled, streakProtectionEnabled, setCalendarColor, saveSoundEffectsEnabled, saveUse24HourFormat, updateNotificationSettings]);
 
   const handleSetupTask = async () => {
     logger.info('UI', 'User chose to set up first task during onboarding');
@@ -380,6 +385,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
                           <HueBar
                             hue={hue}
                             onHueChange={handleHueChange}
+                            onDragSound={playRandomType}
                             width={screenWidth - spacing[8] * 2 - spacing[6]}
                             height={28}
                           />
@@ -475,6 +481,29 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
                             saveSoundEffectsEnabled(enabled);
                             setSoundEffectsEnabled(enabled);
                           }
+                        }}
+                        trackColor={{ false: colors.interactive.default, true: colors.primary }}
+                        thumbColor={colors.surface}
+                      />
+                    </View>
+                  </View>
+
+                  {/* Time Format Section */}
+                  <View style={styles.settingSection}>
+                    <Text style={styles.settingSectionTitle}>Time Format</Text>
+
+                    <View style={styles.settingRow}>
+                      <View style={styles.settingInfo}>
+                        <Text style={styles.settingLabel}>24-Hour Format</Text>
+                        <Text style={styles.settingDescription}>
+                          Use 24-hour time format
+                        </Text>
+                      </View>
+                      <Switch
+                        value={use24HourFormat}
+                        onValueChange={(enabled) => {
+                          playToggle(enabled);
+                          setUse24HourFormat(enabled);
                         }}
                         trackColor={{ false: colors.interactive.default, true: colors.primary }}
                         thumbColor={colors.surface}
