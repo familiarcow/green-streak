@@ -19,6 +19,7 @@ import { LiveCalendar, ViewType } from './LiveCalendar';
 import { colors, textStyles, shadows, spacing } from '../../theme';
 import { fontSizes, radiusValues, sizes } from '../../theme/utils';
 import { getMonthName, getTodayString } from '../../utils/dateHelpers';
+import { useSettingsStore } from '../../store/settingsStore';
 
 interface ContributionGraphProps {
   data: ContributionData[];
@@ -75,10 +76,31 @@ export const ContributionGraph: React.FC<ContributionGraphProps> = ({
   const [periodOffset, setPeriodOffset] = useState(0); // For navigation
   const [isTransitioning, setIsTransitioning] = useState(false);
   const previousPeriod = useRef<TimePeriod>('LIVE');
-  
-  // Filter state
+
+  // Get excluded task IDs from settings store (wait for hydration)
+  const excludedCalendarTaskIds = useSettingsStore(state => state.excludedCalendarTaskIds) ?? [];
+  const hasHydrated = useSettingsStore(state => state._hasHydrated);
+
+  // Compute default selected IDs from exclude list
+  // If excludedTaskIds is empty, selectedTaskIds stays empty (= show all)
+  // If excludedTaskIds has items, selectedTaskIds = all tasks except excluded
+  // Don't compute until store has hydrated to avoid using stale defaults
+  const defaultSelectedIds = useMemo(() => {
+    if (!hasHydrated) return [];
+    if (excludedCalendarTaskIds.length === 0) return [];
+    return tasks.filter(t => !excludedCalendarTaskIds.includes(t.id)).map(t => t.id);
+  }, [excludedCalendarTaskIds, tasks, hasHydrated]);
+
+  // Filter state - initialize from settings
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
   const [dateOffset, setDateOffset] = useState(0);
+
+  // Update selectedTaskIds when settings hydrate or change
+  useEffect(() => {
+    if (hasHydrated) {
+      setSelectedTaskIds(defaultSelectedIds);
+    }
+  }, [defaultSelectedIds, hasHydrated]);
 
   if (!data || data.length === 0) {
     return (

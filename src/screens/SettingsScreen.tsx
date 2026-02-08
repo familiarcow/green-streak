@@ -15,6 +15,7 @@ import * as StoreReview from 'expo-store-review';
 import { Icon } from '../components/common/Icon';
 import { ColorPickerModal } from '../components/ColorPicker/ColorPickerModal';
 import { CalendarColorPreview } from '../components/CalendarColorPreview';
+import { CalendarViewSettingsModal } from '../components/modals/CalendarViewSettingsModal';
 import { useSettingsStore, DEFAULT_CALENDAR_COLOR } from '../store/settingsStore';
 import { generateContributionPalette, DEFAULT_CONTRIBUTION_PALETTE, CALENDAR_COLOR_PRESETS } from '../utils/colorUtils';
 import { useAccentColor, useSounds } from '../hooks';
@@ -37,6 +38,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
     notificationSettings,
     soundEffectsEnabled,
     use24HourFormat,
+    excludedCalendarTaskIds,
     updateGlobalReminder,
     setCalendarColor,
     setSoundEffectsEnabled,
@@ -63,6 +65,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
     data: false,
   });
   const [showCalendarColorPicker, setShowCalendarColorPicker] = useState(false);
+  const [showCalendarViewSettings, setShowCalendarViewSettings] = useState(false);
 
   // Toggle section expansion
   const toggleSection = (section: string) => {
@@ -370,6 +373,25 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
                 <View style={styles.calendarColorRight}>
                   <CalendarColorPreview palette={calendarPalette} size={18} />
                   <Icon name="edit" size={16} color={colors.text.secondary} />
+                </View>
+              </TouchableOpacity>
+
+              {/* Calendar View Setting */}
+              <TouchableOpacity
+                style={[styles.settingItem, glassStyles.card]}
+                onPress={() => setShowCalendarViewSettings(true)}
+                accessibilityRole="button"
+                accessibilityLabel="Calendar view"
+                accessibilityHint="Double tap to choose which habits appear by default"
+              >
+                <Text style={styles.settingTitle}>Calendar View</Text>
+                <View style={styles.calendarColorRight}>
+                  <Text style={styles.calendarViewCount}>
+                    {(excludedCalendarTaskIds?.length ?? 0) === 0
+                      ? 'All habits'
+                      : `${tasks.length - (excludedCalendarTaskIds?.length ?? 0)} of ${tasks.length}`}
+                  </Text>
+                  <Icon name="chevron-right" size={16} color={colors.text.secondary} />
                 </View>
               </TouchableOpacity>
 
@@ -1065,6 +1087,13 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
         showGradientPreview={true}
         hideShadeSelector={true}
       />
+
+      {/* Calendar View Settings Modal */}
+      <CalendarViewSettingsModal
+        visible={showCalendarViewSettings}
+        onClose={() => setShowCalendarViewSettings(false)}
+        tasks={tasks}
+      />
     </SafeAreaView>
   );
 };
@@ -1206,6 +1235,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing[3],
+  },
+
+  calendarViewCount: {
+    ...textStyles.bodySmall,
+    color: colors.text.secondary,
   },
 
   footer: {

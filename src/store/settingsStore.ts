@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AppSettings, NotificationSettings, DeepPartial } from '../types';
 import { getNotificationService, getNotificationManager, getSoundService } from '../services';
 import logger from '../utils/logger';
@@ -53,6 +54,7 @@ interface SettingsState extends AppSettings, RatingPromptState, HydrationState {
   setCalendarColor: (color: string) => void;
   setSoundEffectsEnabled: (enabled: boolean) => void;
   setUse24HourFormat: (enabled: boolean) => void;
+  setExcludedCalendarTaskIds: (taskIds: string[]) => void;
   exportSettings: () => string;
   resetSettings: () => Promise<void>;
 
@@ -112,6 +114,7 @@ const defaultSettings: AppSettings & RatingPromptState = {
   calendarColor: DEFAULT_CALENDAR_COLOR,
   soundEffectsEnabled: true,
   use24HourFormat: false,
+  excludedCalendarTaskIds: [], // Task IDs to exclude from default calendar view (empty = show all)
   // Rating prompt state
   ratingPromptDismissedAt: undefined,
   ratingPromptDismissedPermanently: false,
@@ -290,6 +293,15 @@ export const useSettingsStore = create<SettingsState>()(
           logger.info('STATE', '24-hour format updated', { enabled });
         } catch (error) {
           logger.error('STATE', 'Failed to set 24-hour format', { error, enabled });
+        }
+      },
+
+      setExcludedCalendarTaskIds: (taskIds: string[]) => {
+        try {
+          set({ excludedCalendarTaskIds: taskIds });
+          logger.info('STATE', 'Excluded calendar task IDs updated', { count: taskIds.length });
+        } catch (error) {
+          logger.error('STATE', 'Failed to set excluded calendar task IDs', { error, taskIds });
         }
       },
 
@@ -534,6 +546,7 @@ export const useSettingsStore = create<SettingsState>()(
     }),
     {
       name: 'green-streak-settings',
+      storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({
         globalReminderEnabled: state.globalReminderEnabled,
         globalReminderTime: state.globalReminderTime,
@@ -543,6 +556,7 @@ export const useSettingsStore = create<SettingsState>()(
         calendarColor: state.calendarColor,
         soundEffectsEnabled: state.soundEffectsEnabled,
         use24HourFormat: state.use24HourFormat,
+        excludedCalendarTaskIds: state.excludedCalendarTaskIds,
         ratingPromptDismissedAt: state.ratingPromptDismissedAt,
         ratingPromptDismissedPermanently: state.ratingPromptDismissedPermanently,
       }),

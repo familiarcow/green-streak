@@ -83,6 +83,7 @@ export interface AppSettings {
   calendarColor?: string; // Custom calendar/contribution graph color (default: #22c55e)
   soundEffectsEnabled?: boolean; // Enable/disable in-app sound effects (default: true)
   use24HourFormat?: boolean; // Use 24-hour time format instead of 12-hour AM/PM (default: false)
+  excludedCalendarTaskIds?: string[]; // Task IDs to exclude from default calendar view (empty = show all)
 }
 
 // Re-export notification types
