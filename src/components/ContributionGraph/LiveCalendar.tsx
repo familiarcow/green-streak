@@ -7,7 +7,7 @@ import Animated, {
   withTiming,
   withDelay,
   FadeIn,
-  FadeInDown,
+  FadeInUp,
 } from 'react-native-reanimated';
 import { ContributionData, Task } from '../../types';
 import { colors, textStyles, spacing, shadows } from '../../theme';
@@ -367,22 +367,28 @@ export const LiveCalendar: React.FC<LiveCalendarProps> = ({
         }}
       >
         <View style={styles.gridWrapper}>
-          {calendarData.map((weekData, weekIndex) => (
+          {calendarData.map((weekData, weekIndex) => {
+            // Reverse animation order: bottom rows (current day) animate first
+            const totalWeeks = calendarData.length;
+            const reversedWeekIndex = totalWeeks - 1 - weekIndex;
+
+            return (
             <Animated.View
               key={`week-${weekIndex}-${viewType}`}
               style={styles.weekRow}
-              entering={FadeInDown.delay(weekIndex * 50).springify()}
+              entering={FadeInUp.delay(reversedWeekIndex * 30).springify()}
             >
               {weekData.map((dayData, dayIndex) => {
                 const isToday = dayData.date === todayString;
                 const isSelected = dayData.date === selectedDate;
                 const backgroundColor = getContributionColor(dayData.count, maxCount, calendarPalette);
                 const showMonthMarker = shouldShowMonthMarkers && isFirstDayOfMonth(dayData.date, weekIndex, dayIndex);
-                
+
                 // Calculate margins - no right margin for last column
                 const isLastInRow = dayIndex === DAYS_PER_WEEK - 1;
-                const animationDelay = weekIndex * 50 + dayIndex * 10;
-                
+                // Reverse delay: bottom rows animate first (current day area)
+                const animationDelay = reversedWeekIndex * 30 + (DAYS_PER_WEEK - 1 - dayIndex) * 5;
+
                 return (
                   <Animated.View
                     key={`${dayData.date}-${viewType}`}
@@ -417,7 +423,8 @@ export const LiveCalendar: React.FC<LiveCalendarProps> = ({
                 );
               })}
             </Animated.View>
-          ))}
+            );
+          })}
         </View>
       </Animated.View>
       
