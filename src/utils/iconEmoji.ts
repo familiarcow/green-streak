@@ -114,6 +114,8 @@ export const ICON_TO_EMOJI: Record<IconName, string> = {
   'bell': '🔔',
   'trash': '🗑️',
   'grip-vertical': '⋮',
+  'volume': '🔊',
+  'volume-x': '🔇',
 };
 
 /**

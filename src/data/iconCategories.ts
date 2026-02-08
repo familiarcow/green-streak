@@ -130,6 +130,8 @@ export const ICON_CATEGORY_MAP: Record<IconName, string> = {
   key: 'other',
   bell: 'other',
   trash: 'other',
+  volume: 'other',
+  'volume-x': 'other',
 };
 
 // Icons to display in the picker (excludes UI/navigation icons)

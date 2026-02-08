@@ -359,32 +359,31 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
           {expandedSections.general && (
             <>
               {/* Calendar Color Setting */}
-              <View style={[styles.settingItem, glassStyles.card]}>
-                <View style={styles.settingInfo}>
-                  <Text style={styles.settingTitle}>Calendar Color</Text>
-                  <Text style={styles.settingDescription}>
-                    Customize the contribution graph colors
-                  </Text>
-                  <View style={styles.calendarColorPreview}>
-                    <CalendarColorPreview palette={calendarPalette} size={20} />
-                  </View>
+              <TouchableOpacity
+                style={[styles.settingItem, glassStyles.card]}
+                onPress={() => setShowCalendarColorPicker(true)}
+                accessibilityRole="button"
+                accessibilityLabel="Change calendar color"
+                accessibilityHint="Double tap to open color picker"
+              >
+                <Text style={styles.settingTitle}>Calendar Color</Text>
+                <View style={styles.calendarColorRight}>
+                  <CalendarColorPreview palette={calendarPalette} size={18} />
+                  <Icon name="edit" size={16} color={colors.text.secondary} />
                 </View>
-                <TouchableOpacity
-                  style={styles.changeColorButton}
-                  onPress={() => setShowCalendarColorPicker(true)}
-                  accessibilityRole="button"
-                  accessibilityLabel="Change calendar color"
-                  accessibilityHint="Double tap to open color picker"
-                >
-                  <View style={[styles.colorSwatch, { backgroundColor: currentCalendarColor }]} />
-                  <Icon name="chevron-right" size={16} color={colors.text.secondary} />
-                </TouchableOpacity>
-              </View>
+              </TouchableOpacity>
 
               {/* Sound Effects Setting */}
               <View style={[styles.settingItem, glassStyles.card]}>
                 <View style={styles.settingInfo}>
-                  <Text style={styles.settingTitle}>Sound Effects</Text>
+                  <View style={styles.settingTitleRow}>
+                    <Text style={styles.settingTitle}>Sound Effects</Text>
+                    <Icon
+                      name={soundEffectsEnabled ? 'volume' : 'volume-x'}
+                      size={16}
+                      color={soundEffectsEnabled ? accentColor : colors.text.tertiary}
+                    />
+                  </View>
                   <Text style={styles.settingDescription}>
                     Play sounds on actions
                   </Text>
@@ -414,7 +413,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
                 <View style={styles.settingInfo}>
                   <Text style={styles.settingTitle}>24-Hour Format</Text>
                   <Text style={styles.settingDescription}>
-                    Use 24-hour time (14:00) instead of 12-hour (2:00 PM)
+                    Display time in 24-hour format
                   </Text>
                 </View>
                 <Switch
@@ -1148,7 +1147,13 @@ const styles = StyleSheet.create({
   settingInfo: {
     flex: 1,
   },
-  
+
+  settingTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
+  },
+
   settingTitle: {
     ...textStyles.body,
     color: colors.text.primary,
@@ -1197,22 +1202,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
-  calendarColorPreview: {
-    marginTop: spacing[2],
-  },
-
-  changeColorButton: {
+  calendarColorRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing[2],
-    paddingLeft: spacing[2],
-  },
-
-  colorSwatch: {
-    width: 32,
-    height: 32,
-    borderRadius: radiusValues.box,
-    ...shadows.sm,
+    gap: spacing[3],
   },
 
   footer: {

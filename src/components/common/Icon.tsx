@@ -110,6 +110,8 @@ import {
   GripVertical,
   ThumbsUp,
   ThumbsDown,
+  Volume2,
+  VolumeX,
   type LucideIcon
 } from 'lucide-react-native';
 import { colors } from '../../theme';
@@ -222,6 +224,8 @@ export const ICON_MAP = {
   key: Key,
   bell: Bell,
   trash: Trash,
+  volume: Volume2,
+  'volume-x': VolumeX,
   'grip-vertical': GripVertical,
   'thumbs-up': ThumbsUp,
   'thumbs-down': ThumbsDown,
