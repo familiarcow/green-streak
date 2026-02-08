@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback, useState, useEffect } from 'react';
+import React, { useMemo, useCallback, useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Dimensions, ScrollView } from 'react-native';
 import Animated, {
   useAnimatedStyle,
@@ -12,7 +12,7 @@ import Animated, {
 import { ContributionData, Task } from '../../types';
 import { colors, textStyles, spacing, shadows } from '../../theme';
 import { radiusValues, fontSizes } from '../../theme/utils';
-import { getTodayString, formatDateString } from '../../utils/dateHelpers';
+import { getTodayString, formatDateString, getYearFromDateString, getMonthFromDateString } from '../../utils/dateHelpers';
 import { getContributionColor } from '../../utils/colorUtils';
 import { useDynamicToday, useCalendarColors, useSounds } from '../../hooks';
 import { TimePeriodSelector, ViewType } from './TimePeriodSelector';
@@ -33,6 +33,7 @@ interface LiveCalendarProps {
   dateOffset?: number;
   onDateOffsetChange?: (offset: number) => void;
   showFilterToggle?: boolean;
+  onHeightChange?: (height: number) => void;
 }
 
 const DAYS_PER_WEEK = 7;
@@ -71,6 +72,7 @@ export const LiveCalendar: React.FC<LiveCalendarProps> = ({
   dateOffset = 0,
   onDateOffsetChange,
   showFilterToggle = true,
+  onHeightChange,
 }) => {
   // Use dynamic today that updates at midnight
   const todayString = useDynamicToday();
@@ -200,28 +202,30 @@ export const LiveCalendar: React.FC<LiveCalendarProps> = ({
   }, [calendarData]);
 
   // Check if a date is the first day of a new month
+  // Uses timezone-safe date string extraction utilities
   const isFirstDayOfMonth = useCallback((dateString: string, weekIndex: number, dayIndex: number): boolean => {
     if (weekIndex === 0 && dayIndex === 0) return true; // First day in data set
-    
-    const currentDate = new Date(dateString);
-    
-    // Get previous day
-    let prevDate: Date | null = null;
+
+    const currentYear = getYearFromDateString(dateString);
+    const currentMonth = getMonthFromDateString(dateString);
+
+    // Get previous day's date string
+    let prevDateString: string | null = null;
     if (dayIndex > 0) {
       // Previous day in same week
-      const prevDay = calendarData[weekIndex][dayIndex - 1];
-      prevDate = new Date(prevDay.date);
+      prevDateString = calendarData[weekIndex][dayIndex - 1].date;
     } else if (weekIndex > 0) {
       // Last day of previous week
       const prevWeek = calendarData[weekIndex - 1];
-      const lastDay = prevWeek[prevWeek.length - 1];
-      prevDate = new Date(lastDay.date);
+      prevDateString = prevWeek[prevWeek.length - 1].date;
     }
-    
-    if (!prevDate) return true;
-    
-    return currentDate.getMonth() !== prevDate.getMonth() || 
-           currentDate.getFullYear() !== prevDate.getFullYear();
+
+    if (!prevDateString) return true;
+
+    const prevYear = getYearFromDateString(prevDateString);
+    const prevMonth = getMonthFromDateString(prevDateString);
+
+    return currentMonth !== prevMonth || currentYear !== prevYear;
   }, [calendarData]);
 
   // Check if view should show month markers
@@ -236,6 +240,17 @@ export const LiveCalendar: React.FC<LiveCalendarProps> = ({
     playRandomType();
     onViewTypeChange?.(newViewType);
   }, [onViewTypeChange, playRandomType]);
+
+  // Track container height and report changes
+  const lastReportedHeight = useRef(0);
+  const handleContainerLayout = useCallback((event: any) => {
+    const { height } = event.nativeEvent.layout;
+    // Only report if height changed significantly (more than 10px) to avoid noise
+    if (Math.abs(height - lastReportedHeight.current) > 10) {
+      lastReportedHeight.current = height;
+      onHeightChange?.(height);
+    }
+  }, [onHeightChange]);
 
   // Reset date offset when view type changes
   useEffect(() => {
@@ -333,7 +348,7 @@ export const LiveCalendar: React.FC<LiveCalendarProps> = ({
 
 
   return (
-    <View style={styles.container}>
+    <View style={styles.container} onLayout={handleContainerLayout}>
       {/* Week day labels */}
       <View style={styles.weekDayLabels}>
         {dayLabels.map((label, index) => (

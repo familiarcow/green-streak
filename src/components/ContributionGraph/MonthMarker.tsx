@@ -2,19 +2,13 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { colors, textStyles } from '../../theme';
 import { fontSizes } from '../../theme/utils';
+import { getMonthLetterFromDateString } from '../../utils/dateHelpers';
 
 interface MonthMarkerProps {
-  date: string; // ISO date string
+  date: string; // ISO date string (YYYY-MM-DD)
   boxSize: number;
   contributionColor: string; // The background color of the contribution box
 }
-
-// Get first letter of month name
-const getMonthLetter = (dateString: string): string => {
-  const date = new Date(dateString);
-  const monthNames = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
-  return monthNames[date.getMonth()];
-};
 
 // Convert hex color to RGB values
 const hexToRgb = (hex: string): { r: number; g: number; b: number } | null => {
@@ -134,7 +128,7 @@ export const MonthMarker: React.FC<MonthMarkerProps> = ({
   boxSize,
   contributionColor,
 }) => {
-  const monthLetter = getMonthLetter(date);
+  const monthLetter = getMonthLetterFromDateString(date);
   const textColor = getTextColor(contributionColor);
   
   // Calculate font size based on box size

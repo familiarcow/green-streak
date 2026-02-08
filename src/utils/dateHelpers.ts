@@ -35,6 +35,46 @@ export const parseDateString = (dateString: string): Date => {
   return new Date(year, month - 1, day);
 };
 
+// ============================================================================
+// Timezone-safe date string extraction utilities
+// ============================================================================
+// IMPORTANT: Use these instead of `new Date(dateString).getMonth()` etc.
+// JavaScript's Date constructor interprets "YYYY-MM-DD" as UTC midnight,
+// but getMonth()/getFullYear() return local timezone values, causing
+// off-by-one errors in timezones west of UTC.
+// ============================================================================
+
+/**
+ * Extract year from YYYY-MM-DD date string without timezone conversion.
+ */
+export const getYearFromDateString = (dateString: string): number => {
+  return Number(dateString.slice(0, 4));
+};
+
+/**
+ * Extract month (1-12) from YYYY-MM-DD date string without timezone conversion.
+ */
+export const getMonthFromDateString = (dateString: string): number => {
+  return Number(dateString.slice(5, 7));
+};
+
+/**
+ * Extract day (1-31) from YYYY-MM-DD date string without timezone conversion.
+ */
+export const getDayFromDateString = (dateString: string): number => {
+  return Number(dateString.slice(8, 10));
+};
+
+/**
+ * Get month letter (J, F, M, A, M, J, J, A, S, O, N, D) from YYYY-MM-DD date string.
+ * Timezone-safe alternative to new Date(str).getMonth().
+ */
+export const getMonthLetterFromDateString = (dateString: string): string => {
+  const monthLetters = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
+  const month = getMonthFromDateString(dateString);
+  return monthLetters[month - 1]; // month is 1-indexed
+};
+
 export const getDateRange = (startDate: Date, endDate: Date): Date[] => {
   return eachDayOfInterval({ start: startDate, end: endDate });
 };
