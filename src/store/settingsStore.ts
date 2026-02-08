@@ -39,7 +39,12 @@ interface RatingPromptState {
   ratingPromptDismissedPermanently: boolean;
 }
 
-interface SettingsState extends AppSettings, RatingPromptState {
+// Hydration state for async storage
+interface HydrationState {
+  _hasHydrated: boolean;
+}
+
+interface SettingsState extends AppSettings, RatingPromptState, HydrationState {
   // Actions
   loadSettings: () => Promise<void>;
   updateGlobalReminder: (enabled: boolean, time?: string) => Promise<void>;
@@ -116,6 +121,7 @@ export const useSettingsStore = create<SettingsState>()(
   persist(
     (set, get) => ({
       ...defaultSettings,
+      _hasHydrated: false,
 
       loadSettings: async () => {
         try {
@@ -310,14 +316,14 @@ export const useSettingsStore = create<SettingsState>()(
       resetSettings: async () => {
         try {
           logger.debug('STATE', 'Resetting settings to defaults');
-          
+
           // Cancel any existing notifications
           const notificationService = getNotificationService();
           await notificationService.cancelGlobalDailyReminder();
-          
-          // Reset to defaults
-          set(defaultSettings);
-          
+
+          // Reset to defaults (preserve hydration state)
+          set({ ...defaultSettings, _hasHydrated: true });
+
           logger.info('STATE', 'Settings reset to defaults');
         } catch (error) {
           logger.error('STATE', 'Failed to reset settings', { error });
@@ -488,6 +494,11 @@ export const useSettingsStore = create<SettingsState>()(
       shouldShowRatingPrompt: (activeDaysCount: number) => {
         const state = get();
 
+        // Don't show until store is hydrated from AsyncStorage
+        if (!state._hasHydrated) {
+          return false;
+        }
+
         // Never show if permanently dismissed
         if (state.ratingPromptDismissedPermanently) {
           return false;
@@ -535,6 +546,10 @@ export const useSettingsStore = create<SettingsState>()(
         ratingPromptDismissedAt: state.ratingPromptDismissedAt,
         ratingPromptDismissedPermanently: state.ratingPromptDismissedPermanently,
       }),
+      onRehydrateStorage: () => () => {
+        // Set hydration complete after storage is loaded
+        useSettingsStore.setState({ _hasHydrated: true });
+      },
     }
   )
 );
