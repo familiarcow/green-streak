@@ -27,6 +27,7 @@ interface AchievementsState {
   stats: AchievementStats | null;
   loading: boolean;
   error: string | null;
+  canShowModal: boolean;
 
   // Actions
   loadAchievements: () => Promise<void>;
@@ -42,6 +43,7 @@ interface AchievementsState {
   markAsViewed: (achievementIds: string[]) => Promise<void>;
   clearError: () => void;
   subscribeToUnlocks: () => () => void;
+  setCanShowModal: (value: boolean) => void;
 }
 
 export const useAchievementsStore = create<AchievementsState>((set, get) => ({
@@ -50,6 +52,7 @@ export const useAchievementsStore = create<AchievementsState>((set, get) => ({
   stats: null,
   loading: false,
   error: null,
+  canShowModal: true,
 
   loadAchievements: async () => {
     set({ loading: true, error: null });
@@ -92,13 +95,18 @@ export const useAchievementsStore = create<AchievementsState>((set, get) => ({
           pendingUnlocks: deduplicatePendingUnlocks(state.pendingUnlocks, unlocks),
         }));
 
-        // Reload achievements to get updated status
-        await get().loadAchievements();
-        await get().loadStats();
-
         logger.info('STATE', 'New achievements unlocked', {
           count: unlocks.length,
           achievements: unlocks.map((u) => u.achievement.name),
+        });
+
+        // Reload data in background - don't block UI
+        // The pendingUnlocks state is already set for modal display
+        get().loadAchievements().catch((error) => {
+          logger.error('STATE', 'Failed to reload achievements', { error });
+        });
+        get().loadStats().catch((error) => {
+          logger.error('STATE', 'Failed to reload stats', { error });
         });
       }
 
@@ -150,6 +158,10 @@ export const useAchievementsStore = create<AchievementsState>((set, get) => ({
 
   clearError: () => {
     set({ error: null });
+  },
+
+  setCanShowModal: (value) => {
+    set({ canShowModal: value });
   },
 
   subscribeToUnlocks: () => {

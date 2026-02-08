@@ -896,6 +896,69 @@ describe('EditTaskModal', () => {
 });
 ```
 
+### Modal Sequencing on iOS
+
+When multiple modals need to appear in sequence (e.g., closing a settings modal triggers an achievement modal), special care must be taken on iOS to prevent app freezes.
+
+#### The Problem
+
+React Native's `<Modal>` component on iOS uses native UIKit modal presentation. The native dismissal animation takes approximately 250-300ms to complete. If a second modal opens before this animation finishes (even by just 68ms), iOS encounters a conflict that freezes the app.
+
+```
+Timeline of the bug:
+[0ms]   Modal A onClose() called
+[0ms]   Modal A isVisible = false (React state)
+[50ms]  Native iOS begins dismissal animation
+[68ms]  Achievement unlocks, Modal B isVisible = true
+[68ms]  APP FREEZES - iOS cannot present Modal B while dismissing Modal A
+```
+
+#### The Solution: `canShowModal` Gating Pattern
+
+The fix uses a gating mechanism that prevents secondary modals from appearing until the primary modal's native animation has fully completed:
+
+```typescript
+// 1. Store holds gating state
+interface AchievementsState {
+  canShowModal: boolean;
+  setCanShowModal: (value: boolean) => void;
+}
+
+// 2. Parent component blocks secondary modals when any modal is open
+useEffect(() => {
+  if (activeModal !== null) {
+    setCanShowModal(false);
+  }
+}, [activeModal, setCanShowModal]);
+
+// 3. BaseModal's onCloseComplete fires AFTER animation completes
+<BaseModal
+  isVisible={activeModal === 'settings'}
+  onClose={closeModal}
+  onCloseComplete={() => {
+    // Extra 100ms buffer ensures native animation is truly done
+    setTimeout(() => setCanShowModal(true), 100);
+  }}
+>
+
+// 4. Secondary modal visibility gated on canShowModal
+const pendingUnlock = canShowModal && pendingUnlocks.length > 0
+  ? pendingUnlocks[0]
+  : null;
+```
+
+#### Implementation Details
+
+- **BaseModal's `onCloseComplete`**: Fires after the JS-side close animation (250ms) completes and `isModalVisible` state becomes false
+- **100ms setTimeout**: Provides safety margin for native iOS cleanup that happens after JS animation
+- **Total delay**: ~350ms from close initiation to secondary modal eligibility
+
+#### Testing Requirements
+
+- Always test modal sequences on **physical iOS devices**
+- Simulators may not reproduce the timing-sensitive freeze
+- Test scenarios: task completion unlocking achievements, settings changes triggering modals
+
 This modal architecture ensures consistent behavior, accessibility compliance, and maintainable code across all modal implementations in Green Streak.
 
 ## Data Flow

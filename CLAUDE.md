@@ -55,3 +55,48 @@ When implementing features, always prefer using existing reusable components ove
 Never nest `<Modal>` components. Instead:
 - Use view switching within a single modal (show/hide different views)
 - Use the `BaseModal` component which handles animations properly
+
+## Modal Sequencing (iOS Critical)
+
+When opening a modal immediately after another modal closes, you MUST account for native iOS modal dismissal animation timing. Failure to do so causes app freezes.
+
+### The Problem
+React Native's `<Modal>` on iOS uses native modal presentation. When modal A closes and modal B opens within ~100ms, iOS has not finished the native dismissal animation, causing a freeze.
+
+### The Solution Pattern: `canShowModal` Gating
+
+1. **Block secondary modals when primary modal is open:**
+   ```tsx
+   // In the parent component (e.g., HomeScreen)
+   useEffect(() => {
+     if (activeModal !== null) {
+       setCanShowModal(false);  // Block achievement/secondary modals
+     }
+   }, [activeModal, setCanShowModal]);
+   ```
+
+2. **Re-enable after close animation completes with delay:**
+   ```tsx
+   <BaseModal
+     isVisible={activeModal === 'settings'}
+     onClose={closeModal}
+     onCloseComplete={() => {
+       // 100ms delay lets native iOS animation fully complete
+       setTimeout(() => setCanShowModal(true), 100);
+     }}
+   >
+   ```
+
+3. **Gate secondary modal visibility on `canShowModal`:**
+   ```tsx
+   // In the hook that provides pendingUnlock
+   const pendingUnlock = canShowModal && pendingUnlocks.length > 0
+     ? pendingUnlocks[0]
+     : null;
+   ```
+
+### Key Rules
+- **Always use `onCloseComplete`** callback, not `onClose`, for enabling subsequent modals
+- **Always add 100ms setTimeout** in `onCloseComplete` before allowing new modals
+- **Never show two `<Modal>` components simultaneously** on iOS
+- **Test modal sequences on physical iOS devices** - simulators may not reproduce the freeze

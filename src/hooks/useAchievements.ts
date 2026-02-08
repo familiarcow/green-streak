@@ -20,6 +20,7 @@ interface UseAchievementsReturn {
   checkForAchievements: (context: AchievementCheckContext) => Promise<AchievementUnlockEvent[]>;
   dismissPendingUnlock: () => Promise<void>;
   refreshAchievements: () => Promise<void>;
+  setCanShowModal: (value: boolean) => void;
 
   // Computed
   unlockedCount: number;
@@ -35,6 +36,7 @@ export const useAchievements = (): UseAchievementsReturn => {
   const {
     achievements,
     pendingUnlocks,
+    canShowModal,
     stats,
     loading,
     error,
@@ -43,6 +45,7 @@ export const useAchievements = (): UseAchievementsReturn => {
     checkForAchievements: storeCheckForAchievements,
     dismissPendingUnlock: storeDismissPendingUnlock,
     subscribeToUnlocks,
+    setCanShowModal,
   } = useAchievementsStore();
 
   // Subscribe to unlock events on mount
@@ -83,7 +86,8 @@ export const useAchievements = (): UseAchievementsReturn => {
   }, [loadAchievements, loadStats]);
 
   // Get the next pending unlock (queue behavior)
-  const pendingUnlock = pendingUnlocks.length > 0 ? pendingUnlocks[0] : null;
+  // Only return pendingUnlock when canShowModal is true to prevent dual modal conflicts
+  const pendingUnlock = canShowModal && pendingUnlocks.length > 0 ? pendingUnlocks[0] : null;
 
   // Computed values
   const unlockedCount = stats?.totalUnlocked || 0;
@@ -102,6 +106,7 @@ export const useAchievements = (): UseAchievementsReturn => {
     checkForAchievements,
     dismissPendingUnlock,
     refreshAchievements,
+    setCanShowModal,
 
     // Computed
     unlockedCount,

@@ -59,6 +59,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
   const [showIconPicker, setShowIconPicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [isEditingNotification, setIsEditingNotification] = useState(false);
+  const [pendingTemplate, setPendingTemplate] = useState<HabitTemplate | null>(null);
 
   const { createTask, updateTask, deleteTask } = useTasksStore();
   const { checkForAchievements } = useAchievementsStore();
@@ -85,9 +86,9 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
     }
   }, [notificationSettings, updateNotificationSettings, playToggle]);
 
-  // Handle template selection - populate form with template data
-  const handleSelectTemplate = useCallback((template: HabitTemplate) => {
-    logger.debug('UI', 'Template selected', { templateId: template.id, name: template.name });
+  // Apply template data to form - extracted for reuse
+  const applyTemplateToForm = useCallback((template: HabitTemplate) => {
+    logger.debug('UI', 'Applying template to form', { templateId: template.id, name: template.name });
 
     // Populate form with template data
     setName(template.name);
@@ -112,10 +113,22 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
     if (suggestedSettings.streakMinimumCount !== undefined) {
       setStreakMinimumCount(suggestedSettings.streakMinimumCount);
     }
+  }, []);
 
-    // Close the template catalog
+  // Handle template selection - store pending and close catalog
+  const handleSelectTemplate = useCallback((template: HabitTemplate) => {
+    logger.debug('UI', 'Template selected', { templateId: template.id, name: template.name });
+    setPendingTemplate(template);
     setShowTemplateCatalog(false);
   }, []);
+
+  // Apply pending template after catalog close animation completes
+  const handleCatalogCloseComplete = useCallback(() => {
+    if (pendingTemplate) {
+      applyTemplateToForm(pendingTemplate);
+      setPendingTemplate(null);
+    }
+  }, [pendingTemplate, applyTemplateToForm]);
 
   // Initialize form with existing task data when editing
   useEffect(() => {
@@ -135,13 +148,13 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
     }
   }, [existingTask]);
 
-  // Initialize form with template data if provided
+  // Initialize form with template data if provided (from onboarding)
   useEffect(() => {
     if (initialTemplate && !existingTask) {
-      handleSelectTemplate(initialTemplate);
+      applyTemplateToForm(initialTemplate);
       logger.info('UI', 'Form initialized with template', { templateId: initialTemplate.id });
     }
-  }, [initialTemplate, existingTask, handleSelectTemplate]);
+  }, [initialTemplate, existingTask, applyTemplateToForm]);
 
   // Quick-access icons (17 most common + "More" button as 18th)
   const ICON_OPTIONS: IconName[] = [
@@ -226,7 +239,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
       playCelebration();
 
       onTaskAdded();
-      onClose();
+      // Don't call onClose() here - onTaskAdded() already triggers closeModal via HomeScreen.handleTaskAdded
     } catch (error) {
       const action = isEditing ? 'update' : 'create';
       logger.error('UI', `Failed to ${action} task`, { error, name });
@@ -763,6 +776,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
       <TemplateCatalogModal
         visible={showTemplateCatalog}
         onClose={() => setShowTemplateCatalog(false)}
+        onCloseComplete={handleCatalogCloseComplete}
         onSelectTemplate={handleSelectTemplate}
       />
 

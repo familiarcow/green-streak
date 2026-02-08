@@ -4,9 +4,7 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSpring,
-  withSequence,
   withDelay,
-  runOnJS,
 } from 'react-native-reanimated';
 import { BaseModal } from './BaseModal';
 import { AnimatedButton } from '../AnimatedButton';
@@ -68,7 +66,7 @@ export const AchievementUnlockedModal: React.FC<AchievementUnlockedModalProps> =
   }, [isVisible, event, iconScale, contentOpacity, badgeScale]);
 
   const playCelebrationEffects = (unlockEvent: AchievementUnlockEvent) => {
-    const { celebration, rarity } = unlockEvent.achievement;
+    const { celebration } = unlockEvent.achievement;
 
     try {
       // Play sound effect
@@ -82,13 +80,6 @@ export const AchievementUnlockedModal: React.FC<AchievementUnlockedModalProps> =
         const confettiService = getConfettiService();
         confettiService.trigger(celebration.confetti);
       }
-
-      logger.debug('UI', 'Achievement celebration effects triggered', {
-        achievementId: unlockEvent.achievement.id,
-        rarity,
-        confetti: celebration.confetti,
-        sound: celebration.sound,
-      });
     } catch (error) {
       logger.error('UI', 'Failed to play celebration effects', { error });
     }

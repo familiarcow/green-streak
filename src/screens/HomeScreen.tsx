@@ -9,7 +9,7 @@ import { TodayCard, EmptyStateSection, TasksSection, AppFeedbackCard } from '../
 import { BaseModal } from '../components/modals';
 import { useTasksStore } from '../store/tasksStore';
 import { useLogsStore } from '../store/logsStore';
-import { useTaskActions, useModalManager, useDateNavigation, useAccentColor, useColorName, useDeepLinks, useWidgetSync, useSounds } from '../hooks';
+import { useTaskActions, useModalManager, useDateNavigation, useAccentColor, useColorName, useDeepLinks, useWidgetSync, useSounds, useAchievements } from '../hooks';
 import { useDateRefresh } from '../hooks/useDateRefresh';
 import { colors, textStyles, spacing } from '../theme';
 import { radiusValues } from '../theme/utils';
@@ -54,6 +54,9 @@ export const HomeScreen: React.FC = () => {
   // Sound effects
   const { playRandomTap } = useSounds();
 
+  // Achievement modal gating - prevents dual modal conflicts on iOS
+  const { setCanShowModal } = useAchievements();
+
   // Handle deep links from widgets
   useDeepLinks({
     onCalendarLink: (date) => {
@@ -76,15 +79,23 @@ export const HomeScreen: React.FC = () => {
   // Now using centralized DateService through the hook
   const currentToday = useDateRefresh((newToday) => {
     logger.info('UI', 'Date refresh triggered in HomeScreen', { newToday });
-    
+
     // If we were on "today" and the date changed, update to new today
     if (selectedDate === newToday || selectedDate < newToday) {
       handleDateChange(newToday);
     }
-    
+
     // Refresh data to ensure everything is up to date
     refreshAllData();
   });
+
+  // Block achievement modal when any HomeScreen modal is open
+  // This prevents dual React Native <Modal> conflicts on iOS
+  useEffect(() => {
+    if (activeModal !== null) {
+      setCanShowModal(false);
+    }
+  }, [activeModal, setCanShowModal]);
 
   // Initialize data on mount
   useEffect(() => {
@@ -118,22 +129,28 @@ export const HomeScreen: React.FC = () => {
   );
 
   // Event handlers
-  const handleTaskAdded = useCallback(async () => {
-    try {
-      await refreshAllData();
-      closeModal();
-    } catch (error) {
+  const handleTaskAdded = useCallback(() => {
+    // Close modal FIRST to prevent race condition with achievement modal
+    // When achievements unlock, pendingUnlocks state is set immediately,
+    // which makes AchievementUnlockedModal visible. If EditTask modal is
+    // still open, two React Native <Modal> components are visible simultaneously,
+    // which causes the app to freeze on iOS.
+    closeModal();
+
+    // Refresh data in the background after modal starts closing
+    refreshAllData().catch((error) => {
       logger.error('UI', 'Failed to refresh after task added', { error });
-    }
+    });
   }, [refreshAllData, closeModal]);
 
-  const handleDailyLogClose = useCallback(async () => {
-    try {
-      await refreshContributionData();
-      closeModal();
-    } catch (error) {
+  const handleDailyLogClose = useCallback(() => {
+    // Close modal first for consistency with handleTaskAdded
+    closeModal();
+
+    // Refresh data in the background
+    refreshContributionData().catch((error) => {
       logger.error('UI', 'Failed to refresh after daily log close', { error });
-    }
+    });
   }, [refreshContributionData, closeModal]);
 
   const handleTaskPress = useCallback((task: Task) => {
@@ -249,6 +266,11 @@ export const HomeScreen: React.FC = () => {
         <BaseModal
           isVisible={activeModal === 'addTask' || activeModal === 'editTask'}
           onClose={closeModal}
+          onCloseComplete={() => {
+            // Delay to let native iOS modal animation fully complete
+            // Prevents freeze when achievement modal opens immediately after
+            setTimeout(() => setCanShowModal(true), 100);
+          }}
         >
           <ScreenErrorBoundary 
             screenName={activeModal === 'addTask' ? 'Add Task' : 'Edit Task'}
@@ -276,6 +298,9 @@ export const HomeScreen: React.FC = () => {
         <BaseModal
           isVisible={activeModal === 'dailyLog'}
           onClose={closeModal}
+          onCloseComplete={() => {
+            setTimeout(() => setCanShowModal(true), 100);
+          }}
         >
           <ScreenErrorBoundary 
             screenName="Daily Log"
@@ -297,6 +322,9 @@ export const HomeScreen: React.FC = () => {
         <BaseModal
           isVisible={activeModal === 'settings'}
           onClose={closeModal}
+          onCloseComplete={() => {
+            setTimeout(() => setCanShowModal(true), 100);
+          }}
         >
           <ScreenErrorBoundary 
             screenName="Settings"
@@ -314,6 +342,9 @@ export const HomeScreen: React.FC = () => {
         <BaseModal
           isVisible={activeModal === 'taskAnalytics'}
           onClose={closeModal}
+          onCloseComplete={() => {
+            setTimeout(() => setCanShowModal(true), 100);
+          }}
         >
           <ScreenErrorBoundary
             screenName="Task Analytics"
@@ -340,6 +371,9 @@ export const HomeScreen: React.FC = () => {
         <BaseModal
           isVisible={activeModal === 'achievementLibrary'}
           onClose={closeModal}
+          onCloseComplete={() => {
+            setTimeout(() => setCanShowModal(true), 100);
+          }}
         >
           <ScreenErrorBoundary
             screenName="Achievements"
