@@ -15,7 +15,9 @@ export type AchievementCategory =
   | 'perfect'       // Perfect week/month
   | 'habit_mastery' // Total completions milestones
   | 'special'       // Holiday/seasonal
-  | 'explorer';     // First actions (first task, first completion)
+  | 'explorer'      // First actions (first task, first completion)
+  | 'recovery'      // Comeback achievements after streak breaks
+  | 'time_based';   // Morning/evening completion patterns
 
 // Confetti animation types
 export type ConfettiType = false | 'burst' | 'fireworks' | 'rain';
@@ -33,15 +35,21 @@ export type AchievementTrigger =
 
 // Condition types for achievements
 export type AchievementConditionType =
-  | 'streak_days'           // Reach X day streak on any task
-  | 'total_completions'     // Total completions on a single task
-  | 'all_habits_streak'     // Complete ALL habits for X consecutive days
-  | 'perfect_week'          // No missed habits for X weeks
-  | 'early_completion'      // Complete before X time for Y days
-  | 'task_count'            // Create X number of tasks
-  | 'first_action'          // First task created, first completion, etc.
-  | 'date_specific'         // Complete on specific date (holidays)
-  | 'app_anniversary';      // Use app for X years
+  | 'streak_days'               // Reach X day streak on any task
+  | 'total_completions'         // Total completions on a single task
+  | 'all_habits_streak'         // Complete ALL habits for X consecutive days
+  | 'perfect_week'              // No missed habits for X weeks
+  | 'early_completion'          // Complete before X time for Y days
+  | 'task_count'                // Create X number of tasks
+  | 'first_action'              // First task created, first completion, etc.
+  | 'date_specific'             // Complete on specific date (holidays)
+  | 'app_anniversary'           // Use app for X years
+  | 'multi_habit_same_day'      // Count distinct habits completed on one day
+  | 'evening_completion'        // Complete after specified time for Y days
+  | 'streak_recovery'           // Resume after streak break (value = min streak to rebuild)
+  | 'weekend_streak'            // Consecutive weekends with both days completed
+  | 'total_habits_completions' // Sum of completions across ALL habits
+  | 'multi_habit_streak';      // Complete X+ habits daily for Y consecutive days
 
 /**
  * Condition definition for evaluating achievement unlock
@@ -60,6 +68,12 @@ export interface AchievementCondition {
 
   // For first-action achievements
   action?: 'create_task' | 'complete_task' | 'customize_task';
+
+  // For streak_recovery: minimum streak that was lost before recovery
+  minLostStreak?: number;
+
+  // For multi_habit_streak: number of consecutive days required
+  days?: number;
 }
 
 /**

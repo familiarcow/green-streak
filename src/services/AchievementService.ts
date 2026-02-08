@@ -125,6 +125,8 @@ export class AchievementService {
         habit_mastery: { unlocked: 0, total: 0 },
         special: { unlocked: 0, total: 0 },
         explorer: { unlocked: 0, total: 0 },
+        recovery: { unlocked: 0, total: 0 },
+        time_based: { unlocked: 0, total: 0 },
       };
 
       // Calculate by rarity
@@ -302,6 +304,31 @@ export class AchievementService {
 
       case 'app_anniversary':
         return this.evaluateAppAnniversary(condition.value!);
+
+      case 'multi_habit_same_day':
+        return this.evaluateMultiHabitSameDay(condition.value!, context);
+
+      case 'evening_completion':
+        return this.evaluateEveningCompletion(
+          condition.value!,
+          condition.time!,
+          context
+        );
+
+      case 'streak_recovery':
+        return this.evaluateStreakRecovery(
+          condition.value!,
+          condition.minLostStreak || 0
+        );
+
+      case 'weekend_streak':
+        return this.evaluateWeekendStreak(condition.value!);
+
+      case 'total_habits_completions':
+        return this.evaluateTotalHabitsCompletions(condition.value!);
+
+      case 'multi_habit_streak':
+        return this.evaluateMultiHabitStreak(condition.value!, condition.days!);
 
       default:
         logger.warn('SERVICES', 'Unknown achievement condition type', {
@@ -498,6 +525,241 @@ export class AchievementService {
     const yearsDiff = (now.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24 * 365);
 
     return yearsDiff >= requiredYears;
+  }
+
+  /**
+   * Multiple habits completed on the same day
+   */
+  private async evaluateMultiHabitSameDay(
+    requiredCount: number,
+    context: AchievementCheckContext
+  ): Promise<boolean> {
+    if (context.trigger !== 'task_completion') return false;
+
+    const date = context.date || formatDateString(new Date());
+    const tasks = await this.taskRepository.getAll();
+
+    let completedCount = 0;
+    for (const task of tasks) {
+      if (task.archivedAt) continue;
+
+      const logs = await this.logRepository.findByTask(task.id);
+      const logForDate = logs.find(l => l.date === date);
+
+      if (logForDate && logForDate.count >= 1) {
+        completedCount++;
+      }
+    }
+
+    return completedCount >= requiredCount;
+  }
+
+  /**
+   * Multi-habit streak: complete X+ habits daily for Y consecutive days
+   */
+  private async evaluateMultiHabitStreak(
+    minHabits: number,
+    requiredDays: number
+  ): Promise<boolean> {
+    const tasks = await this.taskRepository.getAll();
+    const activeTasks = tasks.filter(t => !t.archivedAt);
+    if (activeTasks.length < minHabits) return false;
+
+    const today = formatDateString(new Date());
+
+    // Check each day going backwards
+    for (let i = 0; i < requiredDays; i++) {
+      const date = this.subtractDays(today, i);
+      let completedCount = 0;
+
+      for (const task of activeTasks) {
+        const logs = await this.logRepository.findByTask(task.id);
+        const logForDate = logs.find(l => l.date === date);
+
+        if (logForDate && logForDate.count >= 1) {
+          completedCount++;
+        }
+      }
+
+      if (completedCount < minHabits) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  /**
+   * Evening completion achievement (complete after specified time)
+   */
+  private async evaluateEveningCompletion(
+    requiredDays: number,
+    afterTime: string,
+    context: AchievementCheckContext
+  ): Promise<boolean> {
+    if (context.trigger !== 'task_completion') return false;
+
+    const now = new Date();
+    const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+
+    // Must be after the specified time
+    if (currentTime < afterTime) {
+      return false;
+    }
+
+    // Find the matching achievement and update progress
+    const achievement = ACHIEVEMENTS.find(
+      a => a.condition.type === 'evening_completion' && a.condition.value === requiredDays
+    );
+
+    if (!achievement) return false;
+
+    const progress = await this.achievementRepository.getProgress(achievement.id);
+    const currentValue = (progress?.currentValue || 0) + 1;
+
+    await this.achievementRepository.updateProgress(
+      achievement.id,
+      currentValue,
+      requiredDays
+    );
+
+    return currentValue >= requiredDays;
+  }
+
+  /**
+   * Streak recovery achievement
+   * Triggered when user rebuilds a streak after losing one
+   */
+  private async evaluateStreakRecovery(
+    requiredNewStreak: number,
+    minLostStreak: number
+  ): Promise<boolean> {
+    const streaks = await this.streakRepository.getAll();
+
+    for (const streak of streaks) {
+      // Check if current streak meets the rebuild requirement
+      if (streak.currentStreak >= requiredNewStreak) {
+        // Check if they previously had a streak >= minLostStreak that was lost
+        // bestStreak tracks the highest streak ever achieved
+        if (streak.bestStreak >= minLostStreak && streak.currentStreak < streak.bestStreak) {
+          // They had a good streak, lost it, and rebuilt
+          return true;
+        }
+        // Also check: if current streak is building back up and best was higher
+        if (minLostStreak === 0) {
+          // For Phoenix Rising (minLostStreak=0), just need to resume within 2 days
+          // This is tracked differently - we need to check gap in logs
+          const logs = await this.logRepository.findByTask(streak.taskId);
+          if (logs.length >= 2) {
+            // Sort by date descending
+            const sortedLogs = [...logs].sort((a, b) => b.date.localeCompare(a.date));
+            // Check if there was a gap of 1-2 days and then resumed
+            for (let i = 0; i < sortedLogs.length - 1; i++) {
+              const currentDate = new Date(sortedLogs[i].date);
+              const prevDate = new Date(sortedLogs[i + 1].date);
+              const daysDiff = Math.floor(
+                (currentDate.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24)
+              );
+              // Found a gap of 2-3 days (meaning 1-2 missed days)
+              if (daysDiff >= 2 && daysDiff <= 3) {
+                return true;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    return false;
+  }
+
+  /**
+   * Weekend streak achievement
+   * Consecutive weekends with both Saturday and Sunday completed
+   */
+  private async evaluateWeekendStreak(requiredWeekends: number): Promise<boolean> {
+    const tasks = await this.taskRepository.getAll();
+    if (tasks.length === 0) return false;
+
+    // We need to check the last N weekends
+    const today = new Date();
+    let consecutiveWeekends = 0;
+
+    // Go back through weekends
+    for (let weekOffset = 0; weekOffset < requiredWeekends + 5; weekOffset++) {
+      // Find the most recent Saturday relative to today minus weekOffset weeks
+      const saturday = new Date(today);
+      saturday.setDate(today.getDate() - today.getDay() - 1 - (weekOffset * 7)); // Previous Saturday
+      const sunday = new Date(saturday);
+      sunday.setDate(saturday.getDate() + 1);
+
+      const saturdayStr = formatDateString(saturday);
+      const sundayStr = formatDateString(sunday);
+
+      // Check if any task was completed on both days
+      let completedBothDays = false;
+
+      for (const task of tasks) {
+        if (task.archivedAt) continue;
+
+        const logs = await this.logRepository.findByTask(task.id);
+        const satLog = logs.find(l => l.date === saturdayStr && l.count >= 1);
+        const sunLog = logs.find(l => l.date === sundayStr && l.count >= 1);
+
+        if (satLog && sunLog) {
+          completedBothDays = true;
+          break;
+        }
+      }
+
+      if (completedBothDays) {
+        consecutiveWeekends++;
+        if (consecutiveWeekends >= requiredWeekends) {
+          return true;
+        }
+      } else {
+        // Break in weekend streak, reset counter
+        if (weekOffset > 0) {
+          // Don't break on current week if it's not yet Sunday
+          consecutiveWeekends = 0;
+        }
+      }
+    }
+
+    return consecutiveWeekends >= requiredWeekends;
+  }
+
+  /**
+   * Total completions across ALL habits
+   */
+  private async evaluateTotalHabitsCompletions(
+    requiredTotal: number
+  ): Promise<boolean> {
+    const tasks = await this.taskRepository.getAll();
+    let totalCompletions = 0;
+
+    for (const task of tasks) {
+      const logs = await this.logRepository.findByTask(task.id);
+      totalCompletions += logs.reduce((sum, log) => sum + log.count, 0);
+    }
+
+    // Update progress tracking
+    const achievement = ACHIEVEMENTS.find(
+      a => a.condition.type === 'total_habits_completions' && a.condition.value === requiredTotal
+    );
+
+    if (achievement) {
+      const unlockedIds = await this.getUnlockedIds();
+      if (!unlockedIds.has(achievement.id) && totalCompletions < requiredTotal) {
+        await this.achievementRepository.updateProgress(
+          achievement.id,
+          totalCompletions,
+          requiredTotal
+        );
+      }
+    }
+
+    return totalCompletions >= requiredTotal;
   }
 
   // ============================================

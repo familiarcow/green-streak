@@ -60,6 +60,8 @@ export const CATEGORY_NAMES: Record<AchievementCategory, string> = {
   habit_mastery: 'Habit Mastery',
   special: 'Special',
   explorer: 'Explorer',
+  recovery: 'Recovery',
+  time_based: 'Time-Based',
 };
 
 /**

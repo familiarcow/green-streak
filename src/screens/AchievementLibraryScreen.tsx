@@ -1,5 +1,6 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import Animated, { useAnimatedStyle, withTiming, useSharedValue } from 'react-native-reanimated';
 import { useAchievementsStore } from '../store/achievementsStore';
 import { Icon } from '../components/common/Icon';
 import { colors, textStyles, spacing } from '../theme';
@@ -19,9 +20,69 @@ const CATEGORY_ORDER: AchievementCategory[] = [
   'perfect',
   'consistency',
   'early_bird',
+  'time_based',
+  'recovery',
   'habit_mastery',
   'special',
 ];
+
+interface CategorySectionProps {
+  category: AchievementCategory;
+  achievements: AchievementWithStatus[];
+}
+
+const CategorySection: React.FC<CategorySectionProps> = ({
+  category,
+  achievements,
+}) => {
+  const [isExpanded, setIsExpanded] = useState(true);
+  const rotation = useSharedValue(180);
+  const { playRandomTap } = useSounds();
+
+  const unlockedCount = achievements.filter((a) => a.isUnlocked).length;
+
+  const handleToggle = useCallback(() => {
+    playRandomTap();
+    const newExpanded = !isExpanded;
+    setIsExpanded(newExpanded);
+    rotation.value = withTiming(newExpanded ? 180 : 0, { duration: 200 });
+  }, [isExpanded, rotation, playRandomTap]);
+
+  const chevronStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${rotation.value}deg` }],
+  }));
+
+  return (
+    <View style={styles.categorySection}>
+      <TouchableOpacity
+        style={styles.categoryHeader}
+        onPress={handleToggle}
+        activeOpacity={0.7}
+        accessible={true}
+        accessibilityRole="button"
+        accessibilityState={{ expanded: isExpanded }}
+        accessibilityLabel={`${CATEGORY_NAMES[category]} section, ${unlockedCount} of ${achievements.length} unlocked`}
+      >
+        <View style={styles.categoryHeaderLeft}>
+          <Text style={styles.categoryTitle}>{CATEGORY_NAMES[category]}</Text>
+          <Text style={styles.categoryCount}>
+            {unlockedCount}/{achievements.length}
+          </Text>
+        </View>
+        <Animated.View style={chevronStyle}>
+          <Icon name="chevron-up" size={20} color={colors.text.secondary} />
+        </Animated.View>
+      </TouchableOpacity>
+      {isExpanded && (
+        <View style={styles.categoryContent}>
+          {achievements.map((achievement) => (
+            <AchievementCard key={achievement.definition.id} achievement={achievement} />
+          ))}
+        </View>
+      )}
+    </View>
+  );
+};
 
 const AchievementCard: React.FC<{ achievement: AchievementWithStatus }> = ({ achievement }) => {
   const { definition, isUnlocked, isHidden, progress } = achievement;
@@ -76,7 +137,6 @@ const AchievementCard: React.FC<{ achievement: AchievementWithStatus }> = ({ ach
 export const AchievementLibraryScreen: React.FC<AchievementLibraryScreenProps> = ({ onClose }) => {
   const { achievements, stats, loadAchievements, loadStats, loading } = useAchievementsStore();
   const { playRandomTap } = useSounds();
-
   const handleClose = () => {
     playRandomTap();
     onClose();
@@ -95,6 +155,8 @@ export const AchievementLibraryScreen: React.FC<AchievementLibraryScreenProps> =
       perfect: [],
       consistency: [],
       early_bird: [],
+      time_based: [],
+      recovery: [],
       habit_mastery: [],
       special: [],
     };
@@ -161,20 +223,12 @@ export const AchievementLibraryScreen: React.FC<AchievementLibraryScreenProps> =
           const categoryAchievements = achievementsByCategory[category];
           if (categoryAchievements.length === 0) return null;
 
-          const unlockedCount = categoryAchievements.filter((a) => a.isUnlocked).length;
-
           return (
-            <View key={category} style={styles.categorySection}>
-              <View style={styles.categoryHeader}>
-                <Text style={styles.categoryTitle}>{CATEGORY_NAMES[category]}</Text>
-                <Text style={styles.categoryCount}>
-                  {unlockedCount}/{categoryAchievements.length}
-                </Text>
-              </View>
-              {categoryAchievements.map((achievement) => (
-                <AchievementCard key={achievement.definition.id} achievement={achievement} />
-              ))}
-            </View>
+            <CategorySection
+              key={category}
+              category={category}
+              achievements={categoryAchievements}
+            />
           );
         })}
       </ScrollView>
@@ -212,7 +266,6 @@ const styles = StyleSheet.create({
     height: 44,
     alignItems: 'center',
     justifyContent: 'center',
-    marginLeft: spacing[2],
   },
   loadingContainer: {
     flex: 1,
@@ -233,7 +286,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: spacing[3],
+    paddingVertical: spacing[2],
+  },
+  categoryHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
   },
   categoryTitle: {
     ...textStyles.h3,
@@ -242,6 +300,9 @@ const styles = StyleSheet.create({
   categoryCount: {
     ...textStyles.caption,
     color: colors.text.secondary,
+  },
+  categoryContent: {
+    marginTop: spacing[2],
   },
   card: {
     flexDirection: 'row',
