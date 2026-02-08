@@ -26,6 +26,7 @@ interface ContributionGraphProps {
   onDayPress: (date: string) => void;
   selectedDate?: string;
   showFilterToggle?: boolean;
+  onHeightChange?: (height: number) => void;
 }
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -62,6 +63,7 @@ export const ContributionGraph: React.FC<ContributionGraphProps> = ({
   onDayPress,
   selectedDate,
   showFilterToggle = true,
+  onHeightChange,
 }) => {
   const [selectedDateInternal, setSelectedDateInternal] = useState<string | undefined>(selectedDate);
   const fadeInValue = useSharedValue(0);
@@ -100,6 +102,7 @@ export const ContributionGraph: React.FC<ContributionGraphProps> = ({
       dateOffset={dateOffset}
       onDateOffsetChange={setDateOffset}
       showFilterToggle={showFilterToggle}
+      onHeightChange={onHeightChange}
     />
   );
 };

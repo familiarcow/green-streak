@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ContributionGraph } from '../components/ContributionGraph';
@@ -53,6 +53,25 @@ export const HomeScreen: React.FC = () => {
 
   // Sound effects
   const { playRandomTap } = useSounds();
+
+  // ScrollView ref for programmatic scrolling
+  const scrollViewRef = useRef<ScrollView>(null);
+  const graphSectionRef = useRef<View>(null);
+
+  // Callback when calendar view type changes - scroll to keep time period selector visible
+  const handleCalendarHeightChange = useCallback((height: number) => {
+    if (scrollViewRef.current && graphSectionRef.current) {
+      graphSectionRef.current.measureLayout(
+        scrollViewRef.current as any,
+        (x, y, width, graphHeight) => {
+          // Scroll so the bottom of the graph (where the time selector is) stays visible
+          const targetScroll = y + height - 200; // Leave some space for visibility
+          scrollViewRef.current?.scrollTo({ y: Math.max(0, targetScroll), animated: true });
+        },
+        () => {} // onFail callback
+      );
+    }
+  }, []);
 
   // Achievement modal gating - prevents dual modal conflicts on iOS
   const { setCanShowModal } = useAchievements();
@@ -180,7 +199,7 @@ export const HomeScreen: React.FC = () => {
   return (
     <ErrorBoundary>
       <SafeAreaView style={styles.container}>
-        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        <ScrollView ref={scrollViewRef} style={styles.scrollView} showsVerticalScrollIndicator={false}>
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.titleContainer}>
@@ -217,12 +236,13 @@ export const HomeScreen: React.FC = () => {
 
           {/* Contribution Graph */}
           <ErrorBoundary>
-            <View style={styles.graphSection}>
+            <View ref={graphSectionRef} style={styles.graphSection}>
               <ContributionGraph
                 data={contributionData}
                 tasks={tasks}
                 onDayPress={handleDayPress}
                 selectedDate={selectedDate}
+                onHeightChange={handleCalendarHeightChange}
               />
             </View>
           </ErrorBoundary>
