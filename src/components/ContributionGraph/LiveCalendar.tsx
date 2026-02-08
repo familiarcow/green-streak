@@ -353,8 +353,8 @@ export const LiveCalendar: React.FC<LiveCalendarProps> = ({
       >
         <View style={styles.gridWrapper}>
           {calendarData.map((weekData, weekIndex) => (
-            <Animated.View 
-              key={`week-${weekIndex}-${viewType}`} 
+            <Animated.View
+              key={`week-${weekIndex}-${viewType}`}
               style={styles.weekRow}
               entering={FadeInDown.delay(weekIndex * 50).springify()}
             >
@@ -369,8 +369,8 @@ export const LiveCalendar: React.FC<LiveCalendarProps> = ({
                 const animationDelay = weekIndex * 50 + dayIndex * 10;
                 
                 return (
-                  <Animated.View 
-                    key={`${dayData.date}-${viewType}`} 
+                  <Animated.View
+                    key={`${dayData.date}-${viewType}`}
                     style={{ position: 'relative' }}
                     entering={FadeIn.delay(animationDelay).springify()}
                   >

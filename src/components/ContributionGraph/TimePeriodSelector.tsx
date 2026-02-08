@@ -3,11 +3,8 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
-  withSpring,
-  interpolate,
-  useAnimatedRef,
-  measure,
-  runOnJS,
+  withTiming,
+  Easing,
 } from 'react-native-reanimated';
 import { colors, textStyles, spacing } from '../../theme';
 import { fontSizes, radiusValues } from '../../theme/utils';
@@ -52,14 +49,12 @@ export const TimePeriodSelector: React.FC<TimePeriodSelectorProps> = ({
     if (selectedIndex >= 0) {
       const layout = buttonLayoutsRef.current[selectedIndex];
       if (layout) {
-        highlightPosition.value = withSpring(layout.x, {
-          damping: 15,
-          stiffness: 200,
-        });
-        highlightWidth.value = withSpring(layout.width, {
-          damping: 15,
-          stiffness: 200,
-        });
+        const timingConfig = {
+          duration: 200,
+          easing: Easing.out(Easing.cubic),
+        };
+        highlightPosition.value = withTiming(layout.x, timingConfig);
+        highlightWidth.value = withTiming(layout.width, timingConfig);
       }
     }
   }, [selected, highlightPosition, highlightWidth]);
