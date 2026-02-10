@@ -81,3 +81,4 @@ tasks/
 # expo-apple-targets generated files
 targets/**/generated.entitlements
 targets/**/Info.plist
+assets/screenshots/
