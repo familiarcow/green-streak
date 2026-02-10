@@ -26,6 +26,7 @@ import { Icon, IconName } from '../components/common/Icon';
 import { TemplateCatalogModal } from '../components/TemplateCatalog';
 import { CalendarColorPreview } from '../components/CalendarColorPreview';
 import { HueBar } from '../components/ColorPicker/HueBar';
+import { GoalExplanationStep, GoalPickerStep } from '../components/onboarding';
 import { colors, textStyles, spacing, shadows } from '../theme';
 import { radiusValues } from '../theme/utils';
 import { HabitTemplate } from '../types/templates';
@@ -33,6 +34,7 @@ import { useSettingsStore, DEFAULT_CALENDAR_COLOR } from '../store/settingsStore
 import { useSounds } from '../hooks';
 import { CALENDAR_COLOR_PRESETS, generateContributionPalette, hexToHsv, hsvToHex } from '../utils/colorUtils';
 import notificationService from '../services/NotificationService';
+import { getGoalService } from '../services';
 import logger from '../utils/logger';
 
 interface OnboardingScreenProps {
@@ -50,6 +52,8 @@ const onboardingSteps = [
     content: 'Every green square on the contribution chart is a promise kept to yourself. Watch your consistency grow, one day at a time.',
     showGraph: false,
     showSettings: false,
+    showGoalExplanation: false,
+    showGoalPicker: false,
   },
   {
     id: 2,
@@ -59,24 +63,52 @@ const onboardingSteps = [
     content: 'Your habit completions are displayed in an intuitive calendar grid. Darker squares mean more activity - build those streaks and watch your dedication shine!',
     showGraph: true,
     showSettings: false,
+    showGoalExplanation: false,
+    showGoalPicker: false,
   },
   {
     id: 3,
+    icon: 'target' as IconName,
+    title: 'Goals & Habits',
+    subtitle: 'The "why" behind the "what"',
+    content: '',
+    showGraph: false,
+    showSettings: false,
+    showGoalExplanation: true,
+    showGoalPicker: false,
+  },
+  {
+    id: 4,
+    icon: 'target' as IconName,
+    title: 'Choose Your Goals',
+    subtitle: 'Select the life goals that matter most',
+    content: '',
+    showGraph: false,
+    showSettings: false,
+    showGoalExplanation: false,
+    showGoalPicker: true,
+  },
+  {
+    id: 5,
     icon: 'settings' as IconName,
     title: 'Settings',
     subtitle: 'Set up your preferences',
     content: '',
     showGraph: false,
     showSettings: true,
+    showGoalExplanation: false,
+    showGoalPicker: false,
   },
   {
-    id: 4,
+    id: 6,
     icon: 'checkCircle' as IconName,
     title: 'Ready to Start?',
     subtitle: 'Your journey begins now',
     content: 'You can set up your first habit right away, or explore the app and add habits later.',
     showGraph: false,
     showSettings: false,
+    showGoalExplanation: false,
+    showGoalPicker: false,
   },
 ];
 
@@ -99,6 +131,10 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
   const [soundEffectsEnabled, setSoundEffectsEnabled] = useState(true);
   const [use24HourFormat, setUse24HourFormat] = useState(false);
 
+  // Goals state
+  const [selectedGoalIds, setSelectedGoalIds] = useState<string[]>([]);
+  const [primaryGoalId, setPrimaryGoalId] = useState<string | null>(null);
+
   // Handle hue change from slider
   const handleHueChange = useCallback((newHue: number) => {
     setHue(newHue);
@@ -114,6 +150,41 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
     if (hsv) {
       setHue(hsv.h);
     }
+  }, []);
+
+  // Handle goal toggle (select/deselect)
+  const handleToggleGoal = useCallback((goalId: string) => {
+    setSelectedGoalIds(prev => {
+      const isSelected = prev.includes(goalId);
+      if (isSelected) {
+        // Deselect - also clear primary if it was the primary goal
+        if (primaryGoalId === goalId) {
+          // Set the first remaining goal as primary, or null if none left
+          const remaining = prev.filter(id => id !== goalId);
+          setPrimaryGoalId(remaining.length > 0 ? remaining[0] : null);
+        }
+        return prev.filter(id => id !== goalId);
+      } else {
+        // Select - if no primary yet, make this the primary
+        const newSelected = [...prev, goalId];
+        if (primaryGoalId === null) {
+          setPrimaryGoalId(goalId);
+        }
+        return newSelected;
+      }
+    });
+  }, [primaryGoalId]);
+
+  // Handle setting primary goal
+  const handleSetPrimaryGoal = useCallback((goalId: string) => {
+    setPrimaryGoalId(goalId);
+    // Ensure the goal is selected
+    setSelectedGoalIds(prev => {
+      if (!prev.includes(goalId)) {
+        return [...prev, goalId];
+      }
+      return prev;
+    });
   }, []);
 
   // Settings store
@@ -187,6 +258,24 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
         },
       });
 
+      // Save selected goals
+      if (selectedGoalIds.length > 0) {
+        try {
+          const goalService = getGoalService();
+          for (const goalId of selectedGoalIds) {
+            const isPrimary = goalId === primaryGoalId;
+            await goalService.selectGoal(goalId, isPrimary);
+          }
+          logger.info('UI', 'Goals saved during onboarding', {
+            count: selectedGoalIds.length,
+            primaryGoalId,
+          });
+        } catch (goalError) {
+          logger.error('UI', 'Failed to save goals during onboarding', { error: goalError });
+          // Don't fail the whole onboarding if goals fail to save
+        }
+      }
+
       logger.info('UI', 'Onboarding settings saved', {
         calendarColor: selectedColor,
         soundEffectsEnabled,
@@ -194,11 +283,12 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
         notificationsEnabled,
         dailyRemindersEnabled,
         streakProtectionEnabled,
+        goalsCount: selectedGoalIds.length,
       });
     } catch (error) {
       logger.error('UI', 'Failed to save onboarding settings', { error });
     }
-  }, [selectedColor, soundEffectsEnabled, use24HourFormat, notificationsEnabled, dailyRemindersEnabled, streakProtectionEnabled, setCalendarColor, saveSoundEffectsEnabled, saveUse24HourFormat, updateNotificationSettings]);
+  }, [selectedColor, soundEffectsEnabled, use24HourFormat, notificationsEnabled, dailyRemindersEnabled, streakProtectionEnabled, selectedGoalIds, primaryGoalId, setCalendarColor, saveSoundEffectsEnabled, saveUse24HourFormat, updateNotificationSettings]);
 
   const handleSetupTask = async () => {
     logger.info('UI', 'User chose to set up first task during onboarding');
@@ -320,6 +410,19 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
                 >
                   <OnboardingDemo />
                 </Animated.View>
+              )}
+
+              {step.showGoalExplanation && (
+                <GoalExplanationStep />
+              )}
+
+              {step.showGoalPicker && (
+                <GoalPickerStep
+                  selectedGoalIds={selectedGoalIds}
+                  primaryGoalId={primaryGoalId}
+                  onToggleGoal={handleToggleGoal}
+                  onSetPrimary={handleSetPrimaryGoal}
+                />
               )}
 
               {step.showSettings && (
