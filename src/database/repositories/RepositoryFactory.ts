@@ -1,9 +1,10 @@
-import { ITaskRepository, ILogRepository, IStreakRepository, IAchievementRepository, IAchievementGridRepository } from './interfaces';
+import { ITaskRepository, ILogRepository, IStreakRepository, IAchievementRepository, IAchievementGridRepository, IGoalRepository } from './interfaces';
 import { TaskRepository } from './TaskRepository';
 import { LogRepository } from './LogRepository';
 import { StreakRepository } from './StreakRepository';
 import { AchievementRepository } from './AchievementRepository';
 import { AchievementGridRepository } from './AchievementGridRepository';
+import { GoalRepository } from './GoalRepository';
 
 /**
  * Repository Factory
@@ -18,6 +19,7 @@ export class RepositoryFactory {
   private _streakRepository: IStreakRepository;
   private _achievementRepository: IAchievementRepository;
   private _achievementGridRepository: IAchievementGridRepository;
+  private _goalRepository: IGoalRepository;
 
   private constructor() {
     // Initialize default implementations
@@ -26,6 +28,7 @@ export class RepositoryFactory {
     this._streakRepository = new StreakRepository();
     this._achievementRepository = new AchievementRepository();
     this._achievementGridRepository = new AchievementGridRepository();
+    this._goalRepository = new GoalRepository();
   }
 
   /**
@@ -74,6 +77,13 @@ export class RepositoryFactory {
   }
 
   /**
+   * Get goal repository instance
+   */
+  public getGoalRepository(): IGoalRepository {
+    return this._goalRepository;
+  }
+
+  /**
    * Set task repository implementation (for testing/dependency injection)
    */
   public setTaskRepository(repository: ITaskRepository): void {
@@ -109,6 +119,13 @@ export class RepositoryFactory {
   }
 
   /**
+   * Set goal repository implementation (for testing/dependency injection)
+   */
+  public setGoalRepository(repository: IGoalRepository): void {
+    this._goalRepository = repository;
+  }
+
+  /**
    * Reset to default implementations
    */
   public resetToDefaults(): void {
@@ -117,6 +134,7 @@ export class RepositoryFactory {
     this._streakRepository = new StreakRepository();
     this._achievementRepository = new AchievementRepository();
     this._achievementGridRepository = new AchievementGridRepository();
+    this._goalRepository = new GoalRepository();
   }
 }
 
@@ -127,5 +145,6 @@ export const logRepository = repositoryFactory.getLogRepository();
 export const streakRepository = repositoryFactory.getStreakRepository();
 export const achievementRepository = repositoryFactory.getAchievementRepository();
 export const achievementGridRepository = repositoryFactory.getAchievementGridRepository();
+export const goalRepository = repositoryFactory.getGoalRepository();
 
 export default RepositoryFactory;

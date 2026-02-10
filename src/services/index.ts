@@ -22,6 +22,7 @@ export { NotificationOrchestrator, createNotificationOrchestrator } from './Noti
 export { NotificationManager, createNotificationManager } from './NotificationManager';
 export { AchievementService, createAchievementService } from './AchievementService';
 export { AchievementGridService, createAchievementGridService, SeededRandom, GRID_CONFIGS, STARTER_ACHIEVEMENT_ID } from './AchievementGridService';
+export { GoalService, createGoalService } from './GoalService';
 
 // Service Registry
 export {
@@ -41,7 +42,8 @@ export {
   getOrchestrator,
   getAchievementService,
   getAchievementGridService,
-  getWidgetDataService
+  getWidgetDataService,
+  getGoalService
 } from './ServiceRegistry';
 
 // Type exports

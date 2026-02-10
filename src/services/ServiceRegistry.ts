@@ -13,6 +13,7 @@ import { createNotificationManager, NotificationManager } from './NotificationMa
 import { AchievementService, createAchievementService } from './AchievementService';
 import { AchievementGridService, createAchievementGridService } from './AchievementGridService';
 import { WidgetDataService, widgetDataService } from './WidgetDataService';
+import { GoalService, createGoalService } from './GoalService';
 import { repositoryFactory } from '../database/repositories/RepositoryFactory';
 import logger from '../utils/logger';
 
@@ -89,6 +90,14 @@ export class ServiceRegistry {
         taskRepository
       );
 
+      // Create GoalService with dependencies
+      const goalRepository = repositoryFactory.getGoalRepository();
+      const goalService = createGoalService(
+        goalRepository,
+        taskRepository,
+        logRepository
+      );
+
       this.register('data', dataService);
       this.register('task', taskService);
       this.register('streak', streakService);
@@ -104,6 +113,7 @@ export class ServiceRegistry {
       this.register('achievement', achievementService);
       this.register('achievementGrid', achievementGridService);
       this.register('widget', widgetDataService);
+      this.register('goal', goalService);
 
       logger.info('SERVICE', 'Default services registered successfully', {
         servicesCount: this.services.size
@@ -284,5 +294,6 @@ export const getOrchestrator = (): NotificationOrchestrator => serviceRegistry.g
 export const getAchievementService = (): AchievementService => serviceRegistry.get<AchievementService>('achievement');
 export const getAchievementGridService = (): AchievementGridService => serviceRegistry.get<AchievementGridService>('achievementGrid');
 export const getWidgetDataService = (): WidgetDataService => serviceRegistry.get<WidgetDataService>('widget');
+export const getGoalService = (): GoalService => serviceRegistry.get<GoalService>('goal');
 
 export default ServiceRegistry;

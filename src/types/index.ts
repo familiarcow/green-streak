@@ -92,6 +92,9 @@ export * from './notifications';
 // Re-export achievement types
 export * from './achievements';
 
+// Re-export goal types
+export * from './goals';
+
 export interface SeedConfig {
   tasks: number;
   days: number;
