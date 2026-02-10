@@ -27,7 +27,6 @@ interface AchievementsState {
   stats: AchievementStats | null;
   loading: boolean;
   error: string | null;
-  canShowModal: boolean;
 
   // Actions
   loadAchievements: () => Promise<void>;
@@ -43,7 +42,6 @@ interface AchievementsState {
   markAsViewed: (achievementIds: string[]) => Promise<void>;
   clearError: () => void;
   subscribeToUnlocks: () => () => void;
-  setCanShowModal: (value: boolean) => void;
 }
 
 export const useAchievementsStore = create<AchievementsState>((set, get) => ({
@@ -52,7 +50,6 @@ export const useAchievementsStore = create<AchievementsState>((set, get) => ({
   stats: null,
   loading: false,
   error: null,
-  canShowModal: true,
 
   loadAchievements: async () => {
     set({ loading: true, error: null });
@@ -158,10 +155,6 @@ export const useAchievementsStore = create<AchievementsState>((set, get) => ({
 
   clearError: () => {
     set({ error: null });
-  },
-
-  setCanShowModal: (value) => {
-    set({ canShowModal: value });
   },
 
   subscribeToUnlocks: () => {

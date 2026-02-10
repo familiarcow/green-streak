@@ -169,3 +169,64 @@ export interface AchievementStats {
 
 // Note: UI-specific constants (RARITY_COLORS, RARITY_CELEBRATIONS, CATEGORY_NAMES)
 // are located in src/theme/achievements.ts to maintain separation of concerns.
+
+// ============================================
+// ACHIEVEMENT GRID TYPES (Kirby Air Ride style)
+// ============================================
+
+/**
+ * Grid cell state for the achievement board
+ */
+export type GridCellState = 'locked' | 'visible' | 'unlocked';
+
+/**
+ * Position of an achievement on the grid
+ */
+export interface AchievementGridPosition {
+  achievementId: string;
+  row: number;  // 0-based (0-6 for 7x7)
+  col: number;  // 0-based (0-6 for 7x7)
+}
+
+/**
+ * Grid configuration based on version
+ */
+export interface GridConfig {
+  version: number;
+  size: number;
+  maxAchievements: number;
+}
+
+/**
+ * Stored grid data in database
+ */
+export interface AchievementGridData {
+  id: string;
+  seed: string;
+  version: number;
+  positions: AchievementGridPosition[];
+  createdAt: string;
+}
+
+/**
+ * Cell data for rendering in the grid
+ */
+export interface GridCell {
+  row: number;
+  col: number;
+  state: GridCellState;
+  achievement: AchievementDefinition | null;
+  unlocked: UnlockedAchievement | null;
+  progress: AchievementProgress | null;
+}
+
+/**
+ * Grid state for the achievement board screen
+ */
+export interface AchievementGridState {
+  cells: GridCell[][];  // 2D array [row][col]
+  unlockedCount: number;
+  totalCount: number;
+  isComplete: boolean;
+  starterPosition: { row: number; col: number };
+}

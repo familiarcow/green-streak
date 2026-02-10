@@ -9,7 +9,8 @@ import { TodayCard, EmptyStateSection, TasksSection, AppFeedbackCard } from '../
 import { BaseModal } from '../components/modals';
 import { useTasksStore } from '../store/tasksStore';
 import { useLogsStore } from '../store/logsStore';
-import { useTaskActions, useModalManager, useDateNavigation, useAccentColor, useColorName, useDeepLinks, useWidgetSync, useSounds, useAchievements } from '../hooks';
+import { useAchievementsStore } from '../store/achievementsStore';
+import { useTaskActions, useModalManager, useDateNavigation, useAccentColor, useColorName, useDeepLinks, useWidgetSync, useSounds } from '../hooks';
 import { useDateRefresh } from '../hooks/useDateRefresh';
 import { colors, textStyles, spacing } from '../theme';
 import { radiusValues } from '../theme/utils';
@@ -18,7 +19,7 @@ import EditTaskModal from './EditTaskModal';
 import DailyLogScreen from './DailyLogScreen';
 import SettingsScreen from './SettingsScreen';
 import TaskAnalyticsScreen from './TaskAnalyticsScreen';
-import AchievementLibraryScreen from './AchievementLibraryScreen';
+import AchievementGridScreen from './AchievementGridScreen';
 import { Task } from '../types';
 import logger from '../utils/logger';
 
@@ -46,6 +47,7 @@ export const HomeScreen: React.FC = () => {
   // Store hooks
   const { tasks, loading: tasksLoading, reorderTasks } = useTasksStore();
   const { contributionData, loading: logsLoading } = useLogsStore();
+  const { pendingUnlocks } = useAchievementsStore();
 
   // Accent color hooks for dynamic header
   const accentColor = useAccentColor();
@@ -72,9 +74,6 @@ export const HomeScreen: React.FC = () => {
       );
     }
   }, []);
-
-  // Achievement modal gating - prevents dual modal conflicts on iOS
-  const { setCanShowModal } = useAchievements();
 
   // Handle deep links from widgets
   useDeepLinks({
@@ -108,14 +107,6 @@ export const HomeScreen: React.FC = () => {
     refreshAllData();
   });
 
-  // Block achievement modal when any HomeScreen modal is open
-  // This prevents dual React Native <Modal> conflicts on iOS
-  useEffect(() => {
-    if (activeModal !== null) {
-      setCanShowModal(false);
-    }
-  }, [activeModal, setCanShowModal]);
-
   // Initialize data on mount
   useEffect(() => {
     const initializeData = async () => {
@@ -129,6 +120,29 @@ export const HomeScreen: React.FC = () => {
 
     initializeData();
   }, [refreshAllData]);
+
+  // Auto-open achievement grid when new achievements unlock
+  const prevPendingCountRef = useRef(0);
+  useEffect(() => {
+    // Only auto-open if:
+    // 1. There are pending unlocks
+    // 2. The count increased (new unlock, not just existing queue)
+    // 3. No modal is currently open
+    if (
+      pendingUnlocks.length > 0 &&
+      pendingUnlocks.length > prevPendingCountRef.current &&
+      activeModal === null
+    ) {
+      logger.info('UI', 'Auto-opening achievement grid for new unlock', {
+        achievementId: pendingUnlocks[0].achievement.id,
+      });
+      // Small delay to let any current transitions complete
+      setTimeout(() => {
+        openAchievementLibrary();
+      }, 300);
+    }
+    prevPendingCountRef.current = pendingUnlocks.length;
+  }, [pendingUnlocks, activeModal, openAchievementLibrary]);
 
   // Memoized computed values
   const selectedDateData = useMemo(() => 
@@ -149,11 +163,6 @@ export const HomeScreen: React.FC = () => {
 
   // Event handlers
   const handleTaskAdded = useCallback(() => {
-    // Close modal FIRST to prevent race condition with achievement modal
-    // When achievements unlock, pendingUnlocks state is set immediately,
-    // which makes AchievementUnlockedModal visible. If EditTask modal is
-    // still open, two React Native <Modal> components are visible simultaneously,
-    // which causes the app to freeze on iOS.
     closeModal();
 
     // Refresh data in the background after modal starts closing
@@ -286,11 +295,6 @@ export const HomeScreen: React.FC = () => {
         <BaseModal
           isVisible={activeModal === 'addTask' || activeModal === 'editTask'}
           onClose={closeModal}
-          onCloseComplete={() => {
-            // Delay to let native iOS modal animation fully complete
-            // Prevents freeze when achievement modal opens immediately after
-            setTimeout(() => setCanShowModal(true), 100);
-          }}
         >
           <ScreenErrorBoundary 
             screenName={activeModal === 'addTask' ? 'Add Task' : 'Edit Task'}
@@ -318,9 +322,6 @@ export const HomeScreen: React.FC = () => {
         <BaseModal
           isVisible={activeModal === 'dailyLog'}
           onClose={closeModal}
-          onCloseComplete={() => {
-            setTimeout(() => setCanShowModal(true), 100);
-          }}
         >
           <ScreenErrorBoundary 
             screenName="Daily Log"
@@ -342,9 +343,6 @@ export const HomeScreen: React.FC = () => {
         <BaseModal
           isVisible={activeModal === 'settings'}
           onClose={closeModal}
-          onCloseComplete={() => {
-            setTimeout(() => setCanShowModal(true), 100);
-          }}
         >
           <ScreenErrorBoundary 
             screenName="Settings"
@@ -362,9 +360,6 @@ export const HomeScreen: React.FC = () => {
         <BaseModal
           isVisible={activeModal === 'taskAnalytics'}
           onClose={closeModal}
-          onCloseComplete={() => {
-            setTimeout(() => setCanShowModal(true), 100);
-          }}
         >
           <ScreenErrorBoundary
             screenName="Task Analytics"
@@ -391,9 +386,6 @@ export const HomeScreen: React.FC = () => {
         <BaseModal
           isVisible={activeModal === 'achievementLibrary'}
           onClose={closeModal}
-          onCloseComplete={() => {
-            setTimeout(() => setCanShowModal(true), 100);
-          }}
         >
           <ScreenErrorBoundary
             screenName="Achievements"
@@ -403,7 +395,7 @@ export const HomeScreen: React.FC = () => {
               setTimeout(() => openAchievementLibrary(), 100);
             }}
           >
-            <AchievementLibraryScreen onClose={closeModal} />
+            <AchievementGridScreen onClose={closeModal} />
           </ScreenErrorBoundary>
         </BaseModal>
       </SafeAreaView>

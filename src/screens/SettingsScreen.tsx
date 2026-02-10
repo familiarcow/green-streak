@@ -182,17 +182,8 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
                       const result = await clearAllData();
                       if (result.success) {
                         logger.info('UI', 'All data cleared, triggering app restart');
-                        Alert.alert(
-                          'Data Cleared',
-                          'All data has been deleted. The app will now restart.',
-                          [{
-                            text: 'OK',
-                            onPress: () => {
-                              // Close settings and the app will show onboarding
-                              onClose();
-                            }
-                          }]
-                        );
+                        // Close settings and the app will show onboarding
+                        onClose();
                       } else {
                         Alert.alert('Error', result.error || 'Failed to clear data. Please try again.');
                       }

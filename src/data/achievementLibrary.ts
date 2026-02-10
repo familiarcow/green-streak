@@ -199,6 +199,20 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     celebration: RARITY_CELEBRATIONS.legendary,
     prerequisiteId: 'streak_200',
   },
+  {
+    id: 'streak_500',
+    name: 'Marathon Runner',
+    description: 'Maintain a 500-day streak - you\'ve made this a permanent part of your life!',
+    icon: '🏃',
+    category: 'streak',
+    rarity: 'legendary',
+    condition: {
+      type: 'streak_days',
+      value: 500,
+    },
+    celebration: RARITY_CELEBRATIONS.legendary,
+    prerequisiteId: 'streak_365',
+  },
 
   // ============================================
   // PERFECT ACHIEVEMENTS - No missed habits
@@ -645,6 +659,20 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     condition: {
       type: 'date_specific',
       date: '06-21',
+    },
+    celebration: RARITY_CELEBRATIONS.rare,
+    hidden: true,
+  },
+  {
+    id: 'special_winter_solstice',
+    name: 'Winter Solstice',
+    description: 'Complete a habit on the shortest day of the year (December 21)',
+    icon: '❄️',
+    category: 'special',
+    rarity: 'rare',
+    condition: {
+      type: 'date_specific',
+      date: '12-21',
     },
     celebration: RARITY_CELEBRATIONS.rare,
     hidden: true,

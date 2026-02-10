@@ -2,7 +2,7 @@ import { Audio } from 'expo-av';
 import * as Haptics from 'expo-haptics';
 import logger from '../utils/logger';
 
-export type SoundType = 'celebration' | 'toggle_on' | 'toggle_off' | 'achievement' | 'caution' | 'button' | 'open' | 'close' | 'tap_01' | 'tap_02' | 'tap_03' | 'tap_04' | 'tap_05';
+export type SoundType = 'celebration' | 'toggle_on' | 'toggle_off' | 'achievement' | 'caution' | 'button' | 'open' | 'close' | 'tap_01' | 'tap_02' | 'tap_03' | 'tap_04' | 'tap_05' | 'glass_crack';
 
 /**
  * Sound priority levels (higher number = higher priority)
@@ -22,7 +22,8 @@ const SOUND_PRIORITY: Record<SoundType, number> = {
   toggle_off: 2,    // UI feedback
   caution: 3,       // Errors - should be heard
   celebration: 4,   // Milestones - important feedback
-  achievement: 5,   // Highest - rare, special event
+  achievement: 5,   // High - rare, special event
+  glass_crack: 6,   // Highest - always plays during unlock animation
 };
 
 /**
@@ -43,6 +44,7 @@ const SOUND_DURATION: Record<SoundType, number> = {
   caution: 300,
   celebration: 800,
   achievement: 1200,
+  glass_crack: 150,
 };
 
 /**
@@ -63,6 +65,7 @@ const SOUND_VOLUME: Record<SoundType, number> = {
   caution: 1.0,
   celebration: 1.0,
   achievement: 1.0,
+  glass_crack: 1.0,
 };
 
 // Sound file mappings
@@ -80,6 +83,7 @@ const SOUND_FILES: Record<SoundType, any> = {
   tap_03: require('../../assets/sounds/tap_03.wav'),
   tap_04: require('../../assets/sounds/tap_04.wav'),
   tap_05: require('../../assets/sounds/tap_05.wav'),
+  glass_crack: require('../../assets/sounds/glass_crack.mp3'),
 };
 
 // Haptic patterns for each sound type
@@ -130,6 +134,10 @@ const HAPTIC_PATTERNS: Record<SoundType, () => Promise<void>> = {
   },
   tap_05: async () => {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  },
+  glass_crack: async () => {
+    // No haptic here - GlassBreakEffect handles haptic via playImpact()
+    // to ensure exactly ONE haptic fires at the impact moment
   },
 };
 
@@ -191,7 +199,7 @@ export class SoundEffectsService {
    * Sound files are optional - haptics will still work without them.
    */
   private async loadSounds(): Promise<void> {
-    const soundTypes: SoundType[] = ['celebration', 'toggle_on', 'toggle_off', 'achievement', 'caution', 'button', 'open', 'close', 'tap_01', 'tap_02', 'tap_03', 'tap_04', 'tap_05'];
+    const soundTypes: SoundType[] = ['celebration', 'toggle_on', 'toggle_off', 'achievement', 'caution', 'button', 'open', 'close', 'tap_01', 'tap_02', 'tap_03', 'tap_04', 'tap_05', 'glass_crack'];
 
     for (const type of soundTypes) {
       try {
