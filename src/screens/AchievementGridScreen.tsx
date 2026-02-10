@@ -30,7 +30,7 @@ interface AchievementGridScreenProps {
 
 /**
  * Kirby Air Ride-inspired achievement grid screen
- * Displays achievements in a 7x7 grid with adjacency-based visibility
+ * Displays achievements in a dynamic grid (8x8 for 54 achievements) with adjacency-based visibility
  */
 export const AchievementGridScreen: React.FC<AchievementGridScreenProps> = ({ onClose }) => {
   const { playRandomTap } = useSounds();
@@ -39,6 +39,7 @@ export const AchievementGridScreen: React.FC<AchievementGridScreenProps> = ({ on
   // Use the dedicated achievement grid hook
   const {
     gridState,
+    config,
     loading,
     pendingUnlock,
     animatingUnlockId,
@@ -217,6 +218,7 @@ export const AchievementGridScreen: React.FC<AchievementGridScreenProps> = ({ on
               animatingUnlockId={animatingUnlockId}
               onUnlockAnimationComplete={handleUnlockAnimationComplete}
               selectedAchievementId={selectedCell?.achievement?.id}
+              gridSize={config.size}
             />
           </View>
 

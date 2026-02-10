@@ -19,6 +19,7 @@ import { IAchievementRepository } from '../database/repositories/interfaces/IAch
 import { ITaskRepository } from '../database/repositories/interfaces/ITaskRepository';
 import { ILogRepository } from '../database/repositories/interfaces/ILogRepository';
 import { IStreakRepository } from '../database/repositories/interfaces/IStreakRepository';
+import { IGoalRepository } from '../database/repositories/interfaces/IGoalRepository';
 import {
   ACHIEVEMENTS,
   getAchievementById,
@@ -38,7 +39,8 @@ export class AchievementService {
     private achievementRepository: IAchievementRepository,
     private taskRepository: ITaskRepository,
     private logRepository: ILogRepository,
-    private streakRepository: IStreakRepository
+    private streakRepository: IStreakRepository,
+    private goalRepository?: IGoalRepository
   ) {
     logger.debug('SERVICES', 'AchievementService initialized');
   }
@@ -127,6 +129,7 @@ export class AchievementService {
         explorer: { unlocked: 0, total: 0 },
         recovery: { unlocked: 0, total: 0 },
         time_based: { unlocked: 0, total: 0 },
+        goals: { unlocked: 0, total: 0 },
       };
 
       // Calculate by rarity
@@ -329,6 +332,30 @@ export class AchievementService {
 
       case 'multi_habit_streak':
         return this.evaluateMultiHabitStreak(condition.value!, condition.days!);
+
+      case 'goal_selected':
+        return this.evaluateGoalSelected(condition.value!, context);
+
+      case 'goal_habits_linked':
+        return this.evaluateGoalHabitsLinked(condition.value!);
+
+      case 'goal_streak':
+        return this.evaluateGoalStreak(condition.value!);
+
+      case 'goal_primary_streak':
+        return this.evaluateGoalPrimaryStreak(condition.value!);
+
+      case 'goal_total_completions':
+        return this.evaluateGoalTotalCompletions(condition.value!);
+
+      case 'goal_all_complete':
+        return this.evaluateGoalAllComplete(condition.value!);
+
+      case 'concurrent_streaks':
+        return this.evaluateConcurrentStreaks(condition.value!, condition.days!);
+
+      case 'total_streak_days':
+        return this.evaluateTotalStreakDays(condition.value!);
 
       default:
         logger.warn('SERVICES', 'Unknown achievement condition type', {
@@ -838,6 +865,279 @@ export class AchievementService {
   invalidateCache(): void {
     this.unlockedCache = null;
   }
+
+  // ============================================
+  // Goal Condition Evaluators
+  // ============================================
+
+  /**
+   * Check if user has selected X goals
+   */
+  private async evaluateGoalSelected(
+    requiredCount: number,
+    context: AchievementCheckContext
+  ): Promise<boolean> {
+    if (!this.goalRepository) return false;
+
+    // Only check on goal_selected trigger
+    if (context.trigger !== 'goal_selected') return false;
+
+    try {
+      const goals = await this.goalRepository.getAllGoals();
+      return goals.length >= requiredCount;
+    } catch (error) {
+      logger.warn('SERVICES', 'Failed to evaluate goal_selected condition', { error });
+      return false;
+    }
+  }
+
+  /**
+   * Check if user has linked X habits to goals
+   */
+  private async evaluateGoalHabitsLinked(requiredCount: number): Promise<boolean> {
+    if (!this.goalRepository) return false;
+
+    try {
+      const counts = await this.goalRepository.getLinkedHabitCounts();
+      const totalLinked = Object.values(counts).reduce((sum, count) => sum + count, 0);
+      return totalLinked >= requiredCount;
+    } catch (error) {
+      logger.warn('SERVICES', 'Failed to evaluate goal_habits_linked condition', { error });
+      return false;
+    }
+  }
+
+  /**
+   * Check if all habits for any goal have been completed for X consecutive days
+   */
+  private async evaluateGoalStreak(requiredDays: number): Promise<boolean> {
+    if (!this.goalRepository) return false;
+
+    try {
+      const goals = await this.goalRepository.getAllGoals();
+
+      for (const goal of goals) {
+        const linkedHabitIds = await this.goalRepository.getHabitsForGoal(goal.id);
+        if (linkedHabitIds.length === 0) continue;
+
+        // Check if all linked habits were completed for the required consecutive days
+        let consecutiveDays = 0;
+        const today = new Date();
+
+        for (let i = 0; i < requiredDays + 10; i++) { // Check a bit beyond required
+          const checkDate = new Date(today);
+          checkDate.setDate(checkDate.getDate() - i);
+          const dateStr = formatDateString(checkDate);
+
+          let allCompleted = true;
+          for (const taskId of linkedHabitIds) {
+            const log = await this.logRepository.getByTaskAndDate(taskId, dateStr);
+            if (!log || log.count === 0) {
+              allCompleted = false;
+              break;
+            }
+          }
+
+          if (allCompleted) {
+            consecutiveDays++;
+            if (consecutiveDays >= requiredDays) {
+              return true;
+            }
+          } else {
+            consecutiveDays = 0;
+          }
+        }
+      }
+
+      return false;
+    } catch (error) {
+      logger.warn('SERVICES', 'Failed to evaluate goal_streak condition', { error });
+      return false;
+    }
+  }
+
+  /**
+   * Check if primary goal habits have been completed for X consecutive days
+   */
+  private async evaluateGoalPrimaryStreak(requiredDays: number): Promise<boolean> {
+    if (!this.goalRepository) return false;
+
+    try {
+      const primaryGoal = await this.goalRepository.getPrimaryGoal();
+      if (!primaryGoal) return false;
+
+      const linkedHabitIds = await this.goalRepository.getHabitsForGoal(primaryGoal.id);
+      if (linkedHabitIds.length === 0) return false;
+
+      let consecutiveDays = 0;
+      const today = new Date();
+
+      for (let i = 0; i < requiredDays + 10; i++) {
+        const checkDate = new Date(today);
+        checkDate.setDate(checkDate.getDate() - i);
+        const dateStr = formatDateString(checkDate);
+
+        let allCompleted = true;
+        for (const taskId of linkedHabitIds) {
+          const log = await this.logRepository.getByTaskAndDate(taskId, dateStr);
+          if (!log || log.count === 0) {
+            allCompleted = false;
+            break;
+          }
+        }
+
+        if (allCompleted) {
+          consecutiveDays++;
+          if (consecutiveDays >= requiredDays) {
+            return true;
+          }
+        } else {
+          consecutiveDays = 0;
+        }
+      }
+
+      return false;
+    } catch (error) {
+      logger.warn('SERVICES', 'Failed to evaluate goal_primary_streak condition', { error });
+      return false;
+    }
+  }
+
+  /**
+   * Check total completions of goal-linked habits
+   */
+  private async evaluateGoalTotalCompletions(requiredCount: number): Promise<boolean> {
+    if (!this.goalRepository) return false;
+
+    try {
+      const goals = await this.goalRepository.getAllGoals();
+      let totalCompletions = 0;
+
+      // Get all unique habit IDs linked to any goal
+      const linkedHabitIds = new Set<string>();
+      for (const goal of goals) {
+        const habitIds = await this.goalRepository.getHabitsForGoal(goal.id);
+        habitIds.forEach(id => linkedHabitIds.add(id));
+      }
+
+      // Sum completions for all goal-linked habits
+      for (const taskId of linkedHabitIds) {
+        const logs = await this.logRepository.findByTask(taskId);
+        totalCompletions += logs.reduce((sum, log) => sum + log.count, 0);
+      }
+
+      // Update progress tracking
+      const achievement = ACHIEVEMENTS.find(
+        a => a.condition.type === 'goal_total_completions' && a.condition.value === requiredCount
+      );
+
+      if (achievement) {
+        const unlockedIds = await this.getUnlockedIds();
+        if (!unlockedIds.has(achievement.id) && totalCompletions < requiredCount) {
+          await this.achievementRepository.updateProgress(
+            achievement.id,
+            totalCompletions,
+            requiredCount
+          );
+        }
+      }
+
+      return totalCompletions >= requiredCount;
+    } catch (error) {
+      logger.warn('SERVICES', 'Failed to evaluate goal_total_completions condition', { error });
+      return false;
+    }
+  }
+
+  /**
+   * Check if all habits for ALL goals are completed today (requires min goals)
+   */
+  private async evaluateGoalAllComplete(minGoals: number): Promise<boolean> {
+    if (!this.goalRepository) return false;
+
+    try {
+      const goals = await this.goalRepository.getAllGoals();
+
+      // Must have minimum number of goals
+      if (goals.length < minGoals) return false;
+
+      const today = formatDateString(new Date());
+
+      // Check each goal has at least 2 linked habits and all are completed today
+      for (const goal of goals) {
+        const linkedHabitIds = await this.goalRepository.getHabitsForGoal(goal.id);
+
+        // Each goal must have at least 2 linked habits (makes it harder)
+        if (linkedHabitIds.length < 2) return false;
+
+        // All habits for this goal must be completed today
+        for (const taskId of linkedHabitIds) {
+          const log = await this.logRepository.getByTaskAndDate(taskId, today);
+          if (!log || log.count === 0) {
+            return false;
+          }
+        }
+      }
+
+      return true;
+    } catch (error) {
+      logger.warn('SERVICES', 'Failed to evaluate goal_all_complete condition', { error });
+      return false;
+    }
+  }
+
+  /**
+   * Check if user has X habits with Y+ day streaks simultaneously
+   */
+  private async evaluateConcurrentStreaks(
+    requiredHabits: number,
+    requiredDays: number
+  ): Promise<boolean> {
+    try {
+      const streaks = await this.streakRepository.getAll();
+
+      // Count habits that currently have streaks >= requiredDays
+      const qualifyingStreaks = streaks.filter(s => s.currentStreak >= requiredDays);
+
+      return qualifyingStreaks.length >= requiredHabits;
+    } catch (error) {
+      logger.warn('SERVICES', 'Failed to evaluate concurrent_streaks condition', { error });
+      return false;
+    }
+  }
+
+  /**
+   * Check total accumulated streak days across all habits
+   */
+  private async evaluateTotalStreakDays(requiredTotal: number): Promise<boolean> {
+    try {
+      const streaks = await this.streakRepository.getAll();
+
+      // Sum all current streaks
+      const totalStreakDays = streaks.reduce((sum, s) => sum + s.currentStreak, 0);
+
+      // Update progress tracking
+      const achievement = ACHIEVEMENTS.find(
+        a => a.condition.type === 'total_streak_days' && a.condition.value === requiredTotal
+      );
+
+      if (achievement) {
+        const unlockedIds = await this.getUnlockedIds();
+        if (!unlockedIds.has(achievement.id) && totalStreakDays < requiredTotal) {
+          await this.achievementRepository.updateProgress(
+            achievement.id,
+            totalStreakDays,
+            requiredTotal
+          );
+        }
+      }
+
+      return totalStreakDays >= requiredTotal;
+    } catch (error) {
+      logger.warn('SERVICES', 'Failed to evaluate total_streak_days condition', { error });
+      return false;
+    }
+  }
 }
 
 /**
@@ -847,12 +1147,14 @@ export const createAchievementService = (
   achievementRepository: IAchievementRepository,
   taskRepository: ITaskRepository,
   logRepository: ILogRepository,
-  streakRepository: IStreakRepository
+  streakRepository: IStreakRepository,
+  goalRepository?: IGoalRepository
 ): AchievementService => {
   return new AchievementService(
     achievementRepository,
     taskRepository,
     logRepository,
-    streakRepository
+    streakRepository,
+    goalRepository
   );
 };

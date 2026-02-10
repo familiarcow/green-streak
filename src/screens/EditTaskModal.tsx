@@ -18,6 +18,7 @@ import Animated, {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AnimatedButton } from '../components/AnimatedButton';
 import { Icon, IconName } from '../components/common/Icon';
+import { GoalSelector } from '../components/goals';
 import { TemplateCatalogModal } from '../components/TemplateCatalog';
 import { IconPickerModal } from '../components/IconPicker';
 import { ColorPickerModal } from '../components/ColorPicker';
@@ -25,6 +26,7 @@ import { TimePickerModal } from '../components/TimePicker';
 import { useTasksStore } from '../store/tasksStore';
 import { useAchievementsStore } from '../store/achievementsStore';
 import { useSettingsStore } from '../store/settingsStore';
+import { useGoalsStore } from '../store/goalsStore';
 import { useAccentColor, useSounds } from '../hooks';
 import { colors, textStyles, spacing, shadows, glassStyles } from '../theme';
 import { radiusValues } from '../theme/utils';
@@ -60,8 +62,10 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [isEditingNotification, setIsEditingNotification] = useState(false);
   const [pendingTemplate, setPendingTemplate] = useState<HabitTemplate | null>(null);
+  const [linkedGoalIds, setLinkedGoalIds] = useState<string[]>([]);
 
   const { createTask, updateTask, deleteTask } = useTasksStore();
+  const { setTaskGoals, goals } = useGoalsStore();
   const { checkForAchievements } = useAchievementsStore();
   const { notificationSettings, updateNotificationSettings, use24HourFormat } = useSettingsStore();
   const accentColor = useAccentColor();
@@ -205,6 +209,16 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
         await updateTask(existingTask.id, taskData);
         logger.info('UI', 'Task updated successfully', { id: existingTask.id, name });
 
+        // Save goal links
+        if (goals.length > 0) {
+          try {
+            await setTaskGoals(existingTask.id, linkedGoalIds);
+            logger.debug('UI', 'Task goals saved', { taskId: existingTask.id, goalCount: linkedGoalIds.length });
+          } catch (error) {
+            logger.warn('UI', 'Failed to save task goals', { error });
+          }
+        }
+
         // Check for customize achievement (if icon or color changed)
         const wasCustomized =
           existingTask.icon !== selectedIcon ||
@@ -223,6 +237,16 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
         logger.debug('UI', 'Creating new task', { name, description, selectedColor });
         const newTask = await createTask(taskData);
         logger.info('UI', 'Task created successfully', { name });
+
+        // Save goal links
+        if (goals.length > 0 && linkedGoalIds.length > 0) {
+          try {
+            await setTaskGoals(newTask.id, linkedGoalIds);
+            logger.debug('UI', 'Task goals saved', { taskId: newTask.id, goalCount: linkedGoalIds.length });
+          } catch (error) {
+            logger.warn('UI', 'Failed to save task goals', { error });
+          }
+        }
 
         // Check for task creation achievements
         try {
@@ -467,6 +491,17 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
             </View>
           </View>
         </View>
+
+        {/* Goal Selector - Only show if user has goals */}
+        {goals.length > 0 && (
+          <View style={styles.section}>
+            <GoalSelector
+              taskId={existingTask?.id}
+              selectedGoalIds={linkedGoalIds}
+              onGoalsChange={setLinkedGoalIds}
+            />
+          </View>
+        )}
 
         {/* Reminder Section */}
         <View style={styles.section}>

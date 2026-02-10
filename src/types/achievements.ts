@@ -17,7 +17,8 @@ export type AchievementCategory =
   | 'special'       // Holiday/seasonal
   | 'explorer'      // First actions (first task, first completion)
   | 'recovery'      // Comeback achievements after streak breaks
-  | 'time_based';   // Morning/evening completion patterns
+  | 'time_based'    // Morning/evening completion patterns
+  | 'goals';        // Goal-related achievements
 
 // Confetti animation types
 export type ConfettiType = false | 'burst' | 'fireworks' | 'rain';
@@ -31,7 +32,9 @@ export type AchievementTrigger =
   | 'streak_update'
   | 'task_created'
   | 'task_customized'
-  | 'app_open';
+  | 'app_open'
+  | 'goal_selected'
+  | 'goal_habit_linked';
 
 // Condition types for achievements
 export type AchievementConditionType =
@@ -48,8 +51,16 @@ export type AchievementConditionType =
   | 'evening_completion'        // Complete after specified time for Y days
   | 'streak_recovery'           // Resume after streak break (value = min streak to rebuild)
   | 'weekend_streak'            // Consecutive weekends with both days completed
-  | 'total_habits_completions' // Sum of completions across ALL habits
-  | 'multi_habit_streak';      // Complete X+ habits daily for Y consecutive days
+  | 'total_habits_completions'  // Sum of completions across ALL habits
+  | 'multi_habit_streak'        // Complete X+ habits daily for Y consecutive days
+  | 'goal_selected'             // Select X goals
+  | 'goal_habits_linked'        // Link X habits to goals
+  | 'goal_streak'               // All habits for a goal completed for X days
+  | 'goal_primary_streak'       // Primary goal habits completed for X days
+  | 'goal_total_completions'    // Total completions of goal-linked habits
+  | 'goal_all_complete'         // Complete all habits for ALL goals in one day
+  | 'concurrent_streaks'        // Have X habits with Y+ day streaks simultaneously
+  | 'total_streak_days';        // Accumulate X total streak days across all habits
 
 /**
  * Condition definition for evaluating achievement unlock
@@ -184,8 +195,8 @@ export type GridCellState = 'locked' | 'visible' | 'unlocked';
  */
 export interface AchievementGridPosition {
   achievementId: string;
-  row: number;  // 0-based (0-6 for 7x7)
-  col: number;  // 0-based (0-6 for 7x7)
+  row: number;  // 0-based (0-7 for 8x8)
+  col: number;  // 0-based (0-7 for 8x8)
 }
 
 /**

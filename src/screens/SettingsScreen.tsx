@@ -16,12 +16,14 @@ import { Icon } from '../components/common/Icon';
 import { ColorPickerModal } from '../components/ColorPicker/ColorPickerModal';
 import { CalendarColorPreview } from '../components/CalendarColorPreview';
 import { CalendarViewSettingsModal } from '../components/modals/CalendarViewSettingsModal';
+import { GoalDetailModal } from '../components/modals/GoalDetailModal';
 import { useSettingsStore, DEFAULT_CALENDAR_COLOR } from '../store/settingsStore';
 import { generateContributionPalette, DEFAULT_CONTRIBUTION_PALETTE, CALENDAR_COLOR_PRESETS } from '../utils/colorUtils';
 import { useAccentColor, useSounds } from '../hooks';
 import { useDataStore } from '../store/dataStore';
 import { useTasksStore } from '../store/tasksStore';
 import { useLogsStore } from '../store/logsStore';
+import { useGoalsStore } from '../store/goalsStore';
 import notificationService from '../services/NotificationService';
 import { colors, textStyles, spacing, shadows, glassStyles } from '../theme';
 import { radiusValues } from '../theme/utils';
@@ -52,6 +54,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
   const { exportData, importData, clearAllData, isExporting, isImporting, isClearing } = useDataStore();
   const { tasks, loadTasks, updateTask } = useTasksStore();
   const { loadContributionData } = useLogsStore();
+  const { goals, primaryGoal, loadGoals } = useGoalsStore();
 
   // Filter habits with reminders configured
   const habitsWithReminders = tasks.filter(t => t.reminderEnabled || t.reminderTime);
@@ -61,11 +64,13 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
   const [notificationPermissions, setNotificationPermissions] = useState<'unknown' | 'granted' | 'denied' | 'undetermined'>('unknown');
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     general: true,
+    goals: true,
     notifications: true,
     data: false,
   });
   const [showCalendarColorPicker, setShowCalendarColorPicker] = useState(false);
   const [showCalendarViewSettings, setShowCalendarViewSettings] = useState(false);
+  const [showGoalDetailModal, setShowGoalDetailModal] = useState(false);
 
   // Toggle section expansion
   const toggleSection = (section: string) => {
@@ -441,6 +446,93 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
                   accessibilityHint={use24HourFormat ? "Double tap to use 12-hour format" : "Double tap to use 24-hour format"}
                 />
               </View>
+            </>
+          )}
+        </View>
+
+        {/* Goals Section */}
+        <View style={styles.section}>
+          <TouchableOpacity
+            style={styles.sectionHeader}
+            onPress={() => toggleSection('goals')}
+            accessibilityRole="button"
+            accessibilityLabel={`Goals section, ${expandedSections.goals ? 'expanded' : 'collapsed'}`}
+          >
+            <Text style={styles.sectionTitle}>Goals</Text>
+            <Icon
+              name={expandedSections.goals ? 'chevron-up' : 'chevron-down'}
+              size={20}
+              color={colors.text.secondary}
+            />
+          </TouchableOpacity>
+
+          {expandedSections.goals && (
+            <>
+              {/* Goals Summary */}
+              <TouchableOpacity
+                style={[styles.settingItem, glassStyles.card]}
+                onPress={() => setShowGoalDetailModal(true)}
+                accessibilityRole="button"
+                accessibilityLabel="Manage goals"
+                accessibilityHint="Double tap to open goal management"
+              >
+                <View style={styles.settingInfo}>
+                  <View style={styles.goalsSummaryHeader}>
+                    <Icon name="target" size={20} color={accentColor} />
+                    <Text style={styles.settingTitle}>
+                      {goals.length === 0
+                        ? 'No goals selected'
+                        : `${goals.length} goal${goals.length !== 1 ? 's' : ''} selected`}
+                    </Text>
+                  </View>
+                  {primaryGoal && (
+                    <Text style={styles.settingDescription}>
+                      Primary: {primaryGoal.definition.emoji} {primaryGoal.definition.title}
+                    </Text>
+                  )}
+                </View>
+                <Icon name="chevron-right" size={16} color={colors.text.secondary} />
+              </TouchableOpacity>
+
+              {/* Goal List */}
+              {goals.length > 0 && (
+                <View style={[styles.goalsListCard, glassStyles.card]}>
+                  {goals.map((goal, index) => (
+                    <View
+                      key={goal.id}
+                      style={[
+                        styles.goalRow,
+                        index < goals.length - 1 && styles.goalRowBorder,
+                      ]}
+                    >
+                      <View style={styles.goalInfo}>
+                        <View style={styles.goalHeader}>
+                          <View style={[styles.goalIcon, { backgroundColor: goal.definition.color + '20' }]}>
+                            <Text style={styles.goalEmoji}>{goal.definition.emoji}</Text>
+                          </View>
+                          <Text style={styles.goalName} numberOfLines={1}>
+                            {goal.definition.title}
+                          </Text>
+                          {goal.isPrimary && (
+                            <Icon name="star" size={12} color={colors.warning} />
+                          )}
+                        </View>
+                        <Text style={styles.goalLinkedCount}>
+                          {goal.linkedHabitIds.length} habit{goal.linkedHabitIds.length !== 1 ? 's' : ''} linked
+                        </Text>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              )}
+
+              {goals.length === 0 && (
+                <View style={[styles.emptyGoalsCard, glassStyles.cardSubtle]}>
+                  <Text style={styles.emptyGoalsText}>
+                    Set life goals to give meaning to your daily habits
+                  </Text>
+                </View>
+              )}
             </>
           )}
         </View>
@@ -1085,6 +1177,16 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
         onClose={() => setShowCalendarViewSettings(false)}
         tasks={tasks}
       />
+
+      {/* Goal Detail Modal */}
+      <GoalDetailModal
+        visible={showGoalDetailModal}
+        onClose={() => setShowGoalDetailModal(false)}
+        onCloseComplete={() => {
+          // Refresh goals after modal closes
+          loadGoals();
+        }}
+      />
     </SafeAreaView>
   );
 };
@@ -1438,6 +1540,79 @@ const styles = StyleSheet.create({
     ...textStyles.body,
     color: colors.text.primary,
     fontWeight: '500',
+  },
+
+  // Goals section styles
+  goalsSummaryHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
+  },
+
+  goalsListCard: {
+    padding: 0,
+    overflow: 'hidden',
+  },
+
+  goalRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: spacing[3],
+    paddingHorizontal: spacing[4],
+  },
+
+  goalRowBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: colors.divider,
+  },
+
+  goalInfo: {
+    flex: 1,
+  },
+
+  goalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
+  },
+
+  goalIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  goalEmoji: {
+    fontSize: 14,
+  },
+
+  goalName: {
+    ...textStyles.bodySmall,
+    color: colors.text.primary,
+    fontWeight: '500',
+    flex: 1,
+  },
+
+  goalLinkedCount: {
+    ...textStyles.caption,
+    color: colors.text.tertiary,
+    marginTop: 2,
+    marginLeft: 28 + spacing[2], // Align with name (icon width + gap)
+  },
+
+  emptyGoalsCard: {
+    padding: spacing[4],
+    alignItems: 'center',
+  },
+
+  emptyGoalsText: {
+    ...textStyles.bodySmall,
+    color: colors.text.tertiary,
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
 });
 

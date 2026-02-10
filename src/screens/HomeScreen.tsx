@@ -6,10 +6,12 @@ import { ErrorBoundary } from '../components/ErrorBoundary';
 import { ScreenErrorBoundary } from '../components/ScreenErrorBoundary';
 import { Icon } from '../components/common/Icon';
 import { TodayCard, EmptyStateSection, TasksSection, AppFeedbackCard } from '../components/HomeScreen';
-import { BaseModal } from '../components/modals';
+import { GoalCard } from '../components/goals';
+import { BaseModal, GoalDetailModal } from '../components/modals';
 import { useTasksStore } from '../store/tasksStore';
 import { useLogsStore } from '../store/logsStore';
 import { useAchievementsStore } from '../store/achievementsStore';
+import { useGoalsStore } from '../store/goalsStore';
 import { useTaskActions, useModalManager, useDateNavigation, useAccentColor, useColorName, useDeepLinks, useWidgetSync, useSounds } from '../hooks';
 import { useDateRefresh } from '../hooks/useDateRefresh';
 import { colors, textStyles, spacing } from '../theme';
@@ -39,6 +41,7 @@ export const HomeScreen: React.FC = () => {
     openSettings,
     openTaskAnalytics,
     openAchievementLibrary,
+    openGoalDetail,
     closeModal,
     getAnimationStyle,
     animations,
@@ -48,6 +51,7 @@ export const HomeScreen: React.FC = () => {
   const { tasks, loading: tasksLoading, reorderTasks } = useTasksStore();
   const { contributionData, loading: logsLoading } = useLogsStore();
   const { pendingUnlocks } = useAchievementsStore();
+  const { goals, primaryGoal, goalProgress, loadGoals, setCanShowModal } = useGoalsStore();
 
   // Accent color hooks for dynamic header
   const accentColor = useAccentColor();
@@ -112,14 +116,24 @@ export const HomeScreen: React.FC = () => {
     const initializeData = async () => {
       try {
         logger.info('UI', 'Initializing HomeScreen');
-        await refreshAllData();
+        await Promise.all([
+          refreshAllData(),
+          loadGoals(),
+        ]);
       } catch (error) {
         logger.error('UI', 'Failed to initialize HomeScreen', { error });
       }
     };
 
     initializeData();
-  }, [refreshAllData]);
+  }, [refreshAllData, loadGoals]);
+
+  // iOS modal sequencing: block secondary modals when primary modal is open
+  useEffect(() => {
+    if (activeModal !== null) {
+      setCanShowModal(false);
+    }
+  }, [activeModal, setCanShowModal]);
 
   // Auto-open achievement grid when new achievements unlock
   const prevPendingCountRef = useRef(0);
@@ -273,6 +287,19 @@ export const HomeScreen: React.FC = () => {
             <AppFeedbackCard activeDaysCount={activeDaysCount} />
           </ErrorBoundary>
 
+          {/* Goal Card - shows primary goal with progress */}
+          {goals.length > 0 && (
+            <ErrorBoundary>
+              <View style={styles.goalCardContainer}>
+                <GoalCard
+                  primaryGoalProgress={goalProgress.find(p => p.goal.isPrimary) ?? null}
+                  allGoals={goals}
+                  onPress={openGoalDetail}
+                />
+              </View>
+            </ErrorBoundary>
+          )}
+
           {/* Empty State */}
           {tasks.length === 0 && (
             <ErrorBoundary>
@@ -386,6 +413,10 @@ export const HomeScreen: React.FC = () => {
         <BaseModal
           isVisible={activeModal === 'achievementLibrary'}
           onClose={closeModal}
+          onCloseComplete={() => {
+            // 100ms delay lets native iOS animation fully complete
+            setTimeout(() => setCanShowModal(true), 100);
+          }}
         >
           <ScreenErrorBoundary
             screenName="Achievements"
@@ -398,6 +429,16 @@ export const HomeScreen: React.FC = () => {
             <AchievementGridScreen onClose={closeModal} />
           </ScreenErrorBoundary>
         </BaseModal>
+
+        {/* Goal Detail Modal */}
+        <GoalDetailModal
+          visible={activeModal === 'goalDetail'}
+          onClose={closeModal}
+          onCloseComplete={() => {
+            // 100ms delay lets native iOS animation fully complete
+            setTimeout(() => setCanShowModal(true), 100);
+          }}
+        />
       </SafeAreaView>
     </ErrorBoundary>
   );
@@ -454,6 +495,10 @@ const styles = StyleSheet.create({
   graphSection: {
     marginHorizontal: spacing[4],
     marginBottom: spacing[6],
+  },
+
+  goalCardContainer: {
+    marginHorizontal: spacing[4],
   },
 });
 

@@ -27,8 +27,9 @@ import logger from '../utils/logger';
 
 /**
  * Grid version configurations
- * Version 1: 7x7 (49 cells) - initial release
- * Future: 8x8 (64 cells), 10x10 (100 cells) as achievements grow
+ * Version 1: 7x7 (49 cells) - for <= 49 achievements
+ * Version 2: 8x8 (64 cells) - for 50-64 achievements (current: 54)
+ * Version 3: 10x10 (100 cells) - for 65+ achievements
  */
 export const GRID_CONFIGS: Record<number, GridConfig> = {
   1: { version: 1, size: 7, maxAchievements: 49 },

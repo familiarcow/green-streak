@@ -37,7 +37,7 @@ interface AchievementGridStoreState {
 export const useAchievementGridStore = create<AchievementGridStoreState>((set, get) => ({
   gridData: null,
   gridState: null,
-  config: { version: 1, size: 7, maxAchievements: 49 }, // Default config, will be updated on init
+  config: { version: 2, size: 8, maxAchievements: 64 }, // Default config, will be updated on init
   loading: false,
   error: null,
 

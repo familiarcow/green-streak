@@ -381,7 +381,8 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
               contentContainerStyle={styles.contentContainer}
               showsVerticalScrollIndicator={false}
             >
-              {!step.showGraph && (
+              {/* Only show default header for steps that don't have custom content */}
+              {!step.showGraph && !step.showGoalExplanation && !step.showGoalPicker && (
                 <Animated.View
                   entering={FadeInUp.delay(200)}
                   style={styles.iconContainer}
@@ -394,14 +395,16 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
                 </Animated.View>
               )}
 
-              <Animated.View
-                entering={FadeInUp.delay(300)}
-                style={styles.textContainer}
-              >
-                <Text style={styles.title}>{step.title}</Text>
-                <Text style={styles.subtitle}>{step.subtitle}</Text>
-                <Text style={styles.content}>{step.content}</Text>
-              </Animated.View>
+              {!step.showGoalExplanation && !step.showGoalPicker && (
+                <Animated.View
+                  entering={FadeInUp.delay(300)}
+                  style={styles.textContainer}
+                >
+                  <Text style={styles.title}>{step.title}</Text>
+                  <Text style={styles.subtitle}>{step.subtitle}</Text>
+                  <Text style={styles.content}>{step.content}</Text>
+                </Animated.View>
+              )}
 
               {step.showGraph && (
                 <Animated.View

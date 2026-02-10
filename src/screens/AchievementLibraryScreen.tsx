@@ -159,6 +159,7 @@ export const AchievementLibraryScreen: React.FC<AchievementLibraryScreenProps> =
       recovery: [],
       habit_mastery: [],
       special: [],
+      goals: [],
     };
 
     achievements.forEach((achievement) => {

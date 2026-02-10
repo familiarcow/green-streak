@@ -62,6 +62,7 @@ export const CATEGORY_NAMES: Record<AchievementCategory, string> = {
   explorer: 'Explorer',
   recovery: 'Recovery',
   time_based: 'Time-Based',
+  goals: 'Goals',
 };
 
 /**

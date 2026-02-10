@@ -13,9 +13,10 @@ interface AchievementGridProps {
   onUnlockAnimationComplete?: () => void;
   backgroundImage?: any;
   selectedAchievementId?: string | null;
+  gridSize?: number; // Dynamic grid size (7 for version 1, 8 for version 2, etc.)
 }
 
-const GRID_SIZE = 7;
+const DEFAULT_GRID_SIZE = 8; // Default to 8x8 grid
 const GAP = 0;
 
 /**
@@ -103,10 +104,11 @@ const PlaceholderBackground: React.FC<{ width: number; height: number }> = ({ wi
 const computeCornerRadius = (
   cells: GridCell[][],
   row: number,
-  col: number
+  col: number,
+  gridSize: number
 ): CornerRadius => {
   const getCellState = (r: number, c: number): string | undefined => {
-    if (r < 0 || r >= GRID_SIZE || c < 0 || c >= GRID_SIZE) {
+    if (r < 0 || r >= gridSize || c < 0 || c >= gridSize) {
       return undefined;
     }
     return cells[r]?.[c]?.state;
@@ -116,9 +118,9 @@ const computeCornerRadius = (
 
   // Edge detection (applies to both visible and locked cells)
   const isTopEdge = row === 0;
-  const isBottomEdge = row === GRID_SIZE - 1;
+  const isBottomEdge = row === gridSize - 1;
   const isLeftEdge = col === 0;
-  const isRightEdge = col === GRID_SIZE - 1;
+  const isRightEdge = col === gridSize - 1;
 
   // Grid corners are always rounded (the 4 extreme corners of the grid)
   const isTopLeftGridCorner = isTopEdge && isLeftEdge;
@@ -202,6 +204,7 @@ export const AchievementGrid: React.FC<AchievementGridProps> = ({
   onUnlockAnimationComplete,
   backgroundImage,
   selectedAchievementId,
+  gridSize = DEFAULT_GRID_SIZE,
 }) => {
   const [containerWidth, setContainerWidth] = useState(0);
   const [isReady, setIsReady] = useState(false);
@@ -210,14 +213,14 @@ export const AchievementGrid: React.FC<AchievementGridProps> = ({
   // Calculate cell size based on container width
   const cellSize = useMemo(() => {
     if (containerWidth === 0) return 40;
-    const availableWidth = containerWidth - (GAP * (GRID_SIZE - 1));
-    return Math.floor(availableWidth / GRID_SIZE);
-  }, [containerWidth]);
+    const availableWidth = containerWidth - (GAP * (gridSize - 1));
+    return Math.floor(availableWidth / gridSize);
+  }, [containerWidth, gridSize]);
 
   // Calculate total grid height
   const gridHeight = useMemo(() => {
-    return cellSize * GRID_SIZE + GAP * (GRID_SIZE - 1);
-  }, [cellSize]);
+    return cellSize * gridSize + GAP * (gridSize - 1);
+  }, [cellSize, gridSize]);
 
   const handleLayout = useCallback((event: LayoutChangeEvent) => {
     const { width } = event.nativeEvent.layout;
@@ -268,9 +271,9 @@ export const AchievementGrid: React.FC<AchievementGridProps> = ({
               style={styles.row}
             >
               {rowCells.map((cell, colIndex) => {
-                const isLastInRow = colIndex === GRID_SIZE - 1;
+                const isLastInRow = colIndex === gridSize - 1;
                 const isAnimatingUnlock = animatingUnlockId === cell.achievement?.id;
-                const cornerRadius = computeCornerRadius(gridState.cells, rowIndex, colIndex);
+                const cornerRadius = computeCornerRadius(gridState.cells, rowIndex, colIndex, gridSize);
                 const isSelected = selectedAchievementId != null && cell.achievement?.id === selectedAchievementId;
 
                 return (

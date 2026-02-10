@@ -66,12 +66,21 @@ export class ServiceRegistry {
       
       // Create NotificationOrchestrator
       const orchestrator = createNotificationOrchestrator(notificationService, toastService);
-      
-      // Create NotificationManager with dependencies
+
+      // Create GoalService with dependencies (before NotificationManager and AchievementService need it)
+      const goalRepository = repositoryFactory.getGoalRepository();
+      const goalService = createGoalService(
+        goalRepository,
+        taskRepository,
+        logRepository
+      );
+
+      // Create NotificationManager with dependencies (after GoalService)
       const notificationManager = createNotificationManager(
         taskService,
         streakService,
-        dataService
+        dataService,
+        goalService
       );
 
       // Create AchievementService with dependencies
@@ -80,7 +89,8 @@ export class ServiceRegistry {
         achievementRepository,
         taskRepository,
         logRepository,
-        streakRepository
+        streakRepository,
+        goalRepository
       );
 
       // Create AchievementGridService with dependencies
@@ -88,14 +98,6 @@ export class ServiceRegistry {
       const achievementGridService = createAchievementGridService(
         achievementGridRepository,
         taskRepository
-      );
-
-      // Create GoalService with dependencies
-      const goalRepository = repositoryFactory.getGoalRepository();
-      const goalService = createGoalService(
-        goalRepository,
-        taskRepository,
-        logRepository
       );
 
       this.register('data', dataService);

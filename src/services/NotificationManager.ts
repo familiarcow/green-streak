@@ -17,6 +17,7 @@ import {
   NotificationPriority,
   UserActivityPattern,
   CacheEntry,
+  GoalNotificationData,
 } from '../types';
 import notificationService from './NotificationService';
 import { TaskService } from './TaskService';
@@ -29,6 +30,7 @@ import {
   StreakProtectionStrategy,
   WeeklyRecapStrategy,
 } from './notifications/strategies';
+import { GoalService } from './GoalService';
 
 export class NotificationManager {
   private strategies: Map<NotificationType, NotificationStrategy> = new Map();
@@ -39,7 +41,8 @@ export class NotificationManager {
   constructor(
     private taskService: TaskService,
     private streakService: StreakService,
-    private dataService: DataService
+    private dataService: DataService,
+    private goalService?: GoalService
   ) {
     this.initializeStrategies();
   }
@@ -67,15 +70,53 @@ export class NotificationManager {
     const midnight = new Date(now);
     midnight.setHours(24, 0, 0, 0);
     const hoursUntilMidnight = (midnight.getTime() - now.getTime()) / (1000 * 60 * 60);
+    const completedTaskIds = activity.completedTasks.map(t => t.id);
+
+    // Build goal context
+    let goals: GoalNotificationData[] = [];
+    let primaryGoal: GoalNotificationData | undefined;
+
+    try {
+      if (!this.goalService) {
+        logger.debug('NOTIF', 'GoalService not available, skipping goal context');
+      } else {
+        const allGoals = await this.goalService.getAllGoals();
+
+        goals = allGoals.map(goal => {
+          const completedToday = goal.linkedHabitIds.filter(id =>
+            completedTaskIds.includes(id)
+          ).length;
+
+          return {
+            id: goal.id,
+            goalId: goal.goalId,
+            title: goal.definition.title,
+            emoji: goal.definition.emoji,
+            color: goal.definition.color,
+            isPrimary: goal.isPrimary,
+            linkedTaskIds: goal.linkedHabitIds,
+            completedToday,
+            totalLinked: goal.linkedHabitIds.length,
+          };
+        });
+
+        primaryGoal = goals.find(g => g.isPrimary);
+      }
+    } catch (error) {
+      logger.debug('NOTIF', 'Could not fetch goal context for notifications', { error });
+      // Goals are optional, continue without them
+    }
 
     return {
       date: getTodayString(),
       tasks: [...activity.completedTasks, ...activity.incompleteTasks],
       streaks: activity.streaksAtRisk,
-      completedToday: activity.completedTasks.map(t => t.id),
+      completedToday: completedTaskIds,
       settings,
       timeUntilMidnight: hoursUntilMidnight,
       isWeekend: now.getDay() === 0 || now.getDay() === 6,
+      goals,
+      primaryGoal,
     };
   }
 
@@ -589,15 +630,17 @@ export class NotificationManager {
   }
 }
 
-// Export singleton instance
+// Export factory function
 export const createNotificationManager = (
   taskService: TaskService,
   streakService: StreakService,
-  dataService: DataService
+  dataService: DataService,
+  goalService?: GoalService
 ): NotificationManager => {
   return new NotificationManager(
     taskService,
     streakService,
-    dataService
+    dataService,
+    goalService
   );
 };

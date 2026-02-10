@@ -3,6 +3,7 @@ import {
   AchievementWithStatus,
   AchievementUnlockEvent,
   AchievementStats,
+  AchievementCheckContext,
 } from '../types/achievements';
 import { getAchievementService } from '../services';
 import logger from '../utils/logger';
@@ -31,12 +32,7 @@ interface AchievementsState {
   // Actions
   loadAchievements: () => Promise<void>;
   loadStats: () => Promise<void>;
-  checkForAchievements: (context: {
-    trigger: 'task_completion' | 'streak_update' | 'task_created' | 'task_customized' | 'app_open';
-    taskId?: string;
-    date?: string;
-    count?: number;
-  }) => Promise<AchievementUnlockEvent[]>;
+  checkForAchievements: (context: AchievementCheckContext) => Promise<AchievementUnlockEvent[]>;
   addPendingUnlock: (event: AchievementUnlockEvent) => void;
   dismissPendingUnlock: () => Promise<void>;
   markAsViewed: (achievementIds: string[]) => Promise<void>;

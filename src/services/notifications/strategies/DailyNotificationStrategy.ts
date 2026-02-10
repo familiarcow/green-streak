@@ -77,6 +77,12 @@ export class DailyNotificationStrategy extends BaseNotificationStrategy {
     const total = context.tasks.length;
     const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
 
+    // Check for goal-specific messages first (if user has goals with linked habits)
+    const goalMessage = this.generateGoalMessage(context);
+    if (goalMessage) {
+      return goalMessage;
+    }
+
     // Perfect day
     if (completed === total && total > 0) {
       return `Perfect day! All ${total} habits completed! 🌟`;
@@ -103,7 +109,7 @@ export class DailyNotificationStrategy extends BaseNotificationStrategy {
       const longestStreak = Math.max(
         ...context.streaks.filter(s => s.atRisk).map(s => s.currentStreak)
       );
-      
+
       if (atRiskCount === 1) {
         const streak = context.streaks.find(s => s.atRisk)!;
         return `Don't break your ${streak.currentStreak} day ${streak.taskName} streak! 🔥`;
@@ -114,6 +120,53 @@ export class DailyNotificationStrategy extends BaseNotificationStrategy {
 
     // Default message
     return "Time to log today's habits! How did you do? 📝";
+  }
+
+  /**
+   * Generate goal-focused message if user has goals with linked habits
+   */
+  private generateGoalMessage(context: NotificationContext): string | null {
+    // Skip if no goals
+    if (!context.goals || context.goals.length === 0) {
+      return null;
+    }
+
+    // Focus on primary goal first
+    const primaryGoal = context.primaryGoal;
+    if (primaryGoal && primaryGoal.totalLinked > 0) {
+      // All primary goal habits completed
+      if (primaryGoal.completedToday === primaryGoal.totalLinked) {
+        return `${primaryGoal.emoji} All ${primaryGoal.title} habits done today! 🌟`;
+      }
+
+      // Good progress on primary goal
+      if (primaryGoal.completedToday > 0) {
+        const remaining = primaryGoal.totalLinked - primaryGoal.completedToday;
+        return `${primaryGoal.emoji} ${primaryGoal.completedToday}/${primaryGoal.totalLinked} ${primaryGoal.title} habits complete. ${remaining} to go! 💪`;
+      }
+
+      // No progress on primary goal but other goals have progress
+      const otherProgress = context.goals.filter(g => !g.isPrimary && g.completedToday > 0);
+      if (otherProgress.length > 0) {
+        return `${primaryGoal.emoji} Time for your ${primaryGoal.title} habits! You've made progress on other goals 🎯`;
+      }
+    }
+
+    // Check if any goals are fully complete
+    const completedGoals = context.goals.filter(
+      g => g.totalLinked > 0 && g.completedToday === g.totalLinked
+    );
+    if (completedGoals.length > 0) {
+      if (completedGoals.length === 1) {
+        const goal = completedGoals[0];
+        return `${goal.emoji} ${goal.title} complete! Keep the momentum going 🚀`;
+      } else {
+        const emojis = completedGoals.slice(0, 3).map(g => g.emoji).join('');
+        return `${emojis} ${completedGoals.length} goals complete today! Amazing! 🌟`;
+      }
+    }
+
+    return null;
   }
 
   private getMotivationalQuote(): string {

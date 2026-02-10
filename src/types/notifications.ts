@@ -68,6 +68,19 @@ export interface NotificationPriority {
   persistent?: boolean;
 }
 
+// Goal notification context
+export interface GoalNotificationData {
+  id: string;
+  goalId: string;
+  title: string;
+  emoji: string;
+  color: string;
+  isPrimary: boolean;
+  linkedTaskIds: string[];
+  completedToday: number; // Count of linked tasks completed today
+  totalLinked: number; // Total linked tasks
+}
+
 // Context for smart notifications
 export interface NotificationContext {
   userId?: string;
@@ -79,6 +92,8 @@ export interface NotificationContext {
   timeUntilMidnight: number; // Hours remaining in day
   isWeekend: boolean;
   userPatterns?: UserActivityPattern;
+  goals?: GoalNotificationData[]; // Goal context for smart messages
+  primaryGoal?: GoalNotificationData; // Primary goal for quick access
 }
 
 export interface TaskNotificationData {
