@@ -21,6 +21,7 @@ export { ToastQueue } from './ToastQueue';
 export { NotificationOrchestrator, createNotificationOrchestrator } from './NotificationOrchestrator';
 export { NotificationManager, createNotificationManager } from './NotificationManager';
 export { AchievementService, createAchievementService } from './AchievementService';
+export { AchievementGridService, createAchievementGridService, SeededRandom, GRID_CONFIGS, STARTER_ACHIEVEMENT_ID } from './AchievementGridService';
 
 // Service Registry
 export {
@@ -39,6 +40,7 @@ export {
   getConfettiService,
   getOrchestrator,
   getAchievementService,
+  getAchievementGridService,
   getWidgetDataService
 } from './ServiceRegistry';
 

@@ -11,6 +11,7 @@ import { ConfettiService } from './ConfettiService';
 import { createNotificationOrchestrator, NotificationOrchestrator } from './NotificationOrchestrator';
 import { createNotificationManager, NotificationManager } from './NotificationManager';
 import { AchievementService, createAchievementService } from './AchievementService';
+import { AchievementGridService, createAchievementGridService } from './AchievementGridService';
 import { WidgetDataService, widgetDataService } from './WidgetDataService';
 import { repositoryFactory } from '../database/repositories/RepositoryFactory';
 import logger from '../utils/logger';
@@ -81,6 +82,13 @@ export class ServiceRegistry {
         streakRepository
       );
 
+      // Create AchievementGridService with dependencies
+      const achievementGridRepository = repositoryFactory.getAchievementGridRepository();
+      const achievementGridService = createAchievementGridService(
+        achievementGridRepository,
+        taskRepository
+      );
+
       this.register('data', dataService);
       this.register('task', taskService);
       this.register('streak', streakService);
@@ -94,6 +102,7 @@ export class ServiceRegistry {
       this.register('confetti', confettiService);
       this.register('orchestrator', orchestrator);
       this.register('achievement', achievementService);
+      this.register('achievementGrid', achievementGridService);
       this.register('widget', widgetDataService);
 
       logger.info('SERVICE', 'Default services registered successfully', {
@@ -273,6 +282,7 @@ export const getSoundService = (): SoundEffectsService => serviceRegistry.get<So
 export const getConfettiService = (): ConfettiService => serviceRegistry.get<ConfettiService>('confetti');
 export const getOrchestrator = (): NotificationOrchestrator => serviceRegistry.get<NotificationOrchestrator>('orchestrator');
 export const getAchievementService = (): AchievementService => serviceRegistry.get<AchievementService>('achievement');
+export const getAchievementGridService = (): AchievementGridService => serviceRegistry.get<AchievementGridService>('achievementGrid');
 export const getWidgetDataService = (): WidgetDataService => serviceRegistry.get<WidgetDataService>('widget');
 
 export default ServiceRegistry;

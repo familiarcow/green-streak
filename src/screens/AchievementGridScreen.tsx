@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import Animated, {
   useAnimatedStyle,
@@ -6,25 +6,23 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
-import { useAchievementsStore } from '../store/achievementsStore';
-import { useAchievementGridStore } from '../store/achievementGridStore';
-import { AchievementGrid, UnlockCelebration, CELEBRATION_DURATION } from '../components/achievements';
+import { useAchievementGrid } from '../hooks/useAchievementGrid';
+import {
+  AchievementGrid,
+  UnlockCelebration,
+  CELEBRATION_DURATION,
+  CompletedAchievementsList,
+  AvailableAchievementsList,
+  AchievementDetailPanel,
+} from '../components/achievements';
 import { Icon } from '../components/common/Icon';
 import { colors, textStyles, spacing } from '../theme';
-import { glassStyles } from '../theme/glass';
 import { radiusValues } from '../theme/utils';
 import { RARITY_COLORS } from '../theme/achievements';
 import { useSounds } from '../hooks/useSounds';
 import { useAccentColor } from '../hooks/useAccentColor';
-// Note: Sound/haptic handled by GlassBreakEffect component
 import logger from '../utils/logger';
-import {
-  GridCell,
-  UnlockedAchievement,
-  AchievementProgress,
-  AchievementGridState,
-  AchievementDefinition,
-} from '../types/achievements';
+import { GridCell, AchievementUnlockEvent } from '../types/achievements';
 
 interface AchievementGridScreenProps {
   onClose: () => void;
@@ -38,82 +36,25 @@ export const AchievementGridScreen: React.FC<AchievementGridScreenProps> = ({ on
   const { playRandomTap } = useSounds();
   const accentColor = useAccentColor();
 
-  // Achievement state - access pendingUnlocks directly from store
-  // (not through the hook which gates it with canShowModal)
+  // Use the dedicated achievement grid hook
   const {
-    achievements,
-    pendingUnlocks,
-    loadAchievements,
-    loadStats,
-    loading,
-    dismissPendingUnlock,
-  } = useAchievementsStore();
-
-  // Get the first pending unlock (FIFO queue)
-  const pendingUnlock = pendingUnlocks.length > 0 ? pendingUnlocks[0] : null;
-
-  // Grid state
-  const {
-    gridData,
     gridState,
-    config,
-    loading: gridLoading,
-    initializeGrid,
-    refreshGrid,
-    getPositionForAchievement,
-  } = useAchievementGridStore();
+    loading,
+    pendingUnlock,
+    animatingUnlockId,
+    setAnimatingUnlockId,
+    dismissPendingUnlock,
+    progressPercentage,
+  } = useAchievementGrid();
 
   // Selected cell for detail view
   const [selectedCell, setSelectedCell] = useState<GridCell | null>(null);
   const detailOpacity = useSharedValue(0);
   const detailScale = useSharedValue(0.9);
 
-  // Unlock animation state
-  const [animatingUnlockId, setAnimatingUnlockId] = useState<string | null>(null);
+  // Celebration state
   const [showCelebration, setShowCelebration] = useState(false);
-  const [celebrationAchievement, setCelebrationAchievement] = useState<typeof pendingUnlock>(null);
-  const hasProcessedPendingUnlock = useRef<string | null>(null);
-  const animationDelayRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Initialize grid and load achievements on mount
-  useEffect(() => {
-    initializeGrid();
-    loadAchievements();
-    loadStats();
-  }, [initializeGrid, loadAchievements, loadStats]);
-
-  // Handle pending unlocks - trigger animation when screen opens with pending unlock
-  useEffect(() => {
-    if (pendingUnlock && gridState && !animatingUnlockId && !animationDelayRef.current) {
-      const achievementId = pendingUnlock.achievement.id;
-
-      // Only process each pending unlock once
-      if (hasProcessedPendingUnlock.current === achievementId) {
-        return;
-      }
-
-      hasProcessedPendingUnlock.current = achievementId;
-      logger.info('UI', 'Scheduling unlock animation', { achievementId, delay: 600 });
-
-      // Wait for drawer to finish opening + user to see the grid (600ms)
-      // Use ref to prevent timeout from being cleared on re-renders
-      animationDelayRef.current = setTimeout(() => {
-        logger.info('UI', 'Starting unlock animation for achievement', { achievementId });
-        setAnimatingUnlockId(achievementId);
-        animationDelayRef.current = null;
-      }, 600);
-    }
-  }, [pendingUnlock, gridState, animatingUnlockId]);
-
-  // Cleanup timeout on unmount only
-  useEffect(() => {
-    return () => {
-      if (animationDelayRef.current) {
-        clearTimeout(animationDelayRef.current);
-        animationDelayRef.current = null;
-      }
-    };
-  }, []);
+  const [celebrationAchievement, setCelebrationAchievement] = useState<AchievementUnlockEvent | null>(null);
 
   // Log when animatingUnlockId changes
   useEffect(() => {
@@ -151,7 +92,7 @@ export const AchievementGridScreen: React.FC<AchievementGridScreenProps> = ({ on
       // Clear animation state
       setAnimatingUnlockId(null);
     }
-  }, [animatingUnlockId, gridState, pendingUnlock]);
+  }, [animatingUnlockId, gridState, pendingUnlock, setAnimatingUnlockId]);
 
   // Handle celebration complete - show detail panel
   const handleCelebrationComplete = useCallback(() => {
@@ -176,32 +117,6 @@ export const AchievementGridScreen: React.FC<AchievementGridScreenProps> = ({ on
     dismissPendingUnlock();
     setCelebrationAchievement(null);
   }, [celebrationAchievement, gridState, detailOpacity, detailScale, dismissPendingUnlock]);
-
-  // Build unlocked data maps from achievements
-  const { unlockedIds, unlockedRecords, progressRecords } = useMemo(() => {
-    const ids = new Set<string>();
-    const unlocked = new Map<string, UnlockedAchievement>();
-    const progress = new Map<string, AchievementProgress>();
-
-    for (const achievement of achievements) {
-      if (achievement.isUnlocked && achievement.unlocked) {
-        ids.add(achievement.definition.id);
-        unlocked.set(achievement.definition.id, achievement.unlocked);
-      }
-      if (achievement.progress) {
-        progress.set(achievement.definition.id, achievement.progress);
-      }
-    }
-
-    return { unlockedIds: ids, unlockedRecords: unlocked, progressRecords: progress };
-  }, [achievements]);
-
-  // Refresh grid when achievements data changes
-  useEffect(() => {
-    if (gridData && achievements.length > 0) {
-      refreshGrid(unlockedIds, unlockedRecords, progressRecords);
-    }
-  }, [gridData, achievements, unlockedIds, unlockedRecords, progressRecords, refreshGrid]);
 
   // Handle close
   const handleClose = useCallback(() => {
@@ -231,13 +146,6 @@ export const AchievementGridScreen: React.FC<AchievementGridScreenProps> = ({ on
     transform: [{ scale: detailScale.value }],
   }));
 
-  // Calculate progress
-  const progressPercentage = gridState
-    ? Math.round((gridState.unlockedCount / gridState.totalCount) * 100)
-    : 0;
-
-  const isLoading = loading || gridLoading || !gridState;
-
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -260,7 +168,7 @@ export const AchievementGridScreen: React.FC<AchievementGridScreenProps> = ({ on
       </View>
 
       {/* Loading State */}
-      {isLoading ? (
+      {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
@@ -337,256 +245,6 @@ export const AchievementGridScreen: React.FC<AchievementGridScreenProps> = ({ on
         cellPosition={null}
         onComplete={handleCelebrationComplete}
       />
-    </View>
-  );
-};
-
-/**
- * Collapsible dropdown list of achievements with full details
- */
-interface AchievementListProps {
-  gridState: AchievementGridState;
-}
-
-const CompletedAchievementsList: React.FC<AchievementListProps> = ({ gridState }) => {
-  const [isExpanded, setIsExpanded] = useState(true);
-
-  // Get all unlocked cells, sorted by unlock date (most recent first)
-  const completedCells = useMemo(() => {
-    const unlocked: GridCell[] = [];
-    for (const row of gridState.cells) {
-      for (const cell of row) {
-        if (cell.state === 'unlocked' && cell.achievement && cell.unlocked) {
-          unlocked.push(cell);
-        }
-      }
-    }
-    // Sort by unlock date descending (most recent first)
-    return unlocked.sort((a, b) => {
-      const dateA = a.unlocked?.unlockedAt ? new Date(a.unlocked.unlockedAt).getTime() : 0;
-      const dateB = b.unlocked?.unlockedAt ? new Date(b.unlocked.unlockedAt).getTime() : 0;
-      return dateB - dateA;
-    });
-  }, [gridState]);
-
-  if (completedCells.length === 0) {
-    return null;
-  }
-
-  return (
-    <View style={styles.dropdownSection}>
-      <TouchableOpacity
-        style={styles.dropdownHeader}
-        onPress={() => setIsExpanded(!isExpanded)}
-        activeOpacity={0.7}
-      >
-        <Text style={styles.dropdownTitle}>Completed ({completedCells.length})</Text>
-        <Icon
-          name={isExpanded ? 'chevron-up' : 'chevron-down'}
-          size={20}
-          color={colors.text.secondary}
-        />
-      </TouchableOpacity>
-      {isExpanded && (
-        <View style={styles.dropdownContent}>
-          {completedCells.map((cell) => {
-            const achievement = cell.achievement!;
-            const rarityColor = RARITY_COLORS[achievement.rarity];
-            return (
-              <View
-                key={achievement.id}
-                style={[styles.achievementRow, { borderLeftColor: rarityColor }]}
-              >
-                <Text style={styles.achievementIcon}>{achievement.icon}</Text>
-                <View style={styles.achievementInfo}>
-                  <View style={styles.achievementNameRow}>
-                    <Text style={styles.achievementName}>{achievement.name}</Text>
-                    <View style={[styles.rarityBadge, { backgroundColor: rarityColor }]}>
-                      <Text style={styles.rarityBadgeText}>
-                        {achievement.rarity.charAt(0).toUpperCase()}
-                      </Text>
-                    </View>
-                  </View>
-                  <Text style={styles.achievementDescription} numberOfLines={2}>
-                    {achievement.description}
-                  </Text>
-                  {cell.unlocked && (
-                    <Text style={styles.achievementDate}>
-                      Unlocked {new Date(cell.unlocked.unlockedAt).toLocaleDateString()}
-                    </Text>
-                  )}
-                </View>
-              </View>
-            );
-          })}
-        </View>
-      )}
-    </View>
-  );
-};
-
-/**
- * Collapsible dropdown list of available achievements (visible but not yet unlocked)
- */
-const AvailableAchievementsList: React.FC<AchievementListProps> = ({ gridState }) => {
-  const [isExpanded, setIsExpanded] = useState(true);
-
-  // Get all visible (not yet unlocked) cells
-  const availableCells = useMemo(() => {
-    const visible: GridCell[] = [];
-    for (const row of gridState.cells) {
-      for (const cell of row) {
-        if (cell.state === 'visible' && cell.achievement) {
-          visible.push(cell);
-        }
-      }
-    }
-    // Sort by progress percentage descending (closest to completion first)
-    return visible.sort((a, b) => {
-      const progressA = a.progress?.percentage || 0;
-      const progressB = b.progress?.percentage || 0;
-      return progressB - progressA;
-    });
-  }, [gridState]);
-
-  if (availableCells.length === 0) {
-    return null;
-  }
-
-  return (
-    <View style={styles.dropdownSection}>
-      <TouchableOpacity
-        style={styles.dropdownHeader}
-        onPress={() => setIsExpanded(!isExpanded)}
-        activeOpacity={0.7}
-      >
-        <Text style={styles.dropdownTitle}>Available ({availableCells.length})</Text>
-        <Icon
-          name={isExpanded ? 'chevron-up' : 'chevron-down'}
-          size={20}
-          color={colors.text.secondary}
-        />
-      </TouchableOpacity>
-      {isExpanded && (
-        <View style={styles.dropdownContent}>
-          {availableCells.map((cell) => {
-            const achievement = cell.achievement!;
-            const rarityColor = RARITY_COLORS[achievement.rarity];
-            const progress = cell.progress;
-            return (
-              <View
-                key={achievement.id}
-                style={[styles.achievementRow, styles.achievementRowAvailable, { borderLeftColor: `${rarityColor}60` }]}
-              >
-                <Text style={[styles.achievementIcon, styles.achievementIconFaded]}>{achievement.icon}</Text>
-                <View style={styles.achievementInfo}>
-                  <View style={styles.achievementNameRow}>
-                    <Text style={[styles.achievementName, styles.achievementNameFaded]}>{achievement.name}</Text>
-                    <View style={[styles.rarityBadge, { backgroundColor: `${rarityColor}60` }]}>
-                      <Text style={styles.rarityBadgeText}>
-                        {achievement.rarity.charAt(0).toUpperCase()}
-                      </Text>
-                    </View>
-                  </View>
-                  <Text style={[styles.achievementDescription, styles.achievementDescriptionFaded]} numberOfLines={2}>
-                    {achievement.description}
-                  </Text>
-                  {progress && (
-                    <View style={styles.progressRow}>
-                      <View style={styles.progressBarSmall}>
-                        <View
-                          style={[
-                            styles.progressFillSmall,
-                            { width: `${Math.min(progress.percentage, 100)}%`, backgroundColor: rarityColor },
-                          ]}
-                        />
-                      </View>
-                      <Text style={styles.progressTextSmall}>
-                        {progress.currentValue}/{progress.targetValue}
-                      </Text>
-                    </View>
-                  )}
-                </View>
-              </View>
-            );
-          })}
-        </View>
-      )}
-    </View>
-  );
-};
-
-/**
- * Detail panel for showing achievement information
- */
-interface AchievementDetailPanelProps {
-  cell: GridCell;
-  onClose: () => void;
-}
-
-const AchievementDetailPanel: React.FC<AchievementDetailPanelProps> = ({ cell, onClose }) => {
-  const { state, achievement, unlocked, progress } = cell;
-
-  if (!achievement) {
-    return null;
-  }
-
-  const rarityColor = RARITY_COLORS[achievement.rarity];
-  const isUnlocked = state === 'unlocked';
-  const isVisible = state === 'visible';
-
-  return (
-    <View style={[styles.detailContent, { borderColor: rarityColor }]}>
-      {/* Header row: Icon, Name, Rarity badge, Close button */}
-      <View style={styles.detailHeader}>
-        <View style={[styles.detailIconContainer, { backgroundColor: `${rarityColor}30` }]}>
-          <Text style={styles.detailIcon}>{achievement.icon}</Text>
-          {isUnlocked && (
-            <View style={[styles.detailUnlockedBadge, { backgroundColor: rarityColor }]}>
-              <Icon name="check" size={10} color="#FFFFFF" />
-            </View>
-          )}
-        </View>
-
-        <View style={styles.detailNameContainer}>
-          <Text style={styles.detailName}>{achievement.name}</Text>
-          <View style={[styles.detailRarityBadge, { backgroundColor: rarityColor }]}>
-            <Text style={styles.detailRarityText}>
-              {achievement.rarity.charAt(0).toUpperCase() + achievement.rarity.slice(1)}
-            </Text>
-          </View>
-        </View>
-
-        <TouchableOpacity style={styles.detailCloseButton} onPress={onClose}>
-          <Icon name="x" size={20} color={colors.text.secondary} />
-        </TouchableOpacity>
-      </View>
-
-      {/* Description - full width */}
-      <Text style={styles.detailDescription}>
-        {isVisible ? `Objective: ${achievement.description}` : achievement.description}
-      </Text>
-
-      {/* Footer: Progress bar OR unlock date */}
-      {isVisible && progress ? (
-        <View style={styles.detailProgressContainer}>
-          <View style={styles.detailProgressBar}>
-            <View
-              style={[
-                styles.detailProgressFill,
-                { width: `${Math.min(progress.percentage, 100)}%`, backgroundColor: rarityColor },
-              ]}
-            />
-          </View>
-          <Text style={styles.detailProgressText}>
-            {progress.currentValue}/{progress.targetValue}
-          </Text>
-        </View>
-      ) : isUnlocked && unlocked ? (
-        <Text style={styles.detailUnlockDate}>
-          Unlocked {new Date(unlocked.unlockedAt).toLocaleDateString()}
-        </Text>
-      ) : null}
     </View>
   );
 };
@@ -731,243 +389,9 @@ const styles = StyleSheet.create({
     marginBottom: spacing[4],
   },
 
-  // Collapsible achievement dropdowns
-  dropdownSection: {
-    marginBottom: spacing[4],
-    ...glassStyles.cardSubtle,
-    borderRadius: radiusValues.lg,
-    overflow: 'hidden',
-  },
-
-  dropdownHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: spacing[3],
-  },
-
-  dropdownTitle: {
-    ...textStyles.body,
-    color: colors.text.primary,
-    fontWeight: '600',
-  },
-
-  dropdownContent: {
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-
-  achievementRow: {
-    flexDirection: 'row',
-    padding: spacing[3],
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    borderLeftWidth: 3,
-  },
-
-  achievementRowAvailable: {
-    opacity: 0.85,
-  },
-
-  achievementIcon: {
-    fontSize: 28,
-    marginRight: spacing[3],
-  },
-
-  achievementIconFaded: {
-    opacity: 0.6,
-  },
-
-  achievementInfo: {
-    flex: 1,
-  },
-
-  achievementNameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing[2],
-    marginBottom: spacing[1],
-  },
-
-  achievementName: {
-    ...textStyles.body,
-    color: colors.text.primary,
-    fontWeight: '600',
-    flex: 1,
-  },
-
-  achievementNameFaded: {
-    color: colors.text.secondary,
-  },
-
-  rarityBadge: {
-    paddingHorizontal: spacing[2],
-    paddingVertical: 2,
-    borderRadius: radiusValues.sm,
-  },
-
-  rarityBadgeText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: colors.text.inverse,
-  },
-
-  achievementDescription: {
-    ...textStyles.caption,
-    color: colors.text.secondary,
-    lineHeight: 16,
-    marginBottom: spacing[1],
-  },
-
-  achievementDescriptionFaded: {
-    color: colors.text.tertiary,
-  },
-
-  achievementDate: {
-    ...textStyles.caption,
-    color: colors.text.tertiary,
-    fontSize: 11,
-  },
-
-  progressRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing[2],
-  },
-
-  progressBarSmall: {
-    flex: 1,
-    height: 4,
-    backgroundColor: colors.interactive.default,
-    borderRadius: 2,
-    overflow: 'hidden',
-  },
-
-  progressFillSmall: {
-    height: '100%',
-    borderRadius: 2,
-  },
-
-  progressTextSmall: {
-    ...textStyles.caption,
-    color: colors.text.tertiary,
-    fontSize: 11,
-    minWidth: 45,
-  },
-
   // Inline detail section above dropdowns
   detailSection: {
     marginBottom: spacing[4],
-  },
-
-  detailContent: {
-    ...glassStyles.card,
-    backgroundColor: colors.surface,
-    borderRadius: radiusValues.xl,
-    padding: spacing[4],
-    borderWidth: 2,
-    gap: spacing[3],
-  },
-
-  detailHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing[3],
-  },
-
-  detailIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
-    flexShrink: 0,
-  },
-
-  detailIcon: {
-    fontSize: 24,
-  },
-
-  detailUnlockedBadge: {
-    position: 'absolute',
-    bottom: -2,
-    right: -2,
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: colors.surface,
-  },
-
-  detailNameContainer: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing[2],
-    flexWrap: 'wrap',
-  },
-
-  detailName: {
-    ...textStyles.h4,
-    color: colors.text.primary,
-  },
-
-  detailRarityBadge: {
-    paddingHorizontal: spacing[2],
-    paddingVertical: 2,
-    borderRadius: radiusValues.sm,
-  },
-
-  detailRarityText: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: colors.text.inverse,
-  },
-
-  detailDescription: {
-    ...textStyles.body,
-    color: colors.text.secondary,
-    lineHeight: 22,
-  },
-
-  detailProgressContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing[2],
-  },
-
-  detailProgressBar: {
-    flex: 1,
-    height: 6,
-    backgroundColor: colors.interactive.default,
-    borderRadius: 3,
-    overflow: 'hidden',
-  },
-
-  detailProgressFill: {
-    height: '100%',
-    borderRadius: 3,
-  },
-
-  detailProgressText: {
-    ...textStyles.caption,
-    color: colors.text.secondary,
-  },
-
-  detailUnlockDate: {
-    ...textStyles.caption,
-    color: colors.text.tertiary,
-  },
-
-  detailCloseButton: {
-    width: 36,
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
   },
 });
 
