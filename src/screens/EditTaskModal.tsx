@@ -65,7 +65,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
   const [linkedGoalIds, setLinkedGoalIds] = useState<string[]>([]);
 
   const { createTask, updateTask, deleteTask } = useTasksStore();
-  const { setTaskGoals, goals } = useGoalsStore();
+  const { setTaskGoals, goals, primaryGoal } = useGoalsStore();
   const { checkForAchievements } = useAchievementsStore();
   const { notificationSettings, updateNotificationSettings, use24HourFormat } = useSettingsStore();
   const accentColor = useAccentColor();
@@ -159,6 +159,14 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
       logger.info('UI', 'Form initialized with template', { templateId: initialTemplate.id });
     }
   }, [initialTemplate, existingTask, applyTemplateToForm]);
+
+  // Default new tasks to primary goal
+  useEffect(() => {
+    if (!existingTask && primaryGoal && linkedGoalIds.length === 0) {
+      setLinkedGoalIds([primaryGoal.goalId]);
+      logger.debug('UI', 'Defaulting new task to primary goal', { goalId: primaryGoal.goalId });
+    }
+  }, [existingTask, primaryGoal]);
 
   // Quick-access icons (17 most common + "More" button as 18th)
   const ICON_OPTIONS: IconName[] = [
@@ -494,13 +502,11 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
 
         {/* Goal Selector - Only show if user has goals */}
         {goals.length > 0 && (
-          <View style={styles.section}>
-            <GoalSelector
-              taskId={existingTask?.id}
-              selectedGoalIds={linkedGoalIds}
-              onGoalsChange={setLinkedGoalIds}
-            />
-          </View>
+          <GoalSelector
+            taskId={existingTask?.id}
+            selectedGoalIds={linkedGoalIds}
+            onGoalsChange={setLinkedGoalIds}
+          />
         )}
 
         {/* Reminder Section */}

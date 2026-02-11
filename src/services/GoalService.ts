@@ -5,13 +5,26 @@
  * habit linking, and progress calculation.
  */
 
-import { UserGoal, UserGoalWithDetails, GoalProgress, GoalHabitLink } from '../types/goals';
+import { UserGoal, UserGoalWithDetails, GoalProgress, GoalHabitLink, HabitStats } from '../types/goals';
 import { IGoalRepository } from '../database/repositories/interfaces/IGoalRepository';
 import { ITaskRepository } from '../database/repositories/interfaces/ITaskRepository';
 import { ILogRepository } from '../database/repositories/interfaces/ILogRepository';
 import { GOAL_MAP, getGoalById } from '../data/goalLibrary';
-import { getTodayString } from '../utils/dateHelpers';
+import { getTodayString, formatDate } from '../utils/dateHelpers';
 import logger from '../utils/logger';
+
+/**
+ * Get an array of date strings for the last N days
+ */
+function getLastNDays(date: Date, n: number): string[] {
+  const dates: string[] = [];
+  for (let i = 0; i < n; i++) {
+    const d = new Date(date);
+    d.setDate(date.getDate() - i);
+    dates.push(formatDate(d));
+  }
+  return dates;
+}
 
 /**
  * Service for managing goal-related operations
@@ -288,7 +301,7 @@ export class GoalService {
   }
 
   /**
-   * Calculate progress for a goal (habits completed today)
+   * Calculate progress for a goal (habits completed today, week, all time)
    */
   async getGoalProgress(goal: UserGoalWithDetails, date?: string): Promise<GoalProgress> {
     try {
@@ -301,25 +314,72 @@ export class GoalService {
           completedToday: 0,
           totalHabits: 0,
           percentage: 0,
+          habitStats: [],
         };
       }
 
-      // Get logs for linked habits on the target date
-      let completedToday = 0;
+      // Get date ranges for calculations
+      const now = new Date();
+      const weekDates = new Set(getLastNDays(now, 7));
+      const monthDates = new Set(getLastNDays(now, 30));
+
+      // Calculate stats for each linked habit
+      const habitStats: HabitStats[] = [];
+      let completedTodayCount = 0;
+
       for (const taskId of linkedHabitIds) {
-        const log = await this.logRepository.getByTaskAndDate(taskId, targetDate);
-        if (log && log.count > 0) {
-          completedToday++;
+        // Get task info
+        const task = await this.taskRepository.getById(taskId);
+        if (!task) continue;
+
+        // Get today's completions
+        const todayLog = await this.logRepository.getByTaskAndDate(taskId, targetDate);
+        const completionsToday = todayLog?.count || 0;
+
+        if (completionsToday > 0) {
+          completedTodayCount++;
         }
+
+        // Get all logs for this task
+        const allLogs = await this.logRepository.findByTask(taskId);
+
+        // Calculate week completions (last 7 days)
+        let completionsThisWeek = 0;
+        // Calculate month completions (last 30 days)
+        let completionsThisMonth = 0;
+        // Calculate all-time completions
+        let completionsAllTime = 0;
+
+        for (const log of allLogs) {
+          completionsAllTime += log.count;
+          if (weekDates.has(log.date)) {
+            completionsThisWeek += log.count;
+          }
+          if (monthDates.has(log.date)) {
+            completionsThisMonth += log.count;
+          }
+        }
+
+        habitStats.push({
+          taskId,
+          name: task.name,
+          icon: task.icon || 'checkCircle',
+          color: task.color,
+          completionsToday,
+          completionsThisWeek,
+          completionsThisMonth,
+          completionsAllTime,
+        });
       }
 
-      const percentage = Math.round((completedToday / linkedHabitIds.length) * 100);
+      const percentage = Math.round((completedTodayCount / linkedHabitIds.length) * 100);
 
       return {
         goal,
-        completedToday,
+        completedToday: completedTodayCount,
         totalHabits: linkedHabitIds.length,
         percentage,
+        habitStats,
       };
     } catch (error) {
       logger.error('SERVICES', 'Failed to calculate goal progress', { error, goalId: goal.id });

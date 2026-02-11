@@ -3,11 +3,12 @@
  *
  * Horizontal scrolling goal chips for linking habits to goals.
  * Used in EditTaskModal to allow multi-select goal association.
+ * Styled consistently with other EditTaskModal sections.
  */
 
-import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, TouchableOpacity } from 'react-native';
-import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+import React, { useCallback, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { Icon } from '../common/Icon';
 import { useGoalsStore } from '../../store/goalsStore';
@@ -28,7 +29,6 @@ export const GoalSelector: React.FC<GoalSelectorProps> = ({
 }) => {
   const goals = useGoalsStore((state) => state.goals);
   const getGoalsForTask = useGoalsStore((state) => state.getGoalsForTask);
-  const [isExpanded, setIsExpanded] = useState(false);
 
   // Load existing links when editing a task
   useEffect(() => {
@@ -65,115 +65,79 @@ export const GoalSelector: React.FC<GoalSelectorProps> = ({
     [selectedGoalIds, onGoalsChange]
   );
 
-  const toggleExpanded = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setIsExpanded((prev) => !prev);
-  }, []);
-
-  // Get selected goal objects for preview
-  const selectedGoals = goals.filter((g) => selectedGoalIds.includes(g.goalId));
+  const selectedCount = selectedGoalIds.length;
 
   return (
-    <Animated.View entering={FadeInDown.delay(100)} style={styles.container}>
-      {/* Header - tap to expand/collapse */}
-      <TouchableOpacity
-        style={styles.header}
-        onPress={toggleExpanded}
-        accessibilityRole="button"
-        accessibilityLabel={`Link to Goals, ${isExpanded ? 'expanded' : 'collapsed'}`}
-      >
+    <View style={[styles.container, glassStyles.card]}>
+      {/* Header */}
+      <View style={styles.header}>
         <View style={styles.headerLeft}>
           <Icon name="target" size={18} color={colors.text.secondary} />
           <Text style={styles.headerTitle}>Link to Goals</Text>
         </View>
-        <View style={styles.headerRight}>
-          {!isExpanded && selectedGoals.length > 0 && (
-            <View style={styles.selectedPreview}>
-              {selectedGoals.slice(0, 3).map((goal) => (
-                <View
-                  key={goal.id}
-                  style={[styles.previewChip, { backgroundColor: goal.definition.color + '20' }]}
-                >
-                  <Text style={styles.previewEmoji}>{goal.definition.emoji}</Text>
-                </View>
-              ))}
-              {selectedGoals.length > 3 && (
-                <Text style={styles.previewMore}>+{selectedGoals.length - 3}</Text>
+        {selectedCount > 0 && (
+          <Text style={styles.countBadge}>
+            {selectedCount} linked
+          </Text>
+        )}
+      </View>
+
+      {/* Goal chips - always visible */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.chipsContainer}
+      >
+        {goals.map((goal) => {
+          const isSelected = selectedGoalIds.includes(goal.goalId);
+          const isPrimary = goal.isPrimary;
+          return (
+            <Pressable
+              key={goal.id}
+              onPress={() => handleToggleGoal(goal.goalId)}
+              style={({ pressed }) => [
+                styles.chip,
+                isSelected && styles.chipSelected,
+                isSelected && { borderColor: goal.definition.color, backgroundColor: goal.definition.color + '15' },
+                pressed && styles.chipPressed,
+              ]}
+            >
+              <Text style={styles.chipEmoji}>{goal.definition.emoji}</Text>
+              <Text
+                style={[
+                  styles.chipTitle,
+                  isSelected && { color: goal.definition.color },
+                ]}
+                numberOfLines={1}
+              >
+                {goal.definition.title}
+              </Text>
+              {isPrimary && (
+                <Icon name="star" size={10} color={isSelected ? goal.definition.color : colors.text.tertiary} />
               )}
-            </View>
-          )}
-          <Icon
-            name={isExpanded ? 'chevron-up' : 'chevron-down'}
-            size={18}
-            color={colors.text.tertiary}
-          />
-        </View>
-      </TouchableOpacity>
-
-      {/* Expanded content */}
-      {isExpanded && (
-        <Animated.View entering={FadeIn} style={styles.content}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.chipsContainer}
-          >
-            {goals.map((goal) => {
-              const isSelected = selectedGoalIds.includes(goal.goalId);
-              return (
-                <Pressable
-                  key={goal.id}
-                  onPress={() => handleToggleGoal(goal.goalId)}
-                  style={({ pressed }) => [
-                    styles.chip,
-                    glassStyles.card,
-                    isSelected && styles.chipSelected,
-                    isSelected && { borderColor: goal.definition.color },
-                    pressed && styles.chipPressed,
-                  ]}
-                >
-                  <Text style={styles.chipEmoji}>{goal.definition.emoji}</Text>
-                  <Text
-                    style={[
-                      styles.chipTitle,
-                      isSelected && { color: goal.definition.color },
-                    ]}
-                    numberOfLines={1}
-                  >
-                    {goal.definition.title}
-                  </Text>
-                  {isSelected && (
-                    <Animated.View entering={FadeIn}>
-                      <Icon name="check" size={12} color={goal.definition.color} />
-                    </Animated.View>
-                  )}
-                </Pressable>
-              );
-            })}
-          </ScrollView>
-
-          {selectedGoals.length > 0 && (
-            <Text style={styles.selectionHint}>
-              {selectedGoals.length} goal{selectedGoals.length !== 1 ? 's' : ''} linked
-            </Text>
-          )}
-        </Animated.View>
-      )}
-    </Animated.View>
+              {isSelected && (
+                <Animated.View entering={FadeIn}>
+                  <Icon name="check" size={12} color={goal.definition.color} />
+                </Animated.View>
+              )}
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: spacing[3],
+    padding: spacing[3],
   },
 
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: spacing[3],
-    paddingHorizontal: spacing[2],
+    marginBottom: spacing[3],
   },
 
   headerLeft: {
@@ -184,46 +148,16 @@ const styles = StyleSheet.create({
 
   headerTitle: {
     ...textStyles.body,
-    color: colors.text.secondary,
-    fontWeight: '500',
+    color: colors.text.primary,
+    fontWeight: '600',
   },
 
-  headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing[2],
-  },
-
-  selectedPreview: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-
-  previewChip: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  previewEmoji: {
-    fontSize: 12,
-  },
-
-  previewMore: {
+  countBadge: {
     ...textStyles.caption,
     color: colors.text.tertiary,
-    marginLeft: 4,
-  },
-
-  content: {
-    paddingTop: spacing[2],
   },
 
   chipsContainer: {
-    paddingHorizontal: spacing[2],
     gap: spacing[2],
   },
 
@@ -235,12 +169,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[3],
     borderRadius: radiusValues.md,
     borderWidth: 2,
-    borderColor: 'transparent',
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
     marginRight: spacing[2],
   },
 
   chipSelected: {
-    backgroundColor: colors.surface,
     ...shadows.sm,
   },
 
@@ -257,14 +191,6 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     fontWeight: '500',
     maxWidth: 100,
-  },
-
-  selectionHint: {
-    ...textStyles.caption,
-    color: colors.text.tertiary,
-    textAlign: 'center',
-    marginTop: spacing[2],
-    paddingHorizontal: spacing[2],
   },
 });
 

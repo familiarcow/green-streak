@@ -71,6 +71,28 @@ export interface UserGoalWithDetails extends UserGoal {
 }
 
 /**
+ * Per-habit completion statistics for a goal
+ */
+export interface HabitStats {
+  /** The task ID */
+  taskId: string;
+  /** Habit name */
+  name: string;
+  /** Habit icon */
+  icon: string;
+  /** Habit color */
+  color: string;
+  /** Completions today */
+  completionsToday: number;
+  /** Completions last 7 days */
+  completionsThisWeek: number;
+  /** Completions last 30 days */
+  completionsThisMonth: number;
+  /** Total completions all time */
+  completionsAllTime: number;
+}
+
+/**
  * Goal progress for display (e.g., in GoalCard)
  */
 export interface GoalProgress {
@@ -82,6 +104,8 @@ export interface GoalProgress {
   totalHabits: number;
   /** Progress percentage (0-100) */
   percentage: number;
+  /** Per-habit statistics */
+  habitStats: HabitStats[];
 }
 
 /**

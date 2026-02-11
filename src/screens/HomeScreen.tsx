@@ -290,13 +290,11 @@ export const HomeScreen: React.FC = () => {
           {/* Goal Card - shows primary goal with progress */}
           {goals.length > 0 && (
             <ErrorBoundary>
-              <View style={styles.goalCardContainer}>
-                <GoalCard
-                  primaryGoalProgress={goalProgress.find(p => p.goal.isPrimary) ?? null}
-                  allGoals={goals}
-                  onPress={openGoalDetail}
-                />
-              </View>
+              <GoalCard
+                primaryGoalProgress={goalProgress.find(p => p.goal.isPrimary) ?? null}
+                secondaryGoalProgress={goalProgress.filter(p => !p.goal.isPrimary)}
+                onPress={openGoalDetail}
+              />
             </ErrorBoundary>
           )}
 
@@ -495,10 +493,6 @@ const styles = StyleSheet.create({
   graphSection: {
     marginHorizontal: spacing[4],
     marginBottom: spacing[6],
-  },
-
-  goalCardContainer: {
-    marginHorizontal: spacing[4],
   },
 });
 

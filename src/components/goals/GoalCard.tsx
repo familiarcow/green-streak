@@ -1,276 +1,324 @@
 /**
  * GoalCard
  *
- * Displays the primary goal with progress on the home screen.
- * Shows linked habit completion progress and quick access to all goals.
+ * Displays goals with habit completion stats on the home screen.
+ * Styled to match TodayCard pattern with proper card container.
+ * Live updates when completions change.
  */
 
-import React from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
-import Animated, { FadeInUp } from 'react-native-reanimated';
-import { Icon } from '../common/Icon';
-import { GoalProgress, UserGoalWithDetails } from '../../types/goals';
+import React, { useState, useCallback, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import Animated, { FadeIn } from 'react-native-reanimated';
+import * as Haptics from 'expo-haptics';
+import { Icon, IconName } from '../common/Icon';
+import { GoalProgress, HabitStats } from '../../types/goals';
+import { useGoalsStore } from '../../store/goalsStore';
+import { useLogsStore } from '../../store/logsStore';
 import { colors, textStyles, spacing, shadows } from '../../theme';
-import { glassStyles } from '../../theme/glass';
-import { radiusValues } from '../../theme/utils';
+import { radiusValues, sizes } from '../../theme/utils';
 
 interface GoalCardProps {
   primaryGoalProgress: GoalProgress | null;
-  allGoals: UserGoalWithDetails[];
+  secondaryGoalProgress: GoalProgress[];
   onPress: () => void;
 }
 
+type Period = 'week' | 'month' | 'allTime';
+
+const PERIOD_OPTIONS: { value: Period; label: string }[] = [
+  { value: 'week', label: 'Week' },
+  { value: 'month', label: 'Month' },
+  { value: 'allTime', label: 'All Time' },
+];
+
+function getCountForPeriod(stats: HabitStats, period: Period): number {
+  switch (period) {
+    case 'week': return stats.completionsThisWeek;
+    case 'month': return stats.completionsThisMonth ?? 0;
+    case 'allTime': return stats.completionsAllTime;
+  }
+}
+
+/**
+ * Period selector - tap to cycle through options
+ */
+const PeriodPill: React.FC<{
+  selected: Period;
+  onChange: (period: Period) => void;
+}> = ({ selected, onChange }) => {
+  const selectedLabel = PERIOD_OPTIONS.find(o => o.value === selected)?.label || 'All Time';
+
+  const cycleNext = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const currentIndex = PERIOD_OPTIONS.findIndex(o => o.value === selected);
+    const nextIndex = (currentIndex + 1) % PERIOD_OPTIONS.length;
+    onChange(PERIOD_OPTIONS[nextIndex].value);
+  };
+
+  return (
+    <TouchableOpacity onPress={cycleNext} style={periodStyles.pill}>
+      <Text style={periodStyles.text}>{selectedLabel}</Text>
+      <Icon name="chevron-down" size={10} color={colors.text.tertiary} />
+    </TouchableOpacity>
+  );
+};
+
+const periodStyles = StyleSheet.create({
+  pill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    paddingHorizontal: spacing[2],
+    paddingVertical: spacing[1],
+    borderRadius: radiusValues.box,
+    backgroundColor: colors.interactive.default,
+  },
+  text: {
+    ...textStyles.caption,
+    color: colors.text.secondary,
+  },
+});
+
+/**
+ * Single goal row with multi-line layout
+ */
+const GoalRow: React.FC<{
+  progress: GoalProgress;
+  selectedPeriod: Period;
+  onPeriodChange?: (period: Period) => void;
+  showPeriodSelector?: boolean;
+}> = ({ progress, selectedPeriod, onPeriodChange, showPeriodSelector }) => {
+  const { goal, habitStats = [] } = progress;
+
+  // Get badges for habits with completions
+  const activeBadges = habitStats
+    .map(s => ({ ...s, count: getCountForPeriod(s, selectedPeriod) }))
+    .filter(s => s.count > 0);
+
+  return (
+    <View style={rowStyles.container}>
+      {/* Goal header row */}
+      <View style={rowStyles.headerRow}>
+        <View style={rowStyles.titleSection}>
+          <Text style={rowStyles.emoji}>{goal.definition.emoji}</Text>
+          <Text style={rowStyles.name} numberOfLines={1}>{goal.definition.title}</Text>
+        </View>
+
+        {/* Period selector (only for primary) */}
+        {showPeriodSelector && onPeriodChange && (
+          <PeriodPill selected={selectedPeriod} onChange={onPeriodChange} />
+        )}
+      </View>
+
+      {/* Completion badges row */}
+      <View style={rowStyles.statsRow}>
+        {activeBadges.length > 0 ? (
+          <View style={rowStyles.badges}>
+            {activeBadges.map((stats) => (
+              <View key={stats.taskId} style={[rowStyles.badge, { backgroundColor: stats.color + '20' }]}>
+                <Icon name={stats.icon as IconName} size={14} color={stats.color} />
+                <Text style={[rowStyles.badgeCount, { color: stats.color }]}>×{stats.count}</Text>
+              </View>
+            ))}
+          </View>
+        ) : (
+          <Text style={rowStyles.emptyText}>No completions this {selectedPeriod === 'allTime' ? 'period' : selectedPeriod}</Text>
+        )}
+      </View>
+    </View>
+  );
+};
+
+const rowStyles = StyleSheet.create({
+  container: {
+    paddingVertical: spacing[2],
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing[2],
+  },
+  titleSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
+    flex: 1,
+  },
+  emoji: {
+    fontSize: 20,
+  },
+  name: {
+    ...textStyles.body,
+    color: colors.text.primary,
+    fontWeight: '600',
+    flex: 1,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  badges: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: spacing[2],
+  },
+  badge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing[2],
+    paddingVertical: spacing[1],
+    borderRadius: radiusValues.box,
+    gap: 4,
+  },
+  badgeCount: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  emptyText: {
+    ...textStyles.caption,
+    color: colors.text.tertiary,
+  },
+});
+
 export const GoalCard: React.FC<GoalCardProps> = ({
   primaryGoalProgress,
-  allGoals,
+  secondaryGoalProgress,
   onPress,
 }) => {
-  // If no goals, don't render
-  if (allGoals.length === 0) {
+  const [selectedPeriod, setSelectedPeriod] = useState<Period>('allTime');
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  // Subscribe to logs for live updates
+  const contributionData = useLogsStore((state) => state.contributionData);
+  const refreshProgress = useGoalsStore((state) => state.refreshProgress);
+
+  useEffect(() => {
+    if (contributionData.length > 0) {
+      refreshProgress();
+    }
+  }, [contributionData, refreshProgress]);
+
+  const hasSecondaryGoals = secondaryGoalProgress.length > 0;
+
+  const toggleExpanded = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setIsExpanded((prev) => !prev);
+  }, []);
+
+  if (!primaryGoalProgress && secondaryGoalProgress.length === 0) {
     return null;
   }
 
-  const primaryGoal = primaryGoalProgress?.goal;
-  const otherGoals = allGoals.filter((g) => !g.isPrimary);
-  const hasOtherGoals = otherGoals.length > 0;
-
-  // Progress calculation
-  const completedCount = primaryGoalProgress?.completedToday ?? 0;
-  const totalCount = primaryGoalProgress?.totalHabits ?? 0;
-  const progressPercentage = primaryGoalProgress?.percentage ?? 0;
-
   return (
-    <Animated.View entering={FadeInUp.delay(200).springify()}>
-      <Pressable
-        onPress={onPress}
-        style={({ pressed }) => [
-          styles.container,
-          glassStyles.card,
-          pressed && styles.pressed,
-        ]}
-      >
-        {/* Header row */}
-        <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            {primaryGoal ? (
-              <>
-                <View
-                  style={[
-                    styles.iconContainer,
-                    { backgroundColor: primaryGoal.definition.color + '20' },
-                  ]}
-                >
-                  <Text style={styles.emoji}>{primaryGoal.definition.emoji}</Text>
-                </View>
-                <View style={styles.titleContainer}>
-                  <View style={styles.titleRow}>
-                    <Text style={styles.title} numberOfLines={1}>
-                      {primaryGoal.definition.title}
-                    </Text>
-                    <Icon name="star" size={14} color={colors.warning} />
-                  </View>
-                  <Text style={styles.subtitle}>Primary Goal</Text>
-                </View>
-              </>
-            ) : (
-              <>
-                <View style={[styles.iconContainer, { backgroundColor: colors.primary + '20' }]}>
-                  <Icon name="target" size={20} color={colors.primary} />
-                </View>
-                <View style={styles.titleContainer}>
-                  <Text style={styles.title}>Your Goals</Text>
-                  <Text style={styles.subtitle}>No primary goal set</Text>
-                </View>
-              </>
-            )}
-          </View>
-          <Icon name="chevron-right" size={20} color={colors.text.tertiary} />
-        </View>
+    <View style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={styles.title}>Your Goals</Text>
+        <TouchableOpacity onPress={onPress} style={styles.editButton}>
+          <Icon name="edit" size={16} color={colors.text.secondary} />
+        </TouchableOpacity>
+      </View>
 
-        {/* Progress section (only if primary goal has linked habits) */}
-        {primaryGoal && totalCount > 0 && (
-          <View style={styles.progressSection}>
-            <View style={styles.progressHeader}>
-              <Text style={styles.progressLabel}>Today's Progress</Text>
-              <Text style={styles.progressCount}>
-                {completedCount}/{totalCount} habits
-              </Text>
-            </View>
-            <View style={styles.progressBarContainer}>
-              <View
-                style={[
-                  styles.progressBar,
-                  {
-                    width: `${progressPercentage}%`,
-                    backgroundColor: primaryGoal.definition.color,
-                  },
-                ]}
-              />
-            </View>
-          </View>
-        )}
+      {/* Primary Goal */}
+      {primaryGoalProgress && (
+        <GoalRow
+          progress={primaryGoalProgress}
+          selectedPeriod={selectedPeriod}
+          onPeriodChange={setSelectedPeriod}
+          showPeriodSelector
+        />
+      )}
 
-        {/* No habits linked message */}
-        {primaryGoal && totalCount === 0 && (
-          <View style={styles.noHabitsSection}>
-            <Text style={styles.noHabitsText}>
-              Link habits to track progress toward this goal
-            </Text>
-          </View>
-        )}
-
-        {/* Other goals preview */}
-        {hasOtherGoals && (
-          <View style={styles.otherGoalsSection}>
-            <View style={styles.emojiPreview}>
-              {otherGoals.slice(0, 3).map((goal) => (
-                <Text key={goal.id} style={styles.previewEmoji}>
-                  {goal.definition.emoji}
+      {/* Secondary Goals */}
+      {hasSecondaryGoals && (
+        <>
+          {!isExpanded ? (
+            <TouchableOpacity onPress={toggleExpanded} style={styles.expandRow}>
+              <View style={styles.expandLeft}>
+                {secondaryGoalProgress.slice(0, 3).map((p) => (
+                  <Text key={p.goal.id} style={styles.expandEmoji}>{p.goal.definition.emoji}</Text>
+                ))}
+                <Text style={styles.expandText}>
+                  {secondaryGoalProgress.length} more goal{secondaryGoalProgress.length !== 1 ? 's' : ''}
                 </Text>
+              </View>
+              <Icon name="chevron-down" size={14} color={colors.text.tertiary} />
+            </TouchableOpacity>
+          ) : (
+            <Animated.View entering={FadeIn.duration(150)}>
+              {secondaryGoalProgress.map((progress) => (
+                <GoalRow
+                  key={progress.goal.id}
+                  progress={progress}
+                  selectedPeriod={selectedPeriod}
+                />
               ))}
-            </View>
-            <Text style={styles.otherGoalsText}>
-              +{otherGoals.length} more goal{otherGoals.length !== 1 ? 's' : ''}
-            </Text>
-          </View>
-        )}
-      </Pressable>
-    </Animated.View>
+              <TouchableOpacity onPress={toggleExpanded} style={styles.collapseRow}>
+                <Icon name="chevron-up" size={14} color={colors.text.tertiary} />
+              </TouchableOpacity>
+            </Animated.View>
+          )}
+        </>
+      )}
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
+    marginHorizontal: spacing[4],
+    marginBottom: spacing[6],
+    padding: spacing[4],
+    backgroundColor: colors.surface,
     borderRadius: radiusValues.box,
-    padding: spacing[3],
-    marginBottom: spacing[3],
+    ...shadows.sm,
   },
-
-  pressed: {
-    opacity: 0.9,
-    transform: [{ scale: 0.99 }],
-  },
-
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-
-  iconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: spacing[3],
-  },
-
-  emoji: {
-    fontSize: 22,
-  },
-
-  titleContainer: {
-    flex: 1,
-  },
-
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing[1],
-  },
-
-  title: {
-    ...textStyles.h4,
-    color: colors.text.primary,
-    fontWeight: '600',
-  },
-
-  subtitle: {
-    ...textStyles.bodySmall,
-    color: colors.text.tertiary,
-    marginTop: 2,
-  },
-
-  progressSection: {
-    marginTop: spacing[3],
-    paddingTop: spacing[3],
-    borderTopWidth: 1,
-    borderTopColor: colors.border + '40',
-  },
-
-  progressHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: spacing[2],
   },
-
-  progressLabel: {
-    ...textStyles.bodySmall,
-    color: colors.text.secondary,
-  },
-
-  progressCount: {
-    ...textStyles.bodySmall,
+  title: {
+    ...textStyles.h2,
     color: colors.text.primary,
-    fontWeight: '600',
+    fontWeight: '700',
   },
-
-  progressBarContainer: {
-    height: 8,
-    backgroundColor: colors.border + '40',
-    borderRadius: 4,
-    overflow: 'hidden',
+  editButton: {
+    width: sizes.touchTarget.small,
+    height: sizes.touchTarget.small,
+    borderRadius: radiusValues.box,
+    backgroundColor: colors.interactive.default,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-
-  progressBar: {
-    height: '100%',
-    borderRadius: 4,
-  },
-
-  noHabitsSection: {
-    marginTop: spacing[3],
-    paddingTop: spacing[3],
-    borderTopWidth: 1,
-    borderTopColor: colors.border + '40',
-  },
-
-  noHabitsText: {
-    ...textStyles.bodySmall,
-    color: colors.text.tertiary,
-    textAlign: 'center',
-    fontStyle: 'italic',
-  },
-
-  otherGoalsSection: {
+  expandRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: spacing[3],
-    paddingTop: spacing[3],
+    justifyContent: 'space-between',
+    paddingVertical: spacing[3],
     borderTopWidth: 1,
     borderTopColor: colors.border + '40',
+    marginTop: spacing[2],
   },
-
-  emojiPreview: {
+  expandLeft: {
     flexDirection: 'row',
-    marginRight: spacing[2],
+    alignItems: 'center',
+    gap: spacing[1],
   },
-
-  previewEmoji: {
-    fontSize: 16,
-    marginRight: 4,
+  expandEmoji: {
+    fontSize: 14,
   },
-
-  otherGoalsText: {
-    ...textStyles.bodySmall,
+  expandText: {
+    ...textStyles.caption,
     color: colors.text.tertiary,
+    marginLeft: spacing[1],
+  },
+  collapseRow: {
+    alignItems: 'center',
+    paddingVertical: spacing[2],
   },
 });
 
