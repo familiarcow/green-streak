@@ -51,6 +51,7 @@ export const ICON_TO_EMOJI: Record<IconName, string> = {
   'glasses': '👓',
   // Productivity icons
   'target': '🎯',
+  'goal': '🥅',
   'zap': '⚡',
   'calendar': '📅',
   'today': '📆',

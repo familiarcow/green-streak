@@ -33,6 +33,7 @@ import {
   BarChart3,
   Clock,
   Target,
+  Goal,
   Zap,
   Sun,
   Moon,
@@ -164,6 +165,7 @@ export const ICON_MAP = {
   glasses: Glasses,
   // Productivity icons
   target: Target,
+  goal: Goal,
   zap: Zap,
   calendar: Calendar,
   today: CalendarDays,

@@ -68,6 +68,7 @@ export const ICON_CATEGORY_MAP: Record<IconName, string> = {
   glasses: 'mind',
   // Productivity icons
   target: 'productivity',
+  goal: 'productivity',
   zap: 'productivity',
   calendar: 'productivity',
   today: 'productivity',
@@ -143,7 +144,7 @@ export const PICKER_ICONS: IconName[] = [
   // Mind
   'brain', 'book', 'graduation', 'lightbulb', 'palette', 'pen', 'pencil', 'notebook', 'glasses',
   // Productivity
-  'target', 'zap', 'calendar', 'today', 'clock', 'fileText', 'clipboard', 'list-todo', 'layers', 'inbox', 'send', 'briefcase', 'laptop', 'code', 'trendingUp', 'barChart',
+  'target', 'goal', 'zap', 'calendar', 'today', 'clock', 'fileText', 'clipboard', 'list-todo', 'layers', 'inbox', 'send', 'briefcase', 'laptop', 'code', 'trendingUp', 'barChart',
   // Lifestyle
   'home', 'sun', 'moon', 'coffee', 'bed', 'bath', 'car', 'plane', 'map', 'compass', 'umbrella', 'shirt', 'broom',
   // Food

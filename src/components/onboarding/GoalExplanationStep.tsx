@@ -3,76 +3,215 @@
  *
  * Onboarding step that explains the difference between goals and habits.
  * Goals are the "why" (motivational anchors), habits are the "what" (daily actions).
+ * Features synchronized highlighting to show goal-habit connections.
+ *
+ * Animation Pattern:
+ * - Uses dual-layer text (inactive + active) with animated opacity for smooth color transitions
+ * - fontWeight cannot be animated in RN, so we overlay bold text on regular text
+ * - activeIndex cycles 0 -> 1 -> 2 -> 0... every CYCLE_DURATION ms
+ * - Each text item has its own opacity derived from activeIndex proximity
+ * - Wraps Animated.View/Text in plain View containers to avoid Reanimated layout animation warnings
  */
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import Animated, { FadeInUp, FadeInRight } from 'react-native-reanimated';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  Easing,
+  useDerivedValue,
+  SharedValue,
+} from 'react-native-reanimated';
 import { Icon } from '../common/Icon';
 import { colors, textStyles, spacing, shadows } from '../../theme';
-import { glassStyles } from '../../theme/glass';
 import { radiusValues } from '../../theme/utils';
 
+// Synchronized pairs: [goal, habit]
+const EXAMPLES = [
+  { goal: 'Better Health', habit: 'Exercise' },
+  { goal: 'Strong Relationships', habit: 'Call a Friend' },
+  { goal: 'Mental Clarity', habit: 'Meditation' },
+];
+
+const CYCLE_DURATION = 5000; // 5 seconds per pair
+const FADE_DURATION = 600; // Smooth transition duration
+
+interface HighlightedTextProps {
+  text: string;
+  isGoal: boolean;
+  index: number;
+  activeIndex: SharedValue<number>;
+}
+
+/**
+ * HighlightedText uses a dual-layer approach:
+ * - Base layer: inactive color (tertiary text), always visible
+ * - Overlay layer: active color (green/blue) + bold, fades in/out based on activeIndex
+ *
+ * This avoids animating fontWeight (not supported) and color interpolation warnings.
+ *
+ * To avoid Reanimated warnings about layout animations overwriting animated properties,
+ * we wrap all Animated components in plain View containers. The animated opacity is
+ * applied only via useAnimatedStyle, with no entering/exiting layout animations.
+ */
+const HighlightedText: React.FC<HighlightedTextProps> = ({
+  text,
+  isGoal,
+  index,
+  activeIndex,
+}) => {
+  const activeColor = isGoal ? colors.primary : colors.info;
+
+  // Derive opacity for the active overlay based on whether this index is active
+  const activeOpacity = useDerivedValue(() => {
+    return activeIndex.value === index ? 1 : 0;
+  });
+
+  // Animated style for the active (colored + bold) overlay - only opacity, no transform
+  const activeOverlayStyle = useAnimatedStyle(() => ({
+    opacity: withTiming(activeOpacity.value, {
+      duration: FADE_DURATION,
+      easing: Easing.inOut(Easing.ease),
+    }),
+  }));
+
+  // Animated style for the inactive (tertiary) base layer - inverse opacity
+  const inactiveBaseStyle = useAnimatedStyle(() => ({
+    opacity: withTiming(activeOpacity.value === 1 ? 0 : 1, {
+      duration: FADE_DURATION,
+      easing: Easing.inOut(Easing.ease),
+    }),
+  }));
+
+  // Animated style for the bullet icon - active state
+  const bulletActiveStyle = useAnimatedStyle(() => ({
+    opacity: withTiming(activeOpacity.value, {
+      duration: FADE_DURATION,
+      easing: Easing.inOut(Easing.ease),
+    }),
+  }));
+
+  // Animated style for the bullet icon - inactive state
+  const bulletInactiveStyle = useAnimatedStyle(() => ({
+    opacity: withTiming(activeOpacity.value === 1 ? 0 : 1, {
+      duration: FADE_DURATION,
+      easing: Easing.inOut(Easing.ease),
+    }),
+  }));
+
+  return (
+    <View style={styles.bulletRow}>
+      {/* Bullet icon with dual-layer animation - wrapped in plain View */}
+      <View style={styles.bulletWrapper}>
+        <View style={styles.bulletLayerContainer}>
+          <Animated.View style={[styles.bulletLayer, bulletInactiveStyle]}>
+            <Icon name="goal" size={14} color={colors.text.tertiary} />
+          </Animated.View>
+        </View>
+        <View style={[styles.bulletLayerContainer, styles.bulletOverlay]}>
+          <Animated.View style={[styles.bulletLayer, bulletActiveStyle]}>
+            <Icon name="goal" size={14} color={activeColor} />
+          </Animated.View>
+        </View>
+      </View>
+      {/* Text with dual-layer animation - wrapped in plain View */}
+      <View style={styles.textWrapper}>
+        <View style={styles.textLayerContainer}>
+          <Animated.View style={inactiveBaseStyle}>
+            <Text style={[styles.exampleItem, styles.inactiveText]}>{text}</Text>
+          </Animated.View>
+        </View>
+        <View style={[styles.textLayerContainer, styles.activeTextContainer]}>
+          <Animated.View style={activeOverlayStyle}>
+            <Text style={[styles.exampleItem, styles.activeText, { color: activeColor }]}>
+              {text}
+            </Text>
+          </Animated.View>
+        </View>
+      </View>
+    </View>
+  );
+};
+
 export const GoalExplanationStep: React.FC = () => {
+  // Discrete index (0, 1, or 2) - not a continuous value
+  const activeIndex = useSharedValue(0);
+
+  // Set up the cycling animation using a simple interval approach
+  // This is cleaner than complex withSequence for discrete state changes
+  useEffect(() => {
+    let currentIndex = 0;
+
+    const intervalId = setInterval(() => {
+      currentIndex = (currentIndex + 1) % EXAMPLES.length;
+      activeIndex.value = currentIndex;
+    }, CYCLE_DURATION);
+
+    return () => clearInterval(intervalId);
+  }, [activeIndex]);
+
   return (
     <View style={styles.container}>
-      <Animated.View entering={FadeInUp.delay(200)} style={styles.headerSection}>
+      <View style={styles.headerSection}>
         <View style={styles.iconContainer}>
-          <Icon name="target" size={48} color={colors.primary} />
+          <Icon name="target" size={40} color={colors.primary} />
         </View>
         <Text style={styles.title}>Goals & Habits</Text>
         <Text style={styles.subtitle}>The "why" behind the "what"</Text>
-      </Animated.View>
-
-      <View style={styles.comparisonContainer}>
-        <Animated.View
-          entering={FadeInRight.delay(400)}
-          style={[styles.comparisonCard, glassStyles.card]}
-        >
-          <View style={[styles.cardHeader, { backgroundColor: colors.primary + '20' }]}>
-            <Icon name="target" size={24} color={colors.primary} />
-            <Text style={styles.cardTitle}>Goals</Text>
-          </View>
-          <Text style={styles.cardDescription}>
-            Life aspirations that motivate you
-          </Text>
-          <View style={styles.exampleContainer}>
-            <Text style={styles.exampleLabel}>Examples:</Text>
-            <Text style={styles.exampleText}>Better Health</Text>
-            <Text style={styles.exampleText}>Career Growth</Text>
-            <Text style={styles.exampleText}>Financial Freedom</Text>
-          </View>
-        </Animated.View>
-
-        <Animated.View entering={FadeInUp.delay(300)} style={styles.arrowContainer}>
-          <Icon name="chevron-down" size={28} color={colors.text.tertiary} />
-        </Animated.View>
-
-        <Animated.View
-          entering={FadeInRight.delay(500)}
-          style={[styles.comparisonCard, glassStyles.card]}
-        >
-          <View style={[styles.cardHeader, { backgroundColor: colors.info + '20' }]}>
-            <Icon name="checkCircle" size={24} color={colors.info} />
-            <Text style={[styles.cardTitle, { color: colors.info }]}>Habits</Text>
-          </View>
-          <Text style={styles.cardDescription}>
-            Daily actions that achieve your goals
-          </Text>
-          <View style={styles.exampleContainer}>
-            <Text style={styles.exampleLabel}>Examples:</Text>
-            <Text style={styles.exampleText}>Exercise 30 minutes</Text>
-            <Text style={styles.exampleText}>Read for 20 minutes</Text>
-            <Text style={styles.exampleText}>Save $10 daily</Text>
-          </View>
-        </Animated.View>
       </View>
 
-      <Animated.View entering={FadeInUp.delay(600)} style={styles.benefitSection}>
+      <View style={styles.comparisonContainer}>
+        {/* Goals Section */}
+        <View style={styles.section}>
+          <View style={[styles.pill, { backgroundColor: colors.primary + '20' }]}>
+            <Icon name="target" size={18} color={colors.primary} />
+            <Text style={[styles.pillText, { color: colors.primary }]}>Goals</Text>
+          </View>
+          <Text style={styles.description}>Life aspirations that motivate you</Text>
+          <View style={styles.examplesList}>
+            {EXAMPLES.map((item, index) => (
+              <HighlightedText
+                key={item.goal}
+                text={item.goal}
+                isGoal={true}
+                index={index}
+                activeIndex={activeIndex}
+              />
+            ))}
+          </View>
+        </View>
+
+        <View style={styles.arrowContainer}>
+          <Icon name="chevron-down" size={20} color={colors.text.tertiary} />
+        </View>
+
+        {/* Habits Section */}
+        <View style={styles.section}>
+          <View style={[styles.pill, { backgroundColor: colors.info + '20' }]}>
+            <Icon name="checkCircle" size={18} color={colors.info} />
+            <Text style={[styles.pillText, { color: colors.info }]}>Habits</Text>
+          </View>
+          <Text style={styles.description}>Daily actions that achieve your goals</Text>
+          <View style={styles.examplesList}>
+            {EXAMPLES.map((item, index) => (
+              <HighlightedText
+                key={item.habit}
+                text={item.habit}
+                isGoal={false}
+                index={index}
+                activeIndex={activeIndex}
+              />
+            ))}
+          </View>
+        </View>
+      </View>
+
+      <View style={styles.benefitSection}>
         <Text style={styles.benefitText}>
-          Link habits to goals to see how your daily actions contribute to your bigger picture.
+          Next, we'll set your first goal. Later, when you create habits you can link them to goals to track progress towards your long-term outcomes.
         </Text>
-      </Animated.View>
+      </View>
     </View>
   );
 };
@@ -80,8 +219,6 @@ export const GoalExplanationStep: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: 'center',
-    paddingHorizontal: spacing[2],
   },
 
   headerSection: {
@@ -90,10 +227,10 @@ const styles = StyleSheet.create({
   },
 
   iconContainer: {
-    padding: spacing[3],
+    padding: spacing[2],
     backgroundColor: colors.accent.light,
-    borderRadius: spacing[3],
-    marginBottom: spacing[3],
+    borderRadius: spacing[2],
+    marginBottom: spacing[2],
     ...shadows.sm,
   },
 
@@ -112,70 +249,114 @@ const styles = StyleSheet.create({
   },
 
   comparisonContainer: {
-    width: '100%',
-    alignItems: 'center',
-    gap: spacing[2],
+    alignItems: 'flex-start',
   },
 
-  comparisonCard: {
+  section: {
     width: '100%',
-    borderRadius: radiusValues.box,
-    padding: spacing[3],
+    marginBottom: spacing[1],
   },
 
-  cardHeader: {
+  pill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing[2],
-    paddingVertical: spacing[2],
-    paddingHorizontal: spacing[3],
+    alignSelf: 'flex-start',
+    gap: spacing[1],
+    paddingVertical: spacing[1],
+    paddingHorizontal: spacing[2],
     borderRadius: radiusValues.md,
-    marginBottom: spacing[2],
+    marginBottom: spacing[1],
   },
 
-  cardTitle: {
-    ...textStyles.h3,
-    color: colors.primary,
+  pillText: {
+    ...textStyles.body,
     fontWeight: '700',
   },
 
-  cardDescription: {
+  description: {
     ...textStyles.body,
-    color: colors.text.secondary,
-    marginBottom: spacing[2],
+    color: colors.text.primary,
+    marginBottom: spacing[1],
   },
 
-  exampleContainer: {
-    paddingLeft: spacing[2],
+  examplesList: {
+    gap: spacing[1],
   },
 
-  exampleLabel: {
+  bulletRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
+  },
+
+  bulletWrapper: {
+    width: 14,
+    height: 14,
+    position: 'relative',
+  },
+
+  bulletLayerContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: 14,
+    height: 14,
+  },
+
+  bulletLayer: {
+    width: 14,
+    height: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  bulletOverlay: {
+    // Positioned absolute via bulletLayerContainer, stacked on top
+  },
+
+  textWrapper: {
+    position: 'relative',
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  textLayerContainer: {
+    // Base layer takes up space in the layout
+  },
+
+  activeTextContainer: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+  },
+
+  exampleItem: {
     ...textStyles.bodySmall,
+  },
+
+  inactiveText: {
     color: colors.text.tertiary,
-    fontWeight: '600',
-    marginBottom: spacing[1],
+    fontWeight: '400',
   },
 
-  exampleText: {
-    ...textStyles.bodySmall,
-    color: colors.text.secondary,
-    marginBottom: spacing[1],
+  activeText: {
+    fontWeight: '700',
   },
 
   arrowContainer: {
-    padding: spacing[1],
+    alignSelf: 'center',
+    paddingVertical: spacing[2],
   },
 
   benefitSection: {
     marginTop: spacing[4],
-    paddingHorizontal: spacing[2],
   },
 
   benefitText: {
-    ...textStyles.body,
+    ...textStyles.bodySmall,
     color: colors.text.secondary,
     textAlign: 'center',
-    lineHeight: 22,
+    lineHeight: 20,
   },
 });
 

@@ -4,17 +4,18 @@
  * Onboarding step for selecting life goals.
  * Multi-select with one "primary" goal.
  * Tap to select/deselect, long-press to set as primary.
+ *
+ * Full-width card layout with descriptions to help users choose.
  */
 
 import React, { useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Pressable } from 'react-native';
-import Animated, { FadeInUp, FadeIn, useAnimatedStyle, withSpring } from 'react-native-reanimated';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { Icon } from '../common/Icon';
 import { GOALS } from '../../data/goalLibrary';
 import { GoalDefinition } from '../../types/goals';
 import { colors, textStyles, spacing, shadows } from '../../theme';
-import { glassStyles } from '../../theme/glass';
 import { radiusValues } from '../../theme/utils';
 
 interface GoalPickerStepProps {
@@ -22,6 +23,7 @@ interface GoalPickerStepProps {
   primaryGoalId: string | null;
   onToggleGoal: (goalId: string) => void;
   onSetPrimary: (goalId: string) => void;
+  onSkip?: () => void;
 }
 
 interface GoalCardProps {
@@ -30,7 +32,6 @@ interface GoalCardProps {
   isPrimary: boolean;
   onPress: () => void;
   onLongPress: () => void;
-  index: number;
 }
 
 const GoalCard: React.FC<GoalCardProps> = ({
@@ -39,53 +40,53 @@ const GoalCard: React.FC<GoalCardProps> = ({
   isPrimary,
   onPress,
   onLongPress,
-  index,
 }) => {
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [
-      { scale: withSpring(isSelected ? 1 : 0.98) },
-    ],
-    opacity: withSpring(isSelected ? 1 : 0.7),
-  }));
-
   return (
-    <Animated.View
-      entering={FadeInUp.delay(100 + index * 50).springify()}
-      style={animatedStyle}
+    <TouchableOpacity
+      onPress={onPress}
+      onLongPress={onLongPress}
+      delayLongPress={400}
+      activeOpacity={0.7}
+      style={[
+        styles.goalCard,
+        isSelected && styles.goalCardSelected,
+        isSelected && { borderColor: goal.color },
+      ]}
+      accessible={true}
+      accessibilityRole="button"
+      accessibilityLabel={`${goal.title}${isSelected ? ', selected' : ''}${isPrimary ? ', primary goal' : ''}`}
     >
-      <Pressable
-        onPress={onPress}
-        onLongPress={onLongPress}
-        delayLongPress={400}
-        style={({ pressed }) => [
-          styles.goalCard,
-          glassStyles.card,
-          isSelected && styles.goalCardSelected,
-          isSelected && { borderColor: goal.color },
-          pressed && styles.goalCardPressed,
-        ]}
-      >
+      {/* Left side: Icon */}
+      <View style={[styles.iconContainer, { backgroundColor: `${goal.color}15` }]}>
+        <Text style={styles.goalEmoji}>{goal.emoji}</Text>
+      </View>
+
+      {/* Middle: Title and Description */}
+      <View style={styles.textContainer}>
+        <Text style={[styles.goalTitle, isSelected && { color: goal.color }]}>
+          {goal.title}
+        </Text>
+        <Text style={styles.goalDescription} numberOfLines={2}>
+          {goal.description}
+        </Text>
+      </View>
+
+      {/* Right side: Selection indicator */}
+      <View style={styles.selectionIndicator}>
+        {isSelected ? (
+          <View style={[styles.checkCircle, { backgroundColor: goal.color }]}>
+            <Icon name="check" size={14} color={colors.text.inverse} />
+          </View>
+        ) : (
+          <View style={styles.emptyCircle} />
+        )}
         {isPrimary && (
-          <Animated.View entering={FadeIn} style={styles.primaryBadge}>
+          <Animated.View entering={FadeIn} style={styles.primaryStar}>
             <Icon name="star" size={12} color={colors.warning} />
           </Animated.View>
         )}
-
-        <View style={[styles.goalIconContainer, { backgroundColor: goal.color + '20' }]}>
-          <Text style={styles.goalEmoji}>{goal.emoji}</Text>
-        </View>
-
-        <Text style={[styles.goalTitle, isSelected && { color: goal.color }]} numberOfLines={1}>
-          {goal.title}
-        </Text>
-
-        {isSelected && (
-          <Animated.View entering={FadeIn} style={styles.checkmark}>
-            <Icon name="check" size={14} color={goal.color} />
-          </Animated.View>
-        )}
-      </Pressable>
-    </Animated.View>
+      </View>
+    </TouchableOpacity>
   );
 };
 
@@ -94,6 +95,7 @@ export const GoalPickerStep: React.FC<GoalPickerStepProps> = ({
   primaryGoalId,
   onToggleGoal,
   onSetPrimary,
+  onSkip,
 }) => {
   const handlePress = useCallback((goalId: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -113,17 +115,28 @@ export const GoalPickerStep: React.FC<GoalPickerStepProps> = ({
     }
   }, [selectedGoalIds, onToggleGoal, onSetPrimary]);
 
+  const handleSkip = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    onSkip?.();
+  }, [onSkip]);
+
   return (
     <View style={styles.container}>
-      <Animated.View entering={FadeInUp.delay(100)} style={styles.headerSection}>
+      {/* Header */}
+      <View style={styles.headerSection}>
         <Text style={styles.title}>Choose Your Goals</Text>
         <Text style={styles.subtitle}>
           Select the life goals that matter most to you
         </Text>
-      </Animated.View>
+      </View>
 
-      <View style={styles.goalsGrid}>
-        {GOALS.map((goal, index) => (
+      {/* Goals List */}
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.goalsList}
+        showsVerticalScrollIndicator={false}
+      >
+        {GOALS.map((goal) => (
           <GoalCard
             key={goal.id}
             goal={goal}
@@ -131,25 +144,29 @@ export const GoalPickerStep: React.FC<GoalPickerStepProps> = ({
             isPrimary={primaryGoalId === goal.id}
             onPress={() => handlePress(goal.id)}
             onLongPress={() => handleLongPress(goal.id)}
-            index={index}
           />
         ))}
-      </View>
+      </ScrollView>
 
-      <Animated.View entering={FadeInUp.delay(500)} style={styles.hintSection}>
-        <View style={styles.hintRow}>
-          <Icon name="star" size={14} color={colors.warning} />
-          <Text style={styles.hintText}>Long-press to set your primary goal</Text>
-        </View>
-        {selectedGoalIds.length === 0 && (
-          <Text style={styles.skipHint}>You can skip this and add goals later</Text>
+      {/* Bottom Section */}
+      <View style={styles.bottomSection}>
+        {selectedGoalIds.length > 0 ? (
+          <>
+            <View style={styles.hintRow}>
+              <Icon name="star" size={14} color={colors.warning} />
+              <Text style={styles.hintText}>Long-press to set your primary goal</Text>
+            </View>
+            <Text style={styles.selectedCount}>
+              {selectedGoalIds.length} goal{selectedGoalIds.length !== 1 ? 's' : ''} selected
+            </Text>
+          </>
+        ) : (
+          <TouchableOpacity onPress={handleSkip} style={styles.skipButton}>
+            <Text style={styles.skipText}>Skip for now</Text>
+            <Icon name="chevron-right" size={16} color={colors.text.tertiary} />
+          </TouchableOpacity>
         )}
-        {selectedGoalIds.length > 0 && (
-          <Text style={styles.selectedCount}>
-            {selectedGoalIds.length} goal{selectedGoalIds.length !== 1 ? 's' : ''} selected
-          </Text>
-        )}
-      </Animated.View>
+      </View>
     </View>
   );
 };
@@ -157,12 +174,12 @@ export const GoalPickerStep: React.FC<GoalPickerStepProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: spacing[2],
   },
 
   headerSection: {
     alignItems: 'center',
-    marginBottom: spacing[4],
+    marginBottom: spacing[3],
+    paddingHorizontal: spacing[4],
   },
 
   title: {
@@ -178,75 +195,93 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
-  goalsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    gap: spacing[2],
+  scrollView: {
+    flex: 1,
+  },
+
+  goalsList: {
+    paddingHorizontal: spacing[4],
+    paddingBottom: spacing[2],
   },
 
   goalCard: {
-    width: '48%',
-    padding: spacing[3],
-    borderRadius: radiusValues.box,
+    flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: radiusValues.box,
+    padding: spacing[3],
+    marginBottom: spacing[2],
     borderWidth: 2,
     borderColor: 'transparent',
-    position: 'relative',
+    ...shadows.sm,
   },
 
   goalCardSelected: {
-    backgroundColor: colors.surface,
     ...shadows.md,
   },
 
-  goalCardPressed: {
-    opacity: 0.8,
-  },
-
-  primaryBadge: {
-    position: 'absolute',
-    top: spacing[2],
-    right: spacing[2],
-    backgroundColor: colors.warning + '20',
-    borderRadius: spacing[3],
-    padding: spacing[1],
-  },
-
-  goalIconContainer: {
+  iconContainer: {
     width: 48,
     height: 48,
     borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing[2],
+    marginRight: spacing[3],
   },
 
   goalEmoji: {
     fontSize: 24,
   },
 
+  textContainer: {
+    flex: 1,
+    marginRight: spacing[2],
+  },
+
   goalTitle: {
-    ...textStyles.bodySmall,
-    color: colors.text.primary,
+    ...textStyles.body,
     fontWeight: '600',
-    textAlign: 'center',
+    color: colors.text.primary,
+    marginBottom: 2,
   },
 
-  checkmark: {
-    position: 'absolute',
-    bottom: spacing[2],
-    right: spacing[2],
-    backgroundColor: colors.surface,
-    borderRadius: 10,
-    padding: 3,
-    ...shadows.sm,
+  goalDescription: {
+    ...textStyles.bodySmall,
+    color: colors.text.secondary,
+    lineHeight: 18,
   },
 
-  hintSection: {
-    marginTop: spacing[4],
+  selectionIndicator: {
     alignItems: 'center',
-    gap: spacing[2],
+    justifyContent: 'center',
+    width: 32,
+  },
+
+  checkCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  emptyCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: colors.border,
+  },
+
+  primaryStar: {
+    marginTop: spacing[1],
+  },
+
+  bottomSection: {
+    alignItems: 'center',
+    paddingVertical: spacing[3],
+    paddingHorizontal: spacing[4],
+    gap: spacing[1],
   },
 
   hintRow: {
@@ -260,16 +295,23 @@ const styles = StyleSheet.create({
     color: colors.text.tertiary,
   },
 
-  skipHint: {
-    ...textStyles.bodySmall,
-    color: colors.text.tertiary,
-    fontStyle: 'italic',
-  },
-
   selectedCount: {
     ...textStyles.bodySmall,
     color: colors.primary,
     fontWeight: '600',
+  },
+
+  skipButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[1],
+    paddingVertical: spacing[2],
+    paddingHorizontal: spacing[4],
+  },
+
+  skipText: {
+    ...textStyles.body,
+    color: colors.text.tertiary,
   },
 });
 
