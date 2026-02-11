@@ -69,6 +69,7 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     icon: 'dumbbell',
     color: COLORS.green,
     category: 'health-fitness',
+    goalIds: ['fitness', 'better-health'],
     tags: ['exercise', 'workout', 'fitness', 'health', 'gym'],
     suggestedSettings: {
       reminderTime: '07:00',
@@ -86,6 +87,7 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     icon: 'droplet',
     color: COLORS.blue,
     category: 'health-fitness',
+    goalIds: ['better-health'],
     tags: ['water', 'hydration', 'health', 'drink'],
     suggestedSettings: {
       reminderTime: '12:00',
@@ -103,6 +105,7 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     icon: 'pill',
     color: COLORS.amber,
     category: 'health-fitness',
+    goalIds: ['better-health'],
     tags: ['vitamins', 'supplements', 'health', 'medicine'],
     suggestedSettings: {
       reminderTime: '08:00',
@@ -120,6 +123,7 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     icon: 'footprints',
     color: COLORS.teal,
     category: 'health-fitness',
+    goalIds: ['fitness', 'better-health', 'mindfulness'],
     tags: ['walk', 'exercise', 'outdoors', 'steps'],
     suggestedSettings: {
       reminderTime: '12:00',
@@ -137,6 +141,7 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     icon: 'activity',
     color: COLORS.violet,
     category: 'health-fitness',
+    goalIds: ['fitness', 'better-health'],
     tags: ['stretch', 'flexibility', 'exercise', 'yoga', 'mobility'],
     suggestedSettings: {
       reminderTime: '12:00',
@@ -154,6 +159,7 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     icon: 'apple',
     color: COLORS.red,
     category: 'health-fitness',
+    goalIds: ['better-health'],
     tags: ['food', 'diet', 'nutrition', 'healthy', 'eating'],
     suggestedSettings: {
       reminderTime: '12:00',
@@ -171,6 +177,7 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     icon: 'moon',
     color: COLORS.gray,
     category: 'health-fitness',
+    goalIds: ['better-health', 'mindfulness'],
     tags: ['sleep', 'rest', 'health', 'recovery', 'night'],
     suggestedSettings: {
       reminderTime: '21:00',
@@ -188,6 +195,7 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     icon: 'coffee',
     color: COLORS.orange,
     category: 'health-fitness',
+    goalIds: ['better-health'],
     tags: ['food', 'junk', 'snacks', 'health', 'avoid'],
     suggestedSettings: {
       reminderTime: '18:00',
@@ -209,6 +217,7 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     icon: 'brain',
     color: COLORS.violet,
     category: 'mindfulness',
+    goalIds: ['mindfulness', 'better-health'],
     tags: ['meditation', 'mindfulness', 'calm', 'focus', 'zen'],
     suggestedSettings: {
       reminderTime: '07:00',
@@ -226,6 +235,7 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     icon: 'fileText',
     color: COLORS.amber,
     category: 'mindfulness',
+    goalIds: ['mindfulness', 'relationships'],
     tags: ['gratitude', 'journal', 'writing', 'positivity', 'reflection'],
     suggestedSettings: {
       reminderTime: '21:00',
@@ -243,6 +253,7 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     icon: 'activity',
     color: COLORS.cyan,
     category: 'mindfulness',
+    goalIds: ['mindfulness', 'better-health'],
     tags: ['breathing', 'stress', 'relax', 'mindfulness', 'calm'],
     suggestedSettings: {
       reminderTime: '12:00',
@@ -260,6 +271,7 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     icon: 'phone',
     color: COLORS.gray,
     category: 'mindfulness',
+    goalIds: ['mindfulness', 'relationships'],
     tags: ['digital', 'screen', 'detox', 'break', 'technology'],
     suggestedSettings: {
       reminderTime: '20:00',
@@ -277,6 +289,7 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     icon: 'moon',
     color: COLORS.blue,
     category: 'mindfulness',
+    goalIds: ['mindfulness', 'learning'],
     tags: ['reflection', 'review', 'mindfulness', 'journaling'],
     suggestedSettings: {
       reminderTime: '21:00',
@@ -294,6 +307,7 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     icon: 'footprints',
     color: COLORS.green,
     category: 'mindfulness',
+    goalIds: ['mindfulness', 'fitness', 'better-health'],
     tags: ['walk', 'mindfulness', 'outdoors', 'awareness', 'nature'],
     suggestedSettings: {
       reminderTime: '12:00',
@@ -311,6 +325,7 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     icon: 'phone',
     color: COLORS.red,
     category: 'mindfulness',
+    goalIds: ['mindfulness', 'career-growth'],
     tags: ['social', 'media', 'limit', 'detox', 'focus'],
     suggestedSettings: {
       reminderTime: '09:00',
@@ -328,6 +343,7 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     icon: 'heart',
     color: COLORS.pink,
     category: 'mindfulness',
+    goalIds: ['mindfulness'],
     tags: ['affirmation', 'positive', 'self-care', 'motivation', 'mindset'],
     suggestedSettings: {
       reminderTime: '08:00',
@@ -349,6 +365,7 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     icon: 'book',
     color: COLORS.blue,
     category: 'productivity',
+    goalIds: ['learning', 'career-growth'],
     tags: ['reading', 'books', 'learning', 'knowledge', 'education'],
     suggestedSettings: {
       reminderTime: '21:00',
@@ -366,6 +383,7 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     icon: 'graduation',
     color: COLORS.violet,
     category: 'productivity',
+    goalIds: ['learning', 'career-growth', 'creativity'],
     tags: ['learning', 'skill', 'education', 'growth', 'development'],
     suggestedSettings: {
       reminderTime: '19:00',
@@ -383,6 +401,7 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     icon: 'calendar',
     color: COLORS.amber,
     category: 'productivity',
+    goalIds: ['career-growth'],
     tags: ['planning', 'tasks', 'organization', 'productivity', 'tomorrow'],
     suggestedSettings: {
       reminderTime: '21:00',
@@ -400,6 +419,7 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     icon: 'zap',
     color: COLORS.red,
     category: 'productivity',
+    goalIds: ['career-growth', 'mindfulness'],
     tags: ['procrastination', 'focus', 'productivity', 'tasks', 'action'],
     suggestedSettings: {
       reminderTime: '09:00',
@@ -417,6 +437,7 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     icon: 'target',
     color: COLORS.green,
     category: 'productivity',
+    goalIds: ['career-growth', 'learning'],
     tags: ['focus', 'deep work', 'concentration', 'productivity', 'work'],
     suggestedSettings: {
       reminderTime: '10:00',
@@ -434,6 +455,7 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     icon: 'fileText',
     color: COLORS.cyan,
     category: 'productivity',
+    goalIds: ['career-growth'],
     tags: ['email', 'inbox', 'organization', 'productivity', 'communication'],
     suggestedSettings: {
       reminderTime: '17:00',
@@ -451,6 +473,7 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     icon: 'checkCircle',
     color: COLORS.teal,
     category: 'productivity',
+    goalIds: ['career-growth', 'mindfulness'],
     tags: ['goals', 'review', 'progress', 'tracking', 'achievement'],
     suggestedSettings: {
       reminderTime: '20:00',
@@ -468,6 +491,7 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     icon: 'brain',
     color: COLORS.purple,
     category: 'productivity',
+    goalIds: ['learning', 'career-growth', 'creativity'],
     tags: ['practice', 'skill', 'improvement', 'mastery', 'learning'],
     suggestedSettings: {
       reminderTime: '19:00',
@@ -480,7 +504,7 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
   },
 
   // ============================================
-  // LIFESTYLE (8 templates)
+  // LIFESTYLE (13 templates - includes 5 new)
   // ============================================
   {
     id: 'call-family',
@@ -489,6 +513,7 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     icon: 'phone',
     color: COLORS.pink,
     category: 'lifestyle',
+    goalIds: ['relationships'],
     tags: ['family', 'call', 'connection', 'relationships', 'communication'],
     suggestedSettings: {
       reminderTime: '19:00',
@@ -506,6 +531,7 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     icon: 'broom',
     color: COLORS.lime,
     category: 'lifestyle',
+    goalIds: ['mindfulness', 'better-health'],
     tags: ['cleaning', 'organization', 'home', 'tidy', 'space'],
     suggestedSettings: {
       reminderTime: '10:00',
@@ -523,6 +549,7 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     icon: 'music',
     color: COLORS.purple,
     category: 'lifestyle',
+    goalIds: ['creativity', 'learning'],
     tags: ['music', 'practice', 'instrument', 'hobby', 'creativity'],
     suggestedSettings: {
       reminderTime: '18:00',
@@ -540,6 +567,7 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     icon: 'sun',
     color: COLORS.amber,
     category: 'lifestyle',
+    goalIds: ['better-health', 'mindfulness'],
     tags: ['morning', 'routine', 'ritual', 'start', 'day'],
     suggestedSettings: {
       reminderTime: '07:00',
@@ -557,6 +585,7 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     icon: 'heart',
     color: COLORS.pink,
     category: 'lifestyle',
+    goalIds: ['better-health'],
     tags: ['skincare', 'routine', 'self-care', 'beauty', 'health'],
     suggestedSettings: {
       reminderTime: '21:00',
@@ -574,6 +603,7 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     icon: 'fileText',
     color: COLORS.green,
     category: 'lifestyle',
+    goalIds: ['financial-freedom'],
     tags: ['budget', 'money', 'finance', 'spending', 'tracking'],
     suggestedSettings: {
       reminderTime: '20:00',
@@ -591,6 +621,7 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     icon: 'coffee',
     color: COLORS.red,
     category: 'lifestyle',
+    goalIds: ['better-health', 'mindfulness'],
     tags: ['alcohol', 'sober', 'health', 'lifestyle', 'avoid'],
     suggestedSettings: {
       reminderTime: '18:00',
@@ -608,6 +639,7 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     icon: 'apple',
     color: COLORS.orange,
     category: 'lifestyle',
+    goalIds: ['better-health', 'financial-freedom'],
     tags: ['cooking', 'food', 'home', 'health', 'savings'],
     suggestedSettings: {
       reminderTime: '18:00',
@@ -625,6 +657,7 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     icon: 'x',
     color: COLORS.red,
     category: 'lifestyle',
+    goalIds: ['better-health', 'financial-freedom'],
     tags: ['smoking', 'quit', 'health', 'stop', 'cigarettes', 'tobacco'],
     suggestedSettings: {
       reminderTime: '09:00',
@@ -642,6 +675,7 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     icon: 'pill',
     color: COLORS.red,
     category: 'lifestyle',
+    goalIds: ['better-health'],
     tags: ['drugs', 'quit', 'health', 'stop', 'sober', 'clean'],
     suggestedSettings: {
       reminderTime: '18:00',
@@ -659,6 +693,7 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     icon: 'lock',
     color: COLORS.red,
     category: 'lifestyle',
+    goalIds: ['mindfulness', 'better-health'],
     tags: ['adult', 'quit', 'health', 'stop', 'nofap', 'mental health'],
     suggestedSettings: {
       reminderTime: '21:00',
@@ -676,6 +711,7 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     icon: 'phone',
     color: COLORS.cyan,
     category: 'lifestyle',
+    goalIds: ['relationships'],
     tags: ['friend', 'call', 'connection', 'social', 'relationships'],
     suggestedSettings: {
       reminderTime: '19:00',
@@ -693,6 +729,7 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     icon: 'message-circle',
     color: COLORS.blue,
     category: 'lifestyle',
+    goalIds: ['relationships', 'mindfulness'],
     tags: ['talk', 'conversation', 'social', 'connection', 'communication'],
     suggestedSettings: {
       reminderTime: '19:00',
@@ -700,6 +737,100 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
       reminderText: 'Connection time',
       streakEnabled: true,
       streakSkipWeekends: false,
+      streakMinimumCount: 1,
+    },
+  },
+
+  // ============================================
+  // NEW TEMPLATES (5 templates)
+  // ============================================
+  {
+    id: 'pack-lunch',
+    name: 'Pack a Lunch',
+    description: '',
+    icon: 'utensils',
+    color: COLORS.green,
+    category: 'lifestyle',
+    goalIds: ['financial-freedom', 'better-health'],
+    tags: ['lunch', 'meal prep', 'savings', 'food', 'health'],
+    suggestedSettings: {
+      reminderTime: '21:00',
+      reminderFrequency: 'daily',
+      reminderText: 'Prep tomorrow\'s lunch',
+      streakEnabled: true,
+      streakSkipWeekends: true,
+      streakMinimumCount: 1,
+    },
+  },
+  {
+    id: 'no-impulse-buying',
+    name: 'No Impulse Buying',
+    description: '',
+    icon: 'tag',
+    color: COLORS.amber,
+    category: 'lifestyle',
+    goalIds: ['financial-freedom', 'mindfulness'],
+    tags: ['spending', 'budget', 'savings', 'money', 'mindful'],
+    suggestedSettings: {
+      reminderTime: '10:00',
+      reminderFrequency: 'daily',
+      reminderText: 'Spend mindfully today',
+      streakEnabled: true,
+      streakSkipWeekends: false,
+      streakMinimumCount: 1,
+    },
+  },
+  {
+    id: 'creative-writing',
+    name: 'Creative Writing',
+    description: '',
+    icon: 'pen',
+    color: COLORS.purple,
+    category: 'productivity',
+    goalIds: ['creativity', 'learning', 'mindfulness'],
+    tags: ['writing', 'creative', 'journal', 'stories', 'expression'],
+    suggestedSettings: {
+      reminderTime: '20:00',
+      reminderFrequency: 'daily',
+      reminderText: 'Let your words flow',
+      streakEnabled: true,
+      streakSkipWeekends: true,
+      streakMinimumCount: 1,
+    },
+  },
+  {
+    id: 'side-project',
+    name: 'Work on Side Project',
+    description: '',
+    icon: 'code',
+    color: COLORS.blue,
+    category: 'productivity',
+    goalIds: ['creativity', 'career-growth', 'learning'],
+    tags: ['project', 'hobby', 'building', 'creating', 'passion'],
+    suggestedSettings: {
+      reminderTime: '19:00',
+      reminderFrequency: 'daily',
+      reminderText: 'Build something you care about',
+      streakEnabled: true,
+      streakSkipWeekends: true,
+      streakMinimumCount: 1,
+    },
+  },
+  {
+    id: 'drawing',
+    name: 'Drawing',
+    description: '',
+    icon: 'palette',
+    color: COLORS.pink,
+    category: 'lifestyle',
+    goalIds: ['creativity', 'mindfulness'],
+    tags: ['art', 'sketch', 'drawing', 'creative', 'expression'],
+    suggestedSettings: {
+      reminderTime: '19:00',
+      reminderFrequency: 'daily',
+      reminderText: 'Time to create',
+      streakEnabled: true,
+      streakSkipWeekends: true,
       streakMinimumCount: 1,
     },
   },

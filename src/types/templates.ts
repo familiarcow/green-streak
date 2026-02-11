@@ -3,6 +3,7 @@
  */
 
 import { IconName } from '../components/common/Icon';
+import { GoalId } from './goals';
 
 /**
  * Template category types
@@ -33,6 +34,8 @@ export interface HabitTemplate {
   icon: IconName;
   color: string;
   category: TemplateCategory;
+  /** Goals this habit supports - used for personalized sorting */
+  goalIds: GoalId[];
   tags: string[];
   suggestedSettings: {
     reminderTime?: string;
@@ -45,6 +48,14 @@ export interface HabitTemplate {
 }
 
 /**
+ * Preview goals for sorting during onboarding (before goals are saved to DB)
+ */
+export interface PreviewGoals {
+  selectedGoalIds: string[];
+  primaryGoalId: string | null;
+}
+
+/**
  * Template catalog modal props
  */
 export interface TemplateCatalogModalProps {
@@ -54,6 +65,8 @@ export interface TemplateCatalogModalProps {
   onCloseComplete?: () => void;
   /** Called when user selects a template - opens EditHabit with template data */
   onSelectTemplate: (template: HabitTemplate) => void;
+  /** Preview goals for sorting during onboarding (bypasses store) */
+  previewGoals?: PreviewGoals;
 }
 
 /**

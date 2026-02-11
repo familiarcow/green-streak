@@ -23,6 +23,7 @@ export { NotificationManager, createNotificationManager } from './NotificationMa
 export { AchievementService, createAchievementService } from './AchievementService';
 export { AchievementGridService, createAchievementGridService, SeededRandom, GRID_CONFIGS, STARTER_ACHIEVEMENT_ID } from './AchievementGridService';
 export { GoalService, createGoalService } from './GoalService';
+export { sortTemplatesByGoals, getTemplateScore, getOrderedUserGoals } from './TemplateSortingService';
 
 // Service Registry
 export {

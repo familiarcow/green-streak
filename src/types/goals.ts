@@ -8,6 +8,20 @@
 import { IconName } from '../components/common/Icon';
 
 /**
+ * Type-safe goal ID union matching goalLibrary.ts
+ * Used for template categorization and goal references
+ */
+export type GoalId =
+  | 'better-health'
+  | 'career-growth'
+  | 'financial-freedom'
+  | 'learning'
+  | 'relationships'
+  | 'mindfulness'
+  | 'fitness'
+  | 'creativity';
+
+/**
  * Predefined goal definition from the goal library
  * These are static and stored in code, not the database
  */

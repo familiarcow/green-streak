@@ -3,11 +3,20 @@
  *
  * Provides search and filter functionality for habit templates.
  * Includes 300ms debouncing for search queries to improve performance.
+ * Templates are automatically sorted by relevance to user's selected goals.
  */
 
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import { HabitTemplate, TemplateCategory } from '../types/templates';
+import { HabitTemplate, TemplateCategory, PreviewGoals } from '../types/templates';
+import { GoalId } from '../types/goals';
 import { HABIT_TEMPLATES } from '../data/habitTemplates';
+import { useGoalsStore } from '../store/goalsStore';
+import { sortTemplatesByGoals, getOrderedUserGoals } from '../services/TemplateSortingService';
+
+interface UseTemplateSearchOptions {
+  /** Goals to use for sorting preview (onboarding mode) - bypasses store */
+  previewGoals?: PreviewGoals;
+}
 
 interface UseTemplateSearchReturn {
   searchQuery: string;
@@ -21,11 +30,28 @@ interface UseTemplateSearchReturn {
 
 const DEBOUNCE_MS = 300;
 
-export const useTemplateSearch = (): UseTemplateSearchReturn => {
+export const useTemplateSearch = (options?: UseTemplateSearchOptions): UseTemplateSearchReturn => {
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<TemplateCategory | 'all'>('all');
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hasAttemptedLoad = useRef(false);
+
+  // Get user's goals for personalized sorting (only used when not in preview mode)
+  const { goals, primaryGoal, loading: goalsLoading, loadGoals } = useGoalsStore();
+
+  // Load goals on mount if not in preview mode and not already loaded
+  useEffect(() => {
+    // Skip if using preview goals (onboarding mode)
+    if (options?.previewGoals) {
+      return;
+    }
+    // Only attempt load once to prevent infinite loop when user has no goals
+    if (!hasAttemptedLoad.current && goals.length === 0 && !goalsLoading) {
+      hasAttemptedLoad.current = true;
+      loadGoals();
+    }
+  }, [options?.previewGoals, goals.length, goalsLoading, loadGoals]);
 
   // Debounce search query
   useEffect(() => {
@@ -44,10 +70,31 @@ export const useTemplateSearch = (): UseTemplateSearchReturn => {
     };
   }, [searchQuery]);
 
-  const filteredTemplates = useMemo(() => {
-    let templates = HABIT_TEMPLATES;
+  // Extract goal IDs - use preview goals if provided (onboarding), otherwise use store
+  const selectedGoalIds = useMemo(() => {
+    if (options?.previewGoals) {
+      return options.previewGoals.selectedGoalIds;
+    }
+    return goals.map((g) => g.goalId);
+  }, [options?.previewGoals, goals]);
 
-    // Filter by category
+  const primaryGoalId = options?.previewGoals?.primaryGoalId ?? (primaryGoal?.goalId ?? null);
+
+  // Pre-sort templates by user's goals (memoized, only changes when goals change)
+  const sortedTemplates = useMemo(() => {
+    // Don't sort while goals are loading (unless using preview goals)
+    if (!options?.previewGoals && goalsLoading) {
+      return HABIT_TEMPLATES;
+    }
+
+    const orderedGoals = getOrderedUserGoals(selectedGoalIds, primaryGoalId);
+    return sortTemplatesByGoals(HABIT_TEMPLATES, orderedGoals as GoalId[]);
+  }, [options?.previewGoals, selectedGoalIds, primaryGoalId, goalsLoading]);
+
+  const filteredTemplates = useMemo(() => {
+    let templates = sortedTemplates;
+
+    // Filter by category (after sorting to maintain goal-based order within category)
     if (selectedCategory !== 'all') {
       templates = templates.filter((template) => template.category === selectedCategory);
     }
@@ -64,7 +111,7 @@ export const useTemplateSearch = (): UseTemplateSearchReturn => {
     }
 
     return templates;
-  }, [debouncedQuery, selectedCategory]);
+  }, [sortedTemplates, debouncedQuery, selectedCategory]);
 
   const clearFilters = useCallback(() => {
     setSearchQuery('');

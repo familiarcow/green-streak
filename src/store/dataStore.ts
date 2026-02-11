@@ -135,6 +135,8 @@ export const useDataStore = create<DataState>((set, get) => ({
         const db = getDatabase();
         // Delete all data from tables (order matters due to foreign keys)
         await db.runAsync('DELETE FROM logs');
+        await db.runAsync('DELETE FROM goal_habits'); // FK to user_goals and tasks
+        await db.runAsync('DELETE FROM user_goals');
         await db.runAsync('DELETE FROM streaks');
         await db.runAsync('DELETE FROM unlocked_achievements');
         await db.runAsync('DELETE FROM tasks');
@@ -172,6 +174,7 @@ export const useDataStore = create<DataState>((set, get) => ({
         const { useSettingsStore } = await import('./settingsStore');
         const { useAchievementsStore } = await import('./achievementsStore');
         const { useStreaksStore } = await import('./streaksStore');
+        const { useGoalsStore } = await import('./goalsStore');
 
         // Reset onboarding to trigger the flow
         useOnboardingStore.getState().resetOnboarding();
@@ -199,6 +202,15 @@ export const useDataStore = create<DataState>((set, get) => ({
 
         // Clear streaks in memory
         useStreaksStore.setState({ streaks: [], loading: false });
+
+        // Clear goals in memory
+        useGoalsStore.setState({
+          goals: [],
+          primaryGoal: null,
+          goalProgress: [],
+          loading: false,
+          error: null,
+        });
 
         logger.debug('DATA', 'In-memory stores reset');
       } catch (storeError) {

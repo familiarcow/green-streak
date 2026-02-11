@@ -298,6 +298,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
 
   const handleBrowseTemplates = useCallback(() => {
     logger.info('UI', 'User chose to browse templates during onboarding');
+    // Goals are passed as previewGoals prop - no need to save to DB yet
     setShowTemplateCatalog(true);
   }, []);
 
@@ -425,6 +426,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
                   primaryGoalId={primaryGoalId}
                   onToggleGoal={handleToggleGoal}
                   onSetPrimary={handleSetPrimaryGoal}
+                  onSkip={handleNext}
                 />
               )}
 
@@ -687,6 +689,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
         visible={showTemplateCatalog}
         onClose={() => setShowTemplateCatalog(false)}
         onSelectTemplate={handleSelectTemplate}
+        previewGoals={{ selectedGoalIds, primaryGoalId }}
       />
     </SafeAreaView>
   );

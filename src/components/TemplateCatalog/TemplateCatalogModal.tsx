@@ -33,6 +33,7 @@ export const TemplateCatalogModal: React.FC<TemplateCatalogModalProps> = ({
   onClose,
   onCloseComplete,
   onSelectTemplate,
+  previewGoals,
 }) => {
   const {
     searchQuery,
@@ -42,7 +43,7 @@ export const TemplateCatalogModal: React.FC<TemplateCatalogModalProps> = ({
     filteredTemplates,
     clearFilters,
     hasActiveFilters,
-  } = useTemplateSearch();
+  } = useTemplateSearch({ previewGoals });
 
   const { playRandomTap } = useSounds();
 
