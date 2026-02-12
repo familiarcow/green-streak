@@ -209,16 +209,6 @@ const GoalRow: React.FC<{
               >
                 <View style={[rowStyles.timelineDotEmpty, { borderColor: goal.definition.color }]} />
                 <Text style={[rowStyles.addMilestoneText, { color: goal.definition.color }]}>+ New Milestone</Text>
-                {/* Chevron on right when there are milestones to expand */}
-                {filteredMilestones.length > 1 && !mostRecentMilestone && (
-                  <TouchableOpacity
-                    style={rowStyles.expandChevron}
-                    onPress={onToggleExpand}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                  >
-                    <Icon name={isExpanded ? 'chevron-up' : 'chevron-down'} size={14} color={colors.text.tertiary} />
-                  </TouchableOpacity>
-                )}
               </TouchableOpacity>
             )}
 
@@ -228,18 +218,6 @@ const GoalRow: React.FC<{
                 <View style={[rowStyles.timelineDot, { backgroundColor: goal.definition.color }]} />
                 <Text style={rowStyles.milestoneDate}>{formatMilestoneDate(mostRecentMilestone.date)}</Text>
                 <Text style={rowStyles.milestoneTitle} numberOfLines={1}>{mostRecentMilestone.title}</Text>
-                {/* Expand chevron on the right */}
-                {filteredMilestones.length > 1 && (
-                  <TouchableOpacity
-                    style={rowStyles.expandChevron}
-                    onPress={onToggleExpand}
-                    accessibilityRole="button"
-                    accessibilityLabel={isExpanded ? 'Collapse milestones' : 'Expand milestones'}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                  >
-                    <Icon name={isExpanded ? 'chevron-up' : 'chevron-down'} size={14} color={colors.text.tertiary} />
-                  </TouchableOpacity>
-                )}
               </View>
             )}
 
@@ -254,6 +232,19 @@ const GoalRow: React.FC<{
                   </View>
                 ))}
               </Animated.View>
+            )}
+
+            {/* Expand/collapse chevron at bottom right */}
+            {filteredMilestones.length > 1 && (
+              <TouchableOpacity
+                style={rowStyles.expandChevronCorner}
+                onPress={onToggleExpand}
+                accessibilityRole="button"
+                accessibilityLabel={isExpanded ? 'Collapse milestones' : 'Expand milestones'}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Icon name={isExpanded ? 'chevron-up' : 'chevron-down'} size={14} color={colors.text.tertiary} />
+              </TouchableOpacity>
             )}
           </View>
         </View>
@@ -346,9 +337,11 @@ const rowStyles = StyleSheet.create({
     ...textStyles.bodySmall,
     fontWeight: '600',
   },
-  expandChevron: {
+  expandChevronCorner: {
+    position: 'absolute',
+    bottom: spacing[2],
+    right: spacing[2],
     padding: spacing[1],
-    marginLeft: 'auto',
   },
   milestoneDate: {
     ...textStyles.caption,
