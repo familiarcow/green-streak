@@ -137,6 +137,7 @@ export const useDataStore = create<DataState>((set, get) => ({
         await db.runAsync('DELETE FROM logs');
         await db.runAsync('DELETE FROM goal_habits'); // FK to user_goals and tasks
         await db.runAsync('DELETE FROM user_goals');
+        await db.runAsync('DELETE FROM custom_goal_definitions'); // Custom goals
         await db.runAsync('DELETE FROM streaks');
         await db.runAsync('DELETE FROM unlocked_achievements');
         await db.runAsync('DELETE FROM tasks');
@@ -203,9 +204,10 @@ export const useDataStore = create<DataState>((set, get) => ({
         // Clear streaks in memory
         useStreaksStore.setState({ streaks: [], loading: false });
 
-        // Clear goals in memory
+        // Clear goals in memory (including custom goals)
         useGoalsStore.setState({
           goals: [],
+          customGoals: [],
           primaryGoal: null,
           goalProgress: [],
           loading: false,

@@ -6,3 +6,4 @@
 
 export { GoalCard } from './GoalCard';
 export { GoalSelector } from './GoalSelector';
+export { GoalListItem } from './GoalListItem';

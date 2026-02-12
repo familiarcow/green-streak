@@ -7,17 +7,19 @@ import { ScreenErrorBoundary } from '../components/ScreenErrorBoundary';
 import { Icon } from '../components/common/Icon';
 import { TodayCard, EmptyStateSection, TasksSection, AppFeedbackCard } from '../components/HomeScreen';
 import { GoalCard } from '../components/goals';
-import { BaseModal, GoalDetailModal } from '../components/modals';
+import { BaseModal, GoalDetailModal, AddGoalsModal } from '../components/modals';
+import { CustomGoalDefinition } from '../types/goals';
 import { useTasksStore } from '../store/tasksStore';
 import { useLogsStore } from '../store/logsStore';
 import { useAchievementsStore } from '../store/achievementsStore';
 import { useGoalsStore } from '../store/goalsStore';
-import { useTaskActions, useModalManager, useDateNavigation, useAccentColor, useColorName, useDeepLinks, useWidgetSync, useSounds } from '../hooks';
+import { useTaskActions, useModalManager, useDateNavigation, useAccentColor, useColorName, useDeepLinks, useWidgetSync, useSounds, useGoalModalFlow } from '../hooks';
 import { useDateRefresh } from '../hooks/useDateRefresh';
 import { colors, textStyles, spacing } from '../theme';
 import { radiusValues } from '../theme/utils';
 import { getTodayString } from '../utils/dateHelpers';
 import EditTaskModal from './EditTaskModal';
+import { EditGoalModal } from '../components/modals';
 import DailyLogScreen from './DailyLogScreen';
 import SettingsScreen from './SettingsScreen';
 import TaskAnalyticsScreen from './TaskAnalyticsScreen';
@@ -52,6 +54,13 @@ export const HomeScreen: React.FC = () => {
   const { contributionData, loading: logsLoading } = useLogsStore();
   const { pendingUnlocks } = useAchievementsStore();
   const { goals, primaryGoal, goalProgress, loadGoals, setCanShowModal } = useGoalsStore();
+
+  // Goal modal flow (handles sequencing for AddGoalsModal and EditGoalModal)
+  const goalModalFlow = useGoalModalFlow({
+    onCloseGoalDetail: closeModal,
+    setCanShowModal,
+    loadGoals,
+  });
 
   // Accent color hooks for dynamic header
   const accentColor = useAccentColor();
@@ -432,11 +441,29 @@ export const HomeScreen: React.FC = () => {
         <GoalDetailModal
           visible={activeModal === 'goalDetail'}
           onClose={closeModal}
-          onCloseComplete={() => {
-            // 100ms delay lets native iOS animation fully complete
-            setTimeout(() => setCanShowModal(true), 100);
-          }}
+          onCloseComplete={goalModalFlow.handleGoalDetailCloseComplete}
+          onOpenAddGoals={goalModalFlow.handleOpenAddGoalsFromGoalDetail}
         />
+
+        {/* Add Goals Modal */}
+        <AddGoalsModal
+          visible={goalModalFlow.showAddGoalsModal}
+          onClose={goalModalFlow.handleAddGoalsClose}
+          onCloseComplete={goalModalFlow.handleAddGoalsCloseComplete}
+          onCreateCustom={goalModalFlow.handleCreateCustomGoal}
+          onEditCustom={goalModalFlow.handleEditCustomGoal}
+        />
+
+        {/* Edit Goal Modal for creating/editing custom goals */}
+        {goalModalFlow.showEditGoalModal && (
+          <View style={StyleSheet.absoluteFill}>
+            <EditGoalModal
+              onClose={goalModalFlow.handleEditGoalClose}
+              onSave={goalModalFlow.handleGoalSaved}
+              existingGoal={goalModalFlow.editingGoal}
+            />
+          </View>
+        )}
       </SafeAreaView>
     </ErrorBoundary>
   );

@@ -334,6 +334,44 @@ export class GoalRepository implements IGoalRepository {
     }
   }
 
+  async getHabitsForGoals(goalIds: string[]): Promise<Map<string, string[]>> {
+    const db = getDatabase();
+    const result = new Map<string, string[]>();
+
+    if (goalIds.length === 0) {
+      return result;
+    }
+
+    try {
+      // Initialize all goalIds with empty arrays
+      for (const goalId of goalIds) {
+        result.set(goalId, []);
+      }
+
+      // Build placeholders for IN clause
+      const placeholders = goalIds.map(() => '?').join(', ');
+      const rows = await db.getAllAsync<{ goal_id: string; task_id: string }>(
+        `SELECT goal_id, task_id FROM goal_habits WHERE goal_id IN (${placeholders})`,
+        ...goalIds
+      );
+
+      // Group by goal_id
+      for (const row of rows) {
+        const habits = result.get(row.goal_id);
+        if (habits) {
+          habits.push(row.task_id);
+        }
+      }
+
+      logger.debug('DATA', 'Batch fetched habits for goals', { goalCount: goalIds.length, linkCount: rows.length });
+      return result;
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('DATA', 'Failed to batch get habits for goals', { error: errorMessage, goalCount: goalIds.length });
+      throw error;
+    }
+  }
+
   async getGoalsForHabit(taskId: string): Promise<string[]> {
     const db = getDatabase();
 

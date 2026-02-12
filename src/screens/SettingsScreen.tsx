@@ -16,10 +16,12 @@ import { Icon } from '../components/common/Icon';
 import { ColorPickerModal } from '../components/ColorPicker/ColorPickerModal';
 import { CalendarColorPreview } from '../components/CalendarColorPreview';
 import { CalendarViewSettingsModal } from '../components/modals/CalendarViewSettingsModal';
-import { GoalDetailModal } from '../components/modals/GoalDetailModal';
+import { GoalDetailModal, AddGoalsModal } from '../components/modals';
+import { EditGoalModal } from '../components/modals';
+import { CustomGoalDefinition } from '../types/goals';
 import { useSettingsStore, DEFAULT_CALENDAR_COLOR } from '../store/settingsStore';
 import { generateContributionPalette, DEFAULT_CONTRIBUTION_PALETTE, CALENDAR_COLOR_PRESETS } from '../utils/colorUtils';
-import { useAccentColor, useSounds } from '../hooks';
+import { useAccentColor, useSounds, useGoalModalFlow } from '../hooks';
 import { useDataStore } from '../store/dataStore';
 import { useTasksStore } from '../store/tasksStore';
 import { useLogsStore } from '../store/logsStore';
@@ -54,7 +56,22 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
   const { exportData, importData, clearAllData, isExporting, isImporting, isClearing } = useDataStore();
   const { tasks, loadTasks, updateTask } = useTasksStore();
   const { loadContributionData } = useLogsStore();
-  const { goals, primaryGoal, loadGoals } = useGoalsStore();
+  const { goals, primaryGoal, loadGoals, setCanShowModal } = useGoalsStore();
+
+  // Goal modal flow (handles sequencing for AddGoalsModal and EditGoalModal)
+  const goalModalFlow = useGoalModalFlow({
+    onCloseGoalDetail: () => setShowGoalDetailModal(false),
+    setCanShowModal,
+    loadGoals,
+  });
+
+  // Cleanup goal modal state when Settings unmounts
+  useEffect(() => {
+    return () => {
+      goalModalFlow.resetState();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Filter habits with reminders configured
   const habitsWithReminders = tasks.filter(t => t.reminderEnabled || t.reminderTime);
@@ -526,13 +543,6 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
                 </View>
               )}
 
-              {goals.length === 0 && (
-                <View style={[styles.emptyGoalsCard, glassStyles.cardSubtle]}>
-                  <Text style={styles.emptyGoalsText}>
-                    Set life goals to give meaning to your daily habits
-                  </Text>
-                </View>
-              )}
             </>
           )}
         </View>
@@ -1182,11 +1192,29 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
       <GoalDetailModal
         visible={showGoalDetailModal}
         onClose={() => setShowGoalDetailModal(false)}
-        onCloseComplete={() => {
-          // Refresh goals after modal closes
-          loadGoals();
-        }}
+        onCloseComplete={goalModalFlow.handleGoalDetailCloseComplete}
+        onOpenAddGoals={goalModalFlow.handleOpenAddGoalsFromGoalDetail}
       />
+
+      {/* Add Goals Modal */}
+      <AddGoalsModal
+        visible={goalModalFlow.showAddGoalsModal}
+        onClose={goalModalFlow.handleAddGoalsClose}
+        onCloseComplete={goalModalFlow.handleAddGoalsCloseComplete}
+        onCreateCustom={goalModalFlow.handleCreateCustomGoal}
+        onEditCustom={goalModalFlow.handleEditCustomGoal}
+      />
+
+      {/* Edit Goal Modal for creating/editing custom goals */}
+      {goalModalFlow.showEditGoalModal && (
+        <View style={StyleSheet.absoluteFill}>
+          <EditGoalModal
+            onClose={goalModalFlow.handleEditGoalClose}
+            onSave={goalModalFlow.handleGoalSaved}
+            existingGoal={goalModalFlow.editingGoal}
+          />
+        </View>
+      )}
     </SafeAreaView>
   );
 };
@@ -1603,17 +1631,6 @@ const styles = StyleSheet.create({
     marginLeft: 28 + spacing[2], // Align with name (icon width + gap)
   },
 
-  emptyGoalsCard: {
-    padding: spacing[4],
-    alignItems: 'center',
-  },
-
-  emptyGoalsText: {
-    ...textStyles.bodySmall,
-    color: colors.text.tertiary,
-    textAlign: 'center',
-    fontStyle: 'italic',
-  },
 });
 
 export default SettingsScreen;

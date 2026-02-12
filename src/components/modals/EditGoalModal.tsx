@@ -17,16 +17,16 @@ import {
   Switch,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { AnimatedButton } from '../components/AnimatedButton';
-import { Icon, IconName } from '../components/common/Icon';
-import { ColorPickerModal } from '../components/ColorPicker';
-import { useGoalsStore } from '../store/goalsStore';
-import { useAccentColor, useSounds } from '../hooks';
-import { colors, textStyles, spacing, shadows, glassStyles } from '../theme';
-import { radiusValues } from '../theme/utils';
-import { COLOR_PALETTE } from '../database/schema';
-import { CustomGoalDefinition } from '../types/goals';
-import logger from '../utils/logger';
+import { AnimatedButton } from '../AnimatedButton';
+import { Icon, IconName } from '../common/Icon';
+import { ColorPickerModal } from '../ColorPicker';
+import { useGoalsStore } from '../../store/goalsStore';
+import { useAccentColor, useSounds } from '../../hooks';
+import { colors, textStyles, spacing, shadows, glassStyles } from '../../theme';
+import { radiusValues } from '../../theme/utils';
+import { COLOR_PALETTE } from '../../database/schema';
+import { CustomGoalDefinition } from '../../types/goals';
+import logger from '../../utils/logger';
 
 interface EditGoalModalProps {
   onClose: () => void;
@@ -34,14 +34,7 @@ interface EditGoalModalProps {
   existingGoal?: CustomGoalDefinition;
 }
 
-// Quick emoji presets for goals
-const EMOJI_PRESETS = [
-  '🎯', '⭐', '🌟', '💫', '✨', '🔥',
-  '💪', '🏆', '🎖️', '🥇', '🎨', '📚',
-  '💰', '❤️', '🧘', '🌱', '🚀', '💎',
-];
-
-// Quick icon presets for goals
+// Icon presets for goals
 const ICON_PRESETS: IconName[] = [
   'target', 'star', 'heart', 'zap', 'medal', 'trophy',
   'book', 'briefcase', 'lightbulb', 'users', 'sun', 'compass',
@@ -53,7 +46,6 @@ export const EditGoalModal: React.FC<EditGoalModalProps> = ({
   existingGoal,
 }) => {
   const [title, setTitle] = useState('');
-  const [emoji, setEmoji] = useState('🎯');
   const [selectedColor, setSelectedColor] = useState(COLOR_PALETTE[0]);
   const [selectedIcon, setSelectedIcon] = useState<IconName>('target');
   const [description, setDescription] = useState('');
@@ -70,7 +62,6 @@ export const EditGoalModal: React.FC<EditGoalModalProps> = ({
   useEffect(() => {
     if (existingGoal) {
       setTitle(existingGoal.title);
-      setEmoji(existingGoal.emoji);
       setSelectedColor(existingGoal.color);
       setSelectedIcon(existingGoal.icon);
       setDescription(existingGoal.description || '');
@@ -103,7 +94,7 @@ export const EditGoalModal: React.FC<EditGoalModalProps> = ({
     try {
       const goalData = {
         title: title.trim(),
-        emoji,
+        emoji: '', // Deprecated - icons are used instead
         color: selectedColor,
         icon: selectedIcon,
         description: description.trim(),
@@ -194,7 +185,7 @@ export const EditGoalModal: React.FC<EditGoalModalProps> = ({
         {/* Preview Card */}
         <View style={[styles.previewCard, { borderColor: selectedColor }]}>
           <View style={[styles.previewIconContainer, { backgroundColor: selectedColor + '20' }]}>
-            <Text style={styles.previewEmoji}>{emoji}</Text>
+            <Icon name={selectedIcon} size={32} color={selectedColor} />
           </View>
           <Text style={[styles.previewTitle, { color: selectedColor }]}>
             {title || 'Your Goal'}
@@ -220,49 +211,6 @@ export const EditGoalModal: React.FC<EditGoalModalProps> = ({
               autoCapitalize="words"
             />
             <Text style={styles.charCount}>{title.length}/30</Text>
-          </View>
-        </View>
-
-        {/* Emoji Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Emoji</Text>
-          <View style={styles.settingItem}>
-            <View style={styles.emojiGrid}>
-              {EMOJI_PRESETS.map((e, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={[
-                    styles.emojiOption,
-                    emoji === e && [styles.selectedEmojiOption, { borderColor: accentColor }],
-                  ]}
-                  onPress={() => {
-                    playRandomTap();
-                    setEmoji(e);
-                  }}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Select ${e} emoji`}
-                  accessibilityState={{ selected: emoji === e }}
-                >
-                  <Text style={styles.emojiText}>{e}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-            {/* Custom emoji input */}
-            <View style={styles.customEmojiRow}>
-              <Text style={styles.customEmojiLabel}>Custom:</Text>
-              <TextInput
-                style={styles.customEmojiInput}
-                value={emoji}
-                onChangeText={(text) => {
-                  // Take only the last character (emoji)
-                  const lastChar = text.slice(-2); // Emojis can be 2 chars
-                  if (lastChar) setEmoji(lastChar);
-                }}
-                placeholder="🎯"
-                placeholderTextColor={colors.text.tertiary}
-                textAlign="center"
-              />
-            </View>
           </View>
         </View>
 
@@ -471,10 +419,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing[2],
   },
 
-  previewEmoji: {
-    fontSize: 32,
-  },
-
   previewTitle: {
     ...textStyles.h2,
     fontWeight: '600',
@@ -525,54 +469,6 @@ const styles = StyleSheet.create({
     color: colors.text.tertiary,
     textAlign: 'right',
     marginTop: spacing[1],
-  },
-
-  emojiGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing[2],
-  },
-
-  emojiOption: {
-    width: 44,
-    height: 44,
-    backgroundColor: colors.surface,
-    borderRadius: radiusValues.box,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-
-  selectedEmojiOption: {
-    borderWidth: 2,
-  },
-
-  emojiText: {
-    fontSize: 24,
-  },
-
-  customEmojiRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: spacing[3],
-    gap: spacing[2],
-  },
-
-  customEmojiLabel: {
-    ...textStyles.bodySmall,
-    color: colors.text.secondary,
-  },
-
-  customEmojiInput: {
-    width: 50,
-    height: 44,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radiusValues.box,
-    fontSize: 24,
-    textAlign: 'center',
   },
 
   colorGrid: {

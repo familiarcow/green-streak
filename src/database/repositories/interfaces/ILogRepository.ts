@@ -29,6 +29,16 @@ export interface ILogRepository {
    * Find all logs for a specific task
    */
   findByTask(taskId: string): Promise<TaskLog[]>;
+
+  /**
+   * Find logs for multiple tasks and a specific date (batch)
+   */
+  getByTasksAndDate(taskIds: string[], date: string): Promise<TaskLog[]>;
+
+  /**
+   * Find all logs for multiple tasks (batch)
+   */
+  findByTasks(taskIds: string[]): Promise<TaskLog[]>;
   
   /**
    * Find logs within a date range

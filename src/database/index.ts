@@ -7,6 +7,7 @@ import { addReminderText } from './migrations/addReminderText';
 import { addReminderDayOfWeek } from './migrations/addReminderDayOfWeek';
 import { addAchievementGridSupport } from './migrations/addAchievementGridSupport';
 import { addGoalsSupport } from './migrations/addGoalsSupport';
+import { addCustomGoals } from './migrations/addCustomGoals';
 import logger from '../utils/logger';
 
 let database: SQLite.SQLiteDatabase;
@@ -31,6 +32,7 @@ export const initializeDatabase = async (): Promise<SQLite.SQLiteDatabase> => {
     await addReminderDayOfWeek(database);
     await addAchievementGridSupport(database);
     await addGoalsSupport(database);
+    await addCustomGoals(database);
 
     logger.info('DATA', 'Database initialized successfully');
     

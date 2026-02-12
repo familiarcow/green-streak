@@ -254,6 +254,8 @@ export const AchievementGridScreen: React.FC<AchievementGridScreenProps> = ({ on
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    // Needed for absolute children to position correctly
+    position: 'relative',
   },
 
   header: {

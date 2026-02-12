@@ -97,9 +97,63 @@ export class LogRepository implements ILogRepository {
       const logs = results.map(row => this.mapRowToLog(row));
       return logs;
     } catch (error: any) {
-      logger.error('DATA', 'Failed to fetch logs for task', { 
-        error: error.message, 
-        taskId 
+      logger.error('DATA', 'Failed to fetch logs for task', {
+        error: error.message,
+        taskId
+      });
+      throw error;
+    }
+  }
+
+  async getByTasksAndDate(taskIds: string[], date: string): Promise<TaskLog[]> {
+    const db = getDatabase();
+
+    if (taskIds.length === 0) {
+      return [];
+    }
+
+    try {
+      const placeholders = taskIds.map(() => '?').join(', ');
+      const results = await db.getAllAsync(
+        `SELECT * FROM logs WHERE task_id IN (${placeholders}) AND date = ?`,
+        ...taskIds,
+        date
+      );
+
+      const logs = results.map(row => this.mapRowToLog(row));
+      logger.debug('DATA', 'Batch fetched logs for tasks on date', { taskCount: taskIds.length, date, logCount: logs.length });
+      return logs;
+    } catch (error: any) {
+      logger.error('DATA', 'Failed to batch fetch logs for tasks on date', {
+        error: error.message,
+        taskCount: taskIds.length,
+        date
+      });
+      throw error;
+    }
+  }
+
+  async findByTasks(taskIds: string[]): Promise<TaskLog[]> {
+    const db = getDatabase();
+
+    if (taskIds.length === 0) {
+      return [];
+    }
+
+    try {
+      const placeholders = taskIds.map(() => '?').join(', ');
+      const results = await db.getAllAsync(
+        `SELECT * FROM logs WHERE task_id IN (${placeholders}) ORDER BY date DESC`,
+        ...taskIds
+      );
+
+      const logs = results.map(row => this.mapRowToLog(row));
+      logger.debug('DATA', 'Batch fetched logs for tasks', { taskCount: taskIds.length, logCount: logs.length });
+      return logs;
+    } catch (error: any) {
+      logger.error('DATA', 'Failed to batch fetch logs for tasks', {
+        error: error.message,
+        taskCount: taskIds.length
       });
       throw error;
     }

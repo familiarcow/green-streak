@@ -53,6 +53,25 @@ export class MockLogRepository implements ILogRepository {
       .sort((a, b) => b.date.localeCompare(a.date));
   }
 
+  async getByTasksAndDate(taskIds: string[], date: string): Promise<TaskLog[]> {
+    if (taskIds.length === 0) {
+      return [];
+    }
+    const taskIdSet = new Set(taskIds);
+    return Array.from(this.logs.values())
+      .filter(log => taskIdSet.has(log.taskId) && log.date === date);
+  }
+
+  async findByTasks(taskIds: string[]): Promise<TaskLog[]> {
+    if (taskIds.length === 0) {
+      return [];
+    }
+    const taskIdSet = new Set(taskIds);
+    return Array.from(this.logs.values())
+      .filter(log => taskIdSet.has(log.taskId))
+      .sort((a, b) => b.date.localeCompare(a.date));
+  }
+
   async findByDateRange(startDate: string, endDate: string): Promise<TaskLog[]> {
     return Array.from(this.logs.values())
       .filter(log => log.date >= startDate && log.date <= endDate)

@@ -32,19 +32,12 @@ export const GoalSelector: React.FC<GoalSelectorProps> = ({
 
   // Load existing links when editing a task
   useEffect(() => {
-    const loadExistingLinks = async () => {
-      if (taskId) {
-        try {
-          const existingGoalIds = await getGoalsForTask(taskId);
-          if (existingGoalIds.length > 0) {
-            onGoalsChange(existingGoalIds);
-          }
-        } catch (error) {
-          // Silently fail - new tasks won't have links
-        }
+    if (taskId) {
+      const existingGoalIds = getGoalsForTask(taskId);
+      if (existingGoalIds.length > 0) {
+        onGoalsChange(existingGoalIds);
       }
-    };
-    loadExistingLinks();
+    }
   }, [taskId, getGoalsForTask]);
 
   // Don't render if user has no goals
@@ -102,7 +95,7 @@ export const GoalSelector: React.FC<GoalSelectorProps> = ({
                 pressed && styles.chipPressed,
               ]}
             >
-              <Text style={styles.chipEmoji}>{goal.definition.emoji}</Text>
+              <Icon name={goal.definition.icon} size={16} color={isSelected ? goal.definition.color : colors.text.secondary} />
               <Text
                 style={[
                   styles.chipTitle,
@@ -180,10 +173,6 @@ const styles = StyleSheet.create({
 
   chipPressed: {
     opacity: 0.8,
-  },
-
-  chipEmoji: {
-    fontSize: 16,
   },
 
   chipTitle: {

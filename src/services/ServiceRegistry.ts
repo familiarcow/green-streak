@@ -69,8 +69,10 @@ export class ServiceRegistry {
 
       // Create GoalService with dependencies (before NotificationManager and AchievementService need it)
       const goalRepository = repositoryFactory.getGoalRepository();
+      const customGoalRepository = repositoryFactory.getCustomGoalRepository();
       const goalService = createGoalService(
         goalRepository,
+        customGoalRepository,
         taskRepository,
         logRepository
       );

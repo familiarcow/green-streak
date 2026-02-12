@@ -196,21 +196,24 @@ export const UnlockCelebration: React.FC<UnlockCelebrationProps> = ({
 
       {/* Card */}
       <Animated.View style={[styles.card, cardStyle]}>
-        {/* Close button inside card */}
-        <Animated.View style={[styles.closeButtonContainer, closeButtonStyle]}>
-          <TouchableOpacity
-            style={styles.closeButton}
-            onPress={handleDismiss}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        {/* Header row with title and rarity pill */}
+        <View style={styles.headerRow}>
+          <Animated.Text style={[styles.headerText, textStyle]}>
+            ACHIEVEMENT UNLOCKED
+          </Animated.Text>
+          {/* Rarity pill - top right */}
+          <Animated.View
+            style={[
+              styles.rarityPill,
+              { backgroundColor: rarityColor },
+              badgeStyle,
+            ]}
           >
-            <Icon name="x" size={20} color={colors.text.secondary} />
-          </TouchableOpacity>
-        </Animated.View>
-
-        {/* Header */}
-        <Animated.Text style={[styles.headerText, textStyle]}>
-          ACHIEVEMENT UNLOCKED
-        </Animated.Text>
+            <Text style={styles.rarityPillText}>
+              {achievement.rarity.charAt(0).toUpperCase() + achievement.rarity.slice(1)}
+            </Text>
+          </Animated.View>
+        </View>
 
         {/* Icon with glow ring */}
         <View style={styles.iconWrapper}>
@@ -240,17 +243,14 @@ export const UnlockCelebration: React.FC<UnlockCelebrationProps> = ({
           {achievement.description}
         </Animated.Text>
 
-        {/* Rarity badge */}
-        <Animated.View
-          style={[
-            styles.rarityBadge,
-            { backgroundColor: rarityColor },
-            badgeStyle,
-          ]}
-        >
-          <Text style={styles.rarityText}>
-            {achievement.rarity.charAt(0).toUpperCase() + achievement.rarity.slice(1)}
-          </Text>
+        {/* Continue button */}
+        <Animated.View style={[styles.continueButtonContainer, closeButtonStyle]}>
+          <TouchableOpacity
+            style={[styles.continueButton, { backgroundColor: rarityColor }]}
+            onPress={handleDismiss}
+          >
+            <Text style={styles.continueButtonText}>Continue</Text>
+          </TouchableOpacity>
         </Animated.View>
       </Animated.View>
     </Animated.View>
@@ -259,7 +259,12 @@ export const UnlockCelebration: React.FC<UnlockCelebrationProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    ...StyleSheet.absoluteFillObject,
+    // Extend beyond parent to cover modal handle area (16px)
+    position: 'absolute',
+    top: -20,
+    left: 0,
+    right: 0,
+    bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 100,
@@ -275,8 +280,8 @@ const styles = StyleSheet.create({
     maxWidth: 360,
     backgroundColor: colors.background,
     borderRadius: 24,
-    paddingTop: spacing[6],
-    paddingBottom: spacing[6],
+    paddingTop: spacing[4],
+    paddingBottom: spacing[5],
     paddingHorizontal: spacing[5],
     alignItems: 'center',
     borderWidth: 1,
@@ -288,29 +293,32 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
 
-  closeButtonContainer: {
-    position: 'absolute',
-    top: spacing[3],
-    right: spacing[3],
-    zIndex: 10,
-  },
-
-  closeButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.interactive.default,
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    justifyContent: 'center',
+    width: '100%',
+    marginBottom: spacing[4],
   },
 
   headerText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
     color: colors.text.secondary,
-    letterSpacing: 2,
-    textAlign: 'center',
-    marginBottom: spacing[5],
+    letterSpacing: 1.5,
+  },
+
+  rarityPill: {
+    paddingHorizontal: spacing[3],
+    paddingVertical: spacing[1],
+    borderRadius: 12,
+  },
+
+  rarityPillText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    letterSpacing: 0.5,
   },
 
   iconWrapper: {
@@ -366,17 +374,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[2],
   },
 
-  rarityBadge: {
-    paddingHorizontal: spacing[5],
-    paddingVertical: spacing[2],
-    borderRadius: 20,
+  continueButtonContainer: {
+    width: '100%',
+    alignItems: 'center',
   },
 
-  rarityText: {
-    fontSize: 13,
+  continueButton: {
+    paddingHorizontal: spacing[8],
+    paddingVertical: spacing[3],
+    borderRadius: 24,
+    minWidth: 140,
+    alignItems: 'center',
+  },
+
+  continueButtonText: {
+    fontSize: 16,
     fontWeight: '700',
     color: '#FFFFFF',
-    letterSpacing: 1,
+    letterSpacing: 0.5,
   },
 });
 

@@ -70,6 +70,12 @@ export interface IGoalRepository {
   getHabitsForGoal(goalId: string): Promise<string[]>;
 
   /**
+   * Get all habit IDs linked to multiple goals (batch)
+   * Returns a map of goalId -> taskIds[]
+   */
+  getHabitsForGoals(goalIds: string[]): Promise<Map<string, string[]>>;
+
+  /**
    * Get all goal IDs linked to a habit
    */
   getGoalsForHabit(taskId: string): Promise<string[]>;

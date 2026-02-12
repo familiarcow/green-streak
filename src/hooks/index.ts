@@ -18,3 +18,4 @@ export { useDeepLinks } from './useDeepLinks';
 export { useSounds } from './useSounds';
 export { useAchievements } from './useAchievements';
 export { useAchievementGrid } from './useAchievementGrid';
+export { useGoalModalFlow } from './useGoalModalFlow';

@@ -100,7 +100,9 @@ const GoalRow: React.FC<{
       {/* Goal header row */}
       <View style={rowStyles.headerRow}>
         <View style={rowStyles.titleSection}>
-          <Text style={rowStyles.emoji}>{goal.definition.emoji}</Text>
+          <View style={[rowStyles.goalIcon, { backgroundColor: goal.definition.color + '20' }]}>
+            <Icon name={goal.definition.icon} size={16} color={goal.definition.color} />
+          </View>
           <Text style={rowStyles.name} numberOfLines={1}>{goal.definition.title}</Text>
         </View>
 
@@ -145,8 +147,12 @@ const rowStyles = StyleSheet.create({
     gap: spacing[2],
     flex: 1,
   },
-  emoji: {
-    fontSize: 20,
+  goalIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   name: {
     ...textStyles.body,
@@ -238,7 +244,12 @@ export const GoalCard: React.FC<GoalCardProps> = ({
             <TouchableOpacity onPress={toggleExpanded} style={styles.expandRow}>
               <View style={styles.expandLeft}>
                 {secondaryGoalProgress.slice(0, 3).map((p) => (
-                  <Text key={p.goal.id} style={styles.expandEmoji}>{p.goal.definition.emoji}</Text>
+                  <View
+                    key={p.goal.id}
+                    style={[styles.expandIcon, { backgroundColor: p.goal.definition.color + '20' }]}
+                  >
+                    <Icon name={p.goal.definition.icon} size={12} color={p.goal.definition.color} />
+                  </View>
                 ))}
                 <Text style={styles.expandText}>
                   {secondaryGoalProgress.length} more goal{secondaryGoalProgress.length !== 1 ? 's' : ''}
@@ -308,8 +319,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing[1],
   },
-  expandEmoji: {
-    fontSize: 14,
+  expandIcon: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   expandText: {
     ...textStyles.caption,

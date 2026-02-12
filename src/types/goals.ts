@@ -3,15 +3,17 @@
  *
  * Type definitions for life goals that give meaning to daily habits.
  * Goals are the "why" behind the "what" of habits.
+ *
+ * Supports both predefined goals (from goalLibrary.ts) and custom user-created goals.
  */
 
 import { IconName } from '../components/common/Icon';
 
 /**
- * Type-safe goal ID union matching goalLibrary.ts
+ * Type-safe predefined goal ID union matching goalLibrary.ts
  * Used for template categorization and goal references
  */
-export type GoalId =
+export type PredefinedGoalId =
   | 'better-health'
   | 'career-growth'
   | 'financial-freedom'
@@ -20,6 +22,18 @@ export type GoalId =
   | 'mindfulness'
   | 'fitness'
   | 'creativity';
+
+/**
+ * Goal ID that can be either a predefined ID or a custom UUID
+ * Used in APIs that accept any goal reference
+ */
+export type AnyGoalId = PredefinedGoalId | string;
+
+/**
+ * @deprecated Use PredefinedGoalId instead
+ * Kept for backwards compatibility
+ */
+export type GoalId = PredefinedGoalId;
 
 /**
  * Predefined goal definition from the goal library
@@ -38,6 +52,74 @@ export interface GoalDefinition {
   description: string;
   /** Emoji representation for compact display */
   emoji: string;
+  /** Type discriminator - always false for predefined goals */
+  isCustom?: false;
+}
+
+/**
+ * Custom goal definition created by user
+ * Stored in custom_goal_definitions table
+ */
+export interface CustomGoalDefinition {
+  /** UUID identifier */
+  id: string;
+  /** User-defined title (max 30 chars) */
+  title: string;
+  /** User-selected emoji */
+  emoji: string;
+  /** User-selected color */
+  color: string;
+  /** User-defined description (max 100 chars) */
+  description: string;
+  /** Icon name (defaults to 'target') */
+  icon: IconName;
+  /** Type discriminator - always true for custom goals */
+  isCustom: true;
+  /** When the goal was created */
+  createdAt: string;
+  /** When the goal was last updated */
+  updatedAt: string;
+}
+
+/**
+ * Union type for all goal definitions (predefined + custom)
+ */
+export type AnyGoalDefinition = GoalDefinition | CustomGoalDefinition;
+
+/**
+ * Type guard to check if a goal definition is custom
+ */
+export function isCustomGoal(def: AnyGoalDefinition): def is CustomGoalDefinition {
+  return 'isCustom' in def && def.isCustom === true;
+}
+
+/**
+ * Type guard to check if a goal definition is predefined
+ */
+export function isPredefinedGoal(def: AnyGoalDefinition): def is GoalDefinition {
+  return !('isCustom' in def) || def.isCustom === false;
+}
+
+/**
+ * Input data for creating a custom goal
+ */
+export interface CreateCustomGoalInput {
+  title: string;
+  emoji: string;
+  color: string;
+  description?: string;
+  icon?: IconName;
+}
+
+/**
+ * Input data for updating a custom goal
+ */
+export interface UpdateCustomGoalInput {
+  title?: string;
+  emoji?: string;
+  color?: string;
+  description?: string;
+  icon?: IconName;
 }
 
 /**
@@ -74,12 +156,12 @@ export interface GoalHabitLink {
 }
 
 /**
- * UserGoal enriched with data from GoalDefinition
+ * UserGoal enriched with data from GoalDefinition or CustomGoalDefinition
  * Used for display purposes
  */
 export interface UserGoalWithDetails extends UserGoal {
-  /** The goal definition */
-  definition: GoalDefinition;
+  /** The goal definition (predefined or custom) */
+  definition: AnyGoalDefinition;
   /** IDs of habits linked to this goal */
   linkedHabitIds: string[];
 }

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -27,9 +27,11 @@ import { TemplateCatalogModal } from '../components/TemplateCatalog';
 import { CalendarColorPreview } from '../components/CalendarColorPreview';
 import { HueBar } from '../components/ColorPicker/HueBar';
 import { GoalExplanationStep, GoalPickerStep } from '../components/onboarding';
+import { EditGoalModal } from '../components/modals';
 import { colors, textStyles, spacing, shadows } from '../theme';
 import { radiusValues } from '../theme/utils';
 import { HabitTemplate } from '../types/templates';
+import { CustomGoalDefinition } from '../types/goals';
 import { useSettingsStore, DEFAULT_CALENDAR_COLOR } from '../store/settingsStore';
 import { useSounds } from '../hooks';
 import { CALENDAR_COLOR_PRESETS, generateContributionPalette, hexToHsv, hsvToHex } from '../utils/colorUtils';
@@ -134,6 +136,39 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
   // Goals state
   const [selectedGoalIds, setSelectedGoalIds] = useState<string[]>([]);
   const [primaryGoalId, setPrimaryGoalId] = useState<string | null>(null);
+  const [customGoals, setCustomGoals] = useState<CustomGoalDefinition[]>([]);
+  const [showEditGoalModal, setShowEditGoalModal] = useState(false);
+
+  // Track if we've already prompted for notifications
+  const hasPromptedForNotifications = useRef(false);
+
+  // Auto-prompt for notification permissions when reaching Settings step (index 4)
+  useEffect(() => {
+    const settingsStepIndex = 4; // Settings is step 5 (0-indexed = 4)
+
+    if (currentStep === settingsStepIndex && !hasPromptedForNotifications.current) {
+      hasPromptedForNotifications.current = true;
+
+      // Small delay to let the step transition complete
+      const timer = setTimeout(async () => {
+        try {
+          const permissions = await notificationService.requestPermissions();
+          if (permissions.status === 'granted') {
+            setNotificationsEnabled(true);
+            setDailyRemindersEnabled(true);
+            setStreakProtectionEnabled(true);
+            logger.info('UI', 'Notification permissions granted during onboarding');
+          } else {
+            logger.info('UI', 'Notification permissions denied during onboarding');
+          }
+        } catch (error) {
+          logger.error('UI', 'Failed to request notification permissions', { error });
+        }
+      }, 300);
+
+      return () => clearTimeout(timer);
+    }
+  }, [currentStep]);
 
   // Handle hue change from slider
   const handleHueChange = useCallback((newHue: number) => {
@@ -187,6 +222,25 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
     });
   }, []);
 
+  // Handle creating custom goal during onboarding
+  const handleCreateCustomGoal = useCallback(() => {
+    setShowEditGoalModal(true);
+  }, []);
+
+  // Handle saving custom goal created during onboarding
+  const handleSaveCustomGoal = useCallback((goal: CustomGoalDefinition) => {
+    // Add to local custom goals list
+    setCustomGoals(prev => [...prev, goal]);
+    // Auto-select the newly created goal
+    setSelectedGoalIds(prev => [...prev, goal.id]);
+    // If no primary yet, make this the primary
+    if (primaryGoalId === null) {
+      setPrimaryGoalId(goal.id);
+    }
+    setShowEditGoalModal(false);
+    logger.info('UI', 'Custom goal created during onboarding', { goalId: goal.id, title: goal.title });
+  }, [primaryGoalId]);
+
   // Settings store
   const { setCalendarColor, updateNotificationSettings, setSoundEffectsEnabled: saveSoundEffectsEnabled, setUse24HourFormat: saveUse24HourFormat } = useSettingsStore();
 
@@ -239,8 +293,8 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
 
       // Request notification permissions if any notification setting is enabled
       if (notificationsEnabled || dailyRemindersEnabled || streakProtectionEnabled) {
-        const hasPermission = await notificationService.requestPermissions();
-        if (!hasPermission) {
+        const permissions = await notificationService.requestPermissions();
+        if (permissions.status !== 'granted') {
           logger.warn('UI', 'Notification permission denied during onboarding');
         }
       }
@@ -258,7 +312,16 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
         },
       });
 
-      // Save selected goals
+      // Note: Custom goals created during onboarding are already persisted by EditGoalModal
+      // They're added to selectedGoalIds when created, so they'll be selected below
+      if (customGoals.length > 0) {
+        logger.info('UI', 'Custom goals already created during onboarding', {
+          count: customGoals.length,
+          ids: customGoals.map(g => g.id),
+        });
+      }
+
+      // Save selected goals (includes both predefined and custom goals)
       if (selectedGoalIds.length > 0) {
         try {
           const goalService = getGoalService();
@@ -288,7 +351,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
     } catch (error) {
       logger.error('UI', 'Failed to save onboarding settings', { error });
     }
-  }, [selectedColor, soundEffectsEnabled, use24HourFormat, notificationsEnabled, dailyRemindersEnabled, streakProtectionEnabled, selectedGoalIds, primaryGoalId, setCalendarColor, saveSoundEffectsEnabled, saveUse24HourFormat, updateNotificationSettings]);
+  }, [selectedColor, soundEffectsEnabled, use24HourFormat, notificationsEnabled, dailyRemindersEnabled, streakProtectionEnabled, selectedGoalIds, primaryGoalId, customGoals, setCalendarColor, saveSoundEffectsEnabled, saveUse24HourFormat, updateNotificationSettings]);
 
   const handleSetupTask = async () => {
     logger.info('UI', 'User chose to set up first task during onboarding');
@@ -319,8 +382,8 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
   const handleNotificationsToggle = useCallback(async (enabled: boolean) => {
     playToggle(enabled);
     if (enabled) {
-      const hasPermission = await notificationService.requestPermissions();
-      if (!hasPermission) {
+      const permissions = await notificationService.requestPermissions();
+      if (permissions.status !== 'granted') {
         Alert.alert(
           'Notifications Disabled',
           'Please enable notifications in your device settings to receive reminders.',
@@ -424,8 +487,10 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
                 <GoalPickerStep
                   selectedGoalIds={selectedGoalIds}
                   primaryGoalId={primaryGoalId}
+                  customGoals={customGoals}
                   onToggleGoal={handleToggleGoal}
                   onSetPrimary={handleSetPrimaryGoal}
+                  onCreateCustom={handleCreateCustomGoal}
                   onSkip={handleNext}
                 />
               )}
@@ -691,6 +756,16 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
         onSelectTemplate={handleSelectTemplate}
         previewGoals={{ selectedGoalIds, primaryGoalId }}
       />
+
+      {/* Edit Goal Modal for creating custom goals during onboarding */}
+      {showEditGoalModal && (
+        <View style={StyleSheet.absoluteFill}>
+          <EditGoalModal
+            onClose={() => setShowEditGoalModal(false)}
+            onSave={handleSaveCustomGoal}
+          />
+        </View>
+      )}
     </SafeAreaView>
   );
 };

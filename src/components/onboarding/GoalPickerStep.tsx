@@ -4,32 +4,37 @@
  * Onboarding step for selecting life goals.
  * Multi-select with one "primary" goal.
  * Tap to select/deselect, long-press to set as primary.
+ * Supports custom goal creation during onboarding.
  *
  * Full-width card layout with descriptions to help users choose.
  */
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { Icon } from '../common/Icon';
 import { GOALS } from '../../data/goalLibrary';
-import { GoalDefinition } from '../../types/goals';
+import { GoalDefinition, CustomGoalDefinition, AnyGoalDefinition, isCustomGoal } from '../../types/goals';
+import { useAccentColor } from '../../hooks';
 import { colors, textStyles, spacing, shadows } from '../../theme';
 import { radiusValues } from '../../theme/utils';
 
 interface GoalPickerStepProps {
   selectedGoalIds: string[];
   primaryGoalId: string | null;
+  customGoals?: CustomGoalDefinition[];
   onToggleGoal: (goalId: string) => void;
   onSetPrimary: (goalId: string) => void;
+  onCreateCustom?: () => void;
   onSkip?: () => void;
 }
 
 interface GoalCardProps {
-  goal: GoalDefinition;
+  goal: AnyGoalDefinition;
   isSelected: boolean;
   isPrimary: boolean;
+  isCustom?: boolean;
   onPress: () => void;
   onLongPress: () => void;
 }
@@ -38,6 +43,7 @@ const GoalCard: React.FC<GoalCardProps> = ({
   goal,
   isSelected,
   isPrimary,
+  isCustom,
   onPress,
   onLongPress,
 }) => {
@@ -54,18 +60,25 @@ const GoalCard: React.FC<GoalCardProps> = ({
       ]}
       accessible={true}
       accessibilityRole="button"
-      accessibilityLabel={`${goal.title}${isSelected ? ', selected' : ''}${isPrimary ? ', primary goal' : ''}`}
+      accessibilityLabel={`${goal.title}${isSelected ? ', selected' : ''}${isPrimary ? ', primary goal' : ''}${isCustom ? ', custom goal' : ''}`}
     >
       {/* Left side: Icon */}
       <View style={[styles.iconContainer, { backgroundColor: `${goal.color}15` }]}>
-        <Text style={styles.goalEmoji}>{goal.emoji}</Text>
+        <Icon name={goal.icon} size={24} color={goal.color} />
       </View>
 
       {/* Middle: Title and Description */}
       <View style={styles.textContainer}>
-        <Text style={[styles.goalTitle, isSelected && { color: goal.color }]}>
-          {goal.title}
-        </Text>
+        <View style={styles.titleRow}>
+          <Text style={[styles.goalTitle, isSelected && { color: goal.color }]}>
+            {goal.title}
+          </Text>
+          {isCustom && (
+            <View style={styles.customTag}>
+              <Text style={styles.customTagText}>Custom</Text>
+            </View>
+          )}
+        </View>
         <Text style={styles.goalDescription} numberOfLines={2}>
           {goal.description}
         </Text>
@@ -93,10 +106,19 @@ const GoalCard: React.FC<GoalCardProps> = ({
 export const GoalPickerStep: React.FC<GoalPickerStepProps> = ({
   selectedGoalIds,
   primaryGoalId,
+  customGoals = [],
   onToggleGoal,
   onSetPrimary,
+  onCreateCustom,
   onSkip,
 }) => {
+  const accentColor = useAccentColor();
+
+  // Combine predefined and custom goals
+  const allGoals: AnyGoalDefinition[] = useMemo(() => {
+    return [...GOALS, ...customGoals];
+  }, [customGoals]);
+
   const handlePress = useCallback((goalId: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onToggleGoal(goalId);
@@ -120,6 +142,11 @@ export const GoalPickerStep: React.FC<GoalPickerStepProps> = ({
     onSkip?.();
   }, [onSkip]);
 
+  const handleCreateCustom = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    onCreateCustom?.();
+  }, [onCreateCustom]);
+
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -136,6 +163,7 @@ export const GoalPickerStep: React.FC<GoalPickerStepProps> = ({
         contentContainerStyle={styles.goalsList}
         showsVerticalScrollIndicator={false}
       >
+        {/* Predefined Goals */}
         {GOALS.map((goal) => (
           <GoalCard
             key={goal.id}
@@ -146,6 +174,44 @@ export const GoalPickerStep: React.FC<GoalPickerStepProps> = ({
             onLongPress={() => handleLongPress(goal.id)}
           />
         ))}
+
+        {/* Custom Goals (created during onboarding) */}
+        {customGoals.map((goal) => (
+          <GoalCard
+            key={goal.id}
+            goal={goal}
+            isSelected={selectedGoalIds.includes(goal.id)}
+            isPrimary={primaryGoalId === goal.id}
+            isCustom
+            onPress={() => handlePress(goal.id)}
+            onLongPress={() => handleLongPress(goal.id)}
+          />
+        ))}
+
+        {/* Create Your Own Button */}
+        {onCreateCustom && (
+          <TouchableOpacity
+            onPress={handleCreateCustom}
+            activeOpacity={0.7}
+            style={[styles.createCustomButton, { borderColor: accentColor }]}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Create your own custom goal"
+          >
+            <View style={[styles.createIconContainer, { backgroundColor: accentColor + '15' }]}>
+              <Icon name="plus" size={24} color={accentColor} />
+            </View>
+            <View style={styles.textContainer}>
+              <Text style={[styles.goalTitle, { color: accentColor }]}>
+                Create Your Own
+              </Text>
+              <Text style={styles.goalDescription}>
+                Define a personal goal that matters to you
+              </Text>
+            </View>
+            <Icon name="chevron-right" size={20} color={colors.text.tertiary} />
+          </TouchableOpacity>
+        )}
       </ScrollView>
 
       {/* Bottom Section */}
@@ -229,13 +295,15 @@ const styles = StyleSheet.create({
     marginRight: spacing[3],
   },
 
-  goalEmoji: {
-    fontSize: 24,
-  },
-
   textContainer: {
     flex: 1,
     marginRight: spacing[2],
+  },
+
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
   },
 
   goalTitle: {
@@ -245,10 +313,47 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
 
+  customTag: {
+    backgroundColor: colors.border + '60',
+    paddingHorizontal: spacing[2],
+    paddingVertical: 2,
+    borderRadius: radiusValues.sm,
+    marginBottom: 2,
+  },
+
+  customTagText: {
+    ...textStyles.caption,
+    fontSize: 10,
+    color: colors.text.tertiary,
+    fontWeight: '600',
+  },
+
   goalDescription: {
     ...textStyles.bodySmall,
     color: colors.text.secondary,
     lineHeight: 18,
+  },
+
+  createCustomButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: radiusValues.box,
+    padding: spacing[3],
+    marginBottom: spacing[2],
+    marginTop: spacing[2],
+    borderWidth: 2,
+    borderStyle: 'dashed',
+    ...shadows.sm,
+  },
+
+  createIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing[3],
   },
 
   selectionIndicator: {

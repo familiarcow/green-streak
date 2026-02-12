@@ -1,10 +1,12 @@
 import { ITaskRepository, ILogRepository, IStreakRepository, IAchievementRepository, IAchievementGridRepository, IGoalRepository } from './interfaces';
+import { ICustomGoalRepository } from './interfaces/ICustomGoalRepository';
 import { TaskRepository } from './TaskRepository';
 import { LogRepository } from './LogRepository';
 import { StreakRepository } from './StreakRepository';
 import { AchievementRepository } from './AchievementRepository';
 import { AchievementGridRepository } from './AchievementGridRepository';
 import { GoalRepository } from './GoalRepository';
+import { CustomGoalRepository } from './CustomGoalRepository';
 
 /**
  * Repository Factory
@@ -20,6 +22,7 @@ export class RepositoryFactory {
   private _achievementRepository: IAchievementRepository;
   private _achievementGridRepository: IAchievementGridRepository;
   private _goalRepository: IGoalRepository;
+  private _customGoalRepository: ICustomGoalRepository;
 
   private constructor() {
     // Initialize default implementations
@@ -29,6 +32,7 @@ export class RepositoryFactory {
     this._achievementRepository = new AchievementRepository();
     this._achievementGridRepository = new AchievementGridRepository();
     this._goalRepository = new GoalRepository();
+    this._customGoalRepository = new CustomGoalRepository();
   }
 
   /**
@@ -84,6 +88,13 @@ export class RepositoryFactory {
   }
 
   /**
+   * Get custom goal repository instance
+   */
+  public getCustomGoalRepository(): ICustomGoalRepository {
+    return this._customGoalRepository;
+  }
+
+  /**
    * Set task repository implementation (for testing/dependency injection)
    */
   public setTaskRepository(repository: ITaskRepository): void {
@@ -126,6 +137,13 @@ export class RepositoryFactory {
   }
 
   /**
+   * Set custom goal repository implementation (for testing/dependency injection)
+   */
+  public setCustomGoalRepository(repository: ICustomGoalRepository): void {
+    this._customGoalRepository = repository;
+  }
+
+  /**
    * Reset to default implementations
    */
   public resetToDefaults(): void {
@@ -135,6 +153,7 @@ export class RepositoryFactory {
     this._achievementRepository = new AchievementRepository();
     this._achievementGridRepository = new AchievementGridRepository();
     this._goalRepository = new GoalRepository();
+    this._customGoalRepository = new CustomGoalRepository();
   }
 }
 
@@ -146,5 +165,6 @@ export const streakRepository = repositoryFactory.getStreakRepository();
 export const achievementRepository = repositoryFactory.getAchievementRepository();
 export const achievementGridRepository = repositoryFactory.getAchievementGridRepository();
 export const goalRepository = repositoryFactory.getGoalRepository();
+export const customGoalRepository = repositoryFactory.getCustomGoalRepository();
 
 export default RepositoryFactory;
