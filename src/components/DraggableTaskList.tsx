@@ -149,8 +149,10 @@ const DraggableTaskItem: React.FC<DraggableTaskItemProps> = ({
     onTaskPress?.(task);
   };
 
+  const isLastItem = index === totalItems - 1;
+
   return (
-    <Animated.View style={[styles.itemContainer, animatedStyle]}>
+    <Animated.View style={[styles.itemContainer, isLastItem && styles.itemContainerLast, animatedStyle]}>
       <GestureDetector gesture={panGesture}>
         <Animated.View style={styles.dragHandle}>
           <Icon name="grip-vertical" size={fontSizes.xlarge} color={colors.text.tertiary} />
@@ -255,26 +257,24 @@ export const DraggableTaskList: React.FC<DraggableTaskListProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: spacing[4],
+    // No bottom margin - parent card handles spacing
   },
   itemContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: spacing[2],
-    backgroundColor: colors.surface,
-    borderRadius: radiusValues.box,
-    paddingRight: spacing[2],
-    ...shadows.sm,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 8,
-    elevation: 4,
+    paddingVertical: spacing[2],
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border + '40',
+  },
+  itemContainerLast: {
+    borderBottomWidth: 0,
   },
   dragHandle: {
-    paddingHorizontal: spacing[3],
-    paddingVertical: spacing[4],
+    paddingHorizontal: spacing[2],
+    paddingVertical: spacing[3],
     justifyContent: 'center',
     alignItems: 'center',
+    marginLeft: -spacing[2], // Align with card edge
   },
   iconContainer: {
     width: 36,
@@ -283,6 +283,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: spacing[3],
+    ...shadows.sm,
   },
   taskInfo: {
     flex: 1,
@@ -290,6 +291,7 @@ const styles = StyleSheet.create({
   taskName: {
     ...textStyles.body,
     color: colors.text.primary,
+    fontWeight: '600',
   },
   taskDescription: {
     ...textStyles.bodySmall,
@@ -297,10 +299,11 @@ const styles = StyleSheet.create({
     marginTop: spacing[1],
   },
   editButton: {
-    paddingHorizontal: spacing[3],
-    paddingVertical: spacing[4],
+    paddingHorizontal: spacing[2],
+    paddingVertical: spacing[3],
     justifyContent: 'center',
     alignItems: 'center',
+    marginRight: -spacing[2], // Align with card edge
   },
 });
 

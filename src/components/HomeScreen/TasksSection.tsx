@@ -1,6 +1,7 @@
 import React, { useMemo, useCallback } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { colors, textStyles, spacing } from '../../theme';
+import { colors, textStyles, spacing, shadows } from '../../theme';
+import { radiusValues } from '../../theme/utils';
 import { TasksSectionProps } from '../../types';
 import { AnimatedButton } from '../AnimatedButton';
 import { DraggableTaskList } from '../DraggableTaskList';
@@ -57,18 +58,23 @@ const styles = StyleSheet.create({
   tasksSection: {
     marginHorizontal: spacing[4],
     marginBottom: spacing[6],
+    padding: spacing[4],
+    backgroundColor: colors.surface,
+    borderRadius: radiusValues.box,
+    ...shadows.sm,
   },
-  
+
   tasksSectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: spacing[3],
   },
-  
+
   tasksSectionTitle: {
-    ...textStyles.h3,
+    ...textStyles.h2,
     color: colors.text.primary,
+    fontWeight: '700',
   },
 });
 
