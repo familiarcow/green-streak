@@ -85,9 +85,7 @@ const periodStyles = StyleSheet.create({
 const GoalRow: React.FC<{
   progress: GoalProgress;
   selectedPeriod: Period;
-  onPeriodChange?: (period: Period) => void;
-  showPeriodSelector?: boolean;
-}> = ({ progress, selectedPeriod, onPeriodChange, showPeriodSelector }) => {
+}> = ({ progress, selectedPeriod }) => {
   const { goal, habitStats = [] } = progress;
 
   // Get badges for habits with completions
@@ -105,11 +103,6 @@ const GoalRow: React.FC<{
           </View>
           <Text style={rowStyles.name} numberOfLines={1}>{goal.definition.title}</Text>
         </View>
-
-        {/* Period selector (only for primary) */}
-        {showPeriodSelector && onPeriodChange && (
-          <PeriodPill selected={selectedPeriod} onChange={onPeriodChange} />
-        )}
       </View>
 
       {/* Completion badges row */}
@@ -222,9 +215,12 @@ export const GoalCard: React.FC<GoalCardProps> = ({
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Your Goals</Text>
-        <TouchableOpacity onPress={onPress} style={styles.editButton}>
-          <Icon name="edit" size={16} color={colors.text.secondary} />
-        </TouchableOpacity>
+        <View style={styles.headerRight}>
+          <PeriodPill selected={selectedPeriod} onChange={setSelectedPeriod} />
+          <TouchableOpacity onPress={onPress} style={styles.editButton}>
+            <Icon name="edit" size={16} color={colors.text.secondary} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Primary Goal */}
@@ -232,8 +228,6 @@ export const GoalCard: React.FC<GoalCardProps> = ({
         <GoalRow
           progress={primaryGoalProgress}
           selectedPeriod={selectedPeriod}
-          onPeriodChange={setSelectedPeriod}
-          showPeriodSelector
         />
       )}
 
@@ -296,6 +290,11 @@ const styles = StyleSheet.create({
     ...textStyles.h2,
     color: colors.text.primary,
     fontWeight: '700',
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
   },
   editButton: {
     width: sizes.touchTarget.small,
