@@ -5,7 +5,7 @@
  * Allows setting primary goal, removing goals, and opening AddGoalsModal.
  */
 
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { BaseModal } from './BaseModal';
@@ -22,6 +22,8 @@ interface GoalDetailModalProps {
   onClose: () => void;
   onCloseComplete?: () => void;
   onOpenAddGoals?: () => void;
+  /** Callback to open AddMilestoneModal with pre-selected goal */
+  onOpenAddMilestone?: (goalId?: string) => void;
 }
 
 export const GoalDetailModal: React.FC<GoalDetailModalProps> = ({
@@ -29,13 +31,19 @@ export const GoalDetailModal: React.FC<GoalDetailModalProps> = ({
   onClose,
   onCloseComplete,
   onOpenAddGoals,
+  onOpenAddMilestone,
 }) => {
   const goals = useGoalsStore((state) => state.goals);
   const primaryGoal = useGoalsStore((state) => state.primaryGoal);
+  const milestones = useGoalsStore((state) => state.milestones);
   const deselectGoal = useGoalsStore((state) => state.deselectGoal);
   const setPrimaryGoal = useGoalsStore((state) => state.setPrimaryGoal);
+  const deleteMilestone = useGoalsStore((state) => state.deleteMilestone);
   const tasks = useTasksStore((state) => state.tasks);
   const accentColor = useAccentColor();
+
+  // Track which goal is expanded
+  const [expandedGoalId, setExpandedGoalId] = useState<string | null>(null);
 
   // Create a map of task ID to task details for quick lookup
   const taskMap = useMemo(() => {
@@ -87,6 +95,37 @@ export const GoalDetailModal: React.FC<GoalDetailModalProps> = ({
     }
   }, [onClose, onOpenAddGoals]);
 
+  const handleToggleExpand = useCallback((goalId: string) => {
+    setExpandedGoalId((current) => (current === goalId ? null : goalId));
+  }, []);
+
+  const handleDeleteMilestone = useCallback(
+    async (milestoneId: string) => {
+      await deleteMilestone(milestoneId);
+    },
+    [deleteMilestone]
+  );
+
+  const handleDeleteGoal = useCallback(
+    async (goalId: string) => {
+      // The GoalListItem shows the confirmation dialogs,
+      // so we just need to execute the deletion here
+      await deselectGoal(goalId);
+      setExpandedGoalId(null);
+    },
+    [deselectGoal]
+  );
+
+  const handleAddMilestone = useCallback(
+    (goalId?: string) => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      if (onOpenAddMilestone) {
+        onOpenAddMilestone(goalId);
+      }
+    },
+    [onOpenAddMilestone]
+  );
+
   return (
     <BaseModal
       isVisible={visible}
@@ -121,15 +160,28 @@ export const GoalDetailModal: React.FC<GoalDetailModalProps> = ({
                 </Text>
               </View>
             </View>
-            {/* Add Goals Button */}
-            <TouchableOpacity
-              style={[styles.addButton, { backgroundColor: accentColor }]}
-              onPress={handleAddGoals}
-              accessibilityRole="button"
-              accessibilityLabel="Add more goals"
-            >
-              <Icon name="plus" size={20} color={colors.surface} />
-            </TouchableOpacity>
+            <View style={styles.headerButtons}>
+              {/* Add Milestone Button */}
+              {goals.length > 0 && onOpenAddMilestone && (
+                <TouchableOpacity
+                  style={[styles.addMilestoneButton, { borderColor: accentColor }]}
+                  onPress={() => handleAddMilestone()}
+                  accessibilityRole="button"
+                  accessibilityLabel="Add milestone"
+                >
+                  <Icon name="goal" size={18} color={accentColor} />
+                </TouchableOpacity>
+              )}
+              {/* Add Goals Button */}
+              <TouchableOpacity
+                style={[styles.addButton, { backgroundColor: accentColor }]}
+                onPress={handleAddGoals}
+                accessibilityRole="button"
+                accessibilityLabel="Add more goals"
+              >
+                <Icon name="plus" size={20} color={colors.surface} />
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
 
@@ -152,6 +204,8 @@ export const GoalDetailModal: React.FC<GoalDetailModalProps> = ({
           ) : (
             goals.map((userGoal, index) => {
               const isPrimary = primaryGoal?.id === userGoal.id;
+              const isExpanded = expandedGoalId === userGoal.id;
+              const goalMilestones = milestones[userGoal.id] || [];
 
               return (
                 <GoalListItem
@@ -162,7 +216,11 @@ export const GoalDetailModal: React.FC<GoalDetailModalProps> = ({
                   isPrimary={isPrimary}
                   linkedTasks={getLinkedTasks(userGoal.linkedHabitIds ?? [])}
                   onLongPress={!isPrimary ? () => handleSetPrimary(userGoal.goalId) : undefined}
-                  onRemove={() => handleRemove(userGoal.goalId)}
+                  isExpanded={isExpanded}
+                  onToggleExpand={() => handleToggleExpand(userGoal.id)}
+                  milestones={goalMilestones}
+                  onDeleteMilestone={handleDeleteMilestone}
+                  onDeleteGoal={() => handleDeleteGoal(userGoal.goalId)}
                 />
               );
             })
@@ -216,6 +274,22 @@ const styles = StyleSheet.create({
   subtitle: {
     ...textStyles.caption,
     color: colors.text.tertiary,
+  },
+
+  headerButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
+  },
+
+  addMilestoneButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    backgroundColor: 'transparent',
   },
 
   addButton: {

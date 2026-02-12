@@ -1,4 +1,4 @@
-import { ITaskRepository, ILogRepository, IStreakRepository, IAchievementRepository, IAchievementGridRepository, IGoalRepository } from './interfaces';
+import { ITaskRepository, ILogRepository, IStreakRepository, IAchievementRepository, IAchievementGridRepository, IGoalRepository, IMilestoneRepository } from './interfaces';
 import { ICustomGoalRepository } from './interfaces/ICustomGoalRepository';
 import { TaskRepository } from './TaskRepository';
 import { LogRepository } from './LogRepository';
@@ -7,6 +7,7 @@ import { AchievementRepository } from './AchievementRepository';
 import { AchievementGridRepository } from './AchievementGridRepository';
 import { GoalRepository } from './GoalRepository';
 import { CustomGoalRepository } from './CustomGoalRepository';
+import { MilestoneRepository } from './MilestoneRepository';
 
 /**
  * Repository Factory
@@ -23,6 +24,7 @@ export class RepositoryFactory {
   private _achievementGridRepository: IAchievementGridRepository;
   private _goalRepository: IGoalRepository;
   private _customGoalRepository: ICustomGoalRepository;
+  private _milestoneRepository: IMilestoneRepository;
 
   private constructor() {
     // Initialize default implementations
@@ -33,6 +35,7 @@ export class RepositoryFactory {
     this._achievementGridRepository = new AchievementGridRepository();
     this._goalRepository = new GoalRepository();
     this._customGoalRepository = new CustomGoalRepository();
+    this._milestoneRepository = new MilestoneRepository();
   }
 
   /**
@@ -95,6 +98,13 @@ export class RepositoryFactory {
   }
 
   /**
+   * Get milestone repository instance
+   */
+  public getMilestoneRepository(): IMilestoneRepository {
+    return this._milestoneRepository;
+  }
+
+  /**
    * Set task repository implementation (for testing/dependency injection)
    */
   public setTaskRepository(repository: ITaskRepository): void {
@@ -144,6 +154,13 @@ export class RepositoryFactory {
   }
 
   /**
+   * Set milestone repository implementation (for testing/dependency injection)
+   */
+  public setMilestoneRepository(repository: IMilestoneRepository): void {
+    this._milestoneRepository = repository;
+  }
+
+  /**
    * Reset to default implementations
    */
   public resetToDefaults(): void {
@@ -154,6 +171,7 @@ export class RepositoryFactory {
     this._achievementGridRepository = new AchievementGridRepository();
     this._goalRepository = new GoalRepository();
     this._customGoalRepository = new CustomGoalRepository();
+    this._milestoneRepository = new MilestoneRepository();
   }
 }
 
@@ -166,5 +184,6 @@ export const achievementRepository = repositoryFactory.getAchievementRepository(
 export const achievementGridRepository = repositoryFactory.getAchievementGridRepository();
 export const goalRepository = repositoryFactory.getGoalRepository();
 export const customGoalRepository = repositoryFactory.getCustomGoalRepository();
+export const milestoneRepository = repositoryFactory.getMilestoneRepository();
 
 export default RepositoryFactory;

@@ -213,3 +213,41 @@ export interface SelectGoalData {
   /** Whether to set as primary */
   isPrimary?: boolean;
 }
+
+// ============================================
+// Milestone Types
+// ============================================
+
+/**
+ * A milestone recorded for a goal - a meaningful moment on the journey
+ */
+export interface Milestone {
+  /** Unique ID */
+  id: string;
+  /** Reference to user_goals.id */
+  userGoalId: string;
+  /** Date of the milestone (YYYY-MM-DD) */
+  date: string;
+  /** Short title (max 50 chars) */
+  title: string;
+  /** Optional description (max 500 chars) */
+  description: string;
+  /** When the milestone was created */
+  createdAt: string;
+  /** When the milestone was last updated */
+  updatedAt: string;
+}
+
+/**
+ * Input data for creating a milestone
+ */
+export interface CreateMilestoneInput {
+  /** Reference to user_goals.id */
+  userGoalId: string;
+  /** Date of the milestone (YYYY-MM-DD) */
+  date: string;
+  /** Short title (max 50 chars) */
+  title: string;
+  /** Optional description (max 500 chars) */
+  description?: string;
+}

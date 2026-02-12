@@ -11,7 +11,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { Icon, IconName } from '../common/Icon';
-import { GoalProgress, HabitStats } from '../../types/goals';
+import { GoalProgress, HabitStats, Milestone } from '../../types/goals';
 import { useGoalsStore } from '../../store/goalsStore';
 import { useLogsStore } from '../../store/logsStore';
 import { colors, textStyles, spacing, shadows } from '../../theme';
@@ -21,6 +21,8 @@ interface GoalCardProps {
   primaryGoalProgress: GoalProgress | null;
   secondaryGoalProgress: GoalProgress[];
   onPress: () => void;
+  /** Callback to add a milestone (goalId is the user_goals.id) */
+  onAddMilestone?: (goalId: string) => void;
 }
 
 type Period = 'week' | 'month' | 'allTime';
@@ -37,6 +39,52 @@ function getCountForPeriod(stats: HabitStats, period: Period): number {
     case 'month': return stats.completionsThisMonth ?? 0;
     case 'allTime': return stats.completionsAllTime;
   }
+}
+
+/**
+ * Format a date string (YYYY-MM-DD) to a short display format
+ */
+function formatMilestoneDate(dateString: string): string {
+  const date = new Date(dateString + 'T12:00:00');
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
+/**
+ * Filter milestones based on selected time period
+ */
+function filterMilestonesByPeriod(milestones: Milestone[], period: Period): Milestone[] {
+  if (period === 'allTime') {
+    return milestones;
+  }
+
+  const now = new Date();
+
+  if (period === 'week') {
+    // Get start of current week (Sunday)
+    const startOfWeek = new Date(now);
+    startOfWeek.setHours(0, 0, 0, 0);
+    startOfWeek.setDate(now.getDate() - now.getDay());
+
+    return milestones.filter(m => {
+      const milestoneDate = new Date(m.date + 'T12:00:00');
+      return milestoneDate >= startOfWeek;
+    });
+  }
+
+  if (period === 'month') {
+    // Get start of current month
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    return milestones.filter(m => {
+      const milestoneDate = new Date(m.date + 'T12:00:00');
+      return milestoneDate >= startOfMonth;
+    });
+  }
+
+  return milestones;
 }
 
 /**
@@ -80,12 +128,16 @@ const periodStyles = StyleSheet.create({
 });
 
 /**
- * Single goal row with multi-line layout
+ * Single goal row with milestones inline
  */
 const GoalRow: React.FC<{
   progress: GoalProgress;
   selectedPeriod: Period;
-}> = ({ progress, selectedPeriod }) => {
+  milestones: Milestone[];
+  isExpanded: boolean;
+  onToggleExpand: () => void;
+  onAddMilestone?: () => void;
+}> = ({ progress, selectedPeriod, milestones, isExpanded, onToggleExpand, onAddMilestone }) => {
   const { goal, habitStats = [] } = progress;
 
   // Get badges for habits with completions
@@ -93,33 +145,119 @@ const GoalRow: React.FC<{
     .map(s => ({ ...s, count: getCountForPeriod(s, selectedPeriod) }))
     .filter(s => s.count > 0);
 
+  // Filter milestones by selected period
+  const filteredMilestones = filterMilestonesByPeriod(milestones, selectedPeriod);
+
+  const mostRecentMilestone = filteredMilestones.length > 0 ? filteredMilestones[0] : null;
+  const hasFewMilestones = filteredMilestones.length <= 1;
+
+  const handleAddMilestone = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    onAddMilestone?.();
+  };
+
   return (
     <View style={rowStyles.container}>
-      {/* Goal header row */}
+      {/* Goal header row with title and badges */}
       <View style={rowStyles.headerRow}>
-        <View style={rowStyles.titleSection}>
-          <View style={[rowStyles.goalIcon, { backgroundColor: goal.definition.color + '20' }]}>
-            <Icon name={goal.definition.icon} size={16} color={goal.definition.color} />
-          </View>
-          <Text style={rowStyles.name} numberOfLines={1}>{goal.definition.title}</Text>
+        <View style={[rowStyles.goalIcon, { backgroundColor: goal.definition.color + '20' }]}>
+          <Icon name={goal.definition.icon} size={16} color={goal.definition.color} />
         </View>
-      </View>
-
-      {/* Completion badges row */}
-      <View style={rowStyles.statsRow}>
+        <Text style={rowStyles.name} numberOfLines={1}>{goal.definition.title}</Text>
+        {/* Completion badges inline */}
         {activeBadges.length > 0 ? (
           <View style={rowStyles.badges}>
             {activeBadges.map((stats) => (
               <View key={stats.taskId} style={[rowStyles.badge, { backgroundColor: stats.color + '20' }]}>
-                <Icon name={stats.icon as IconName} size={14} color={stats.color} />
+                <Icon name={stats.icon as IconName} size={12} color={stats.color} />
                 <Text style={[rowStyles.badgeCount, { color: stats.color }]}>×{stats.count}</Text>
               </View>
             ))}
           </View>
         ) : (
-          <Text style={rowStyles.emptyText}>No completions this {selectedPeriod === 'allTime' ? 'period' : selectedPeriod}</Text>
+          <Text style={rowStyles.emptyText}>No completions</Text>
         )}
       </View>
+
+      {/* Milestones timeline section */}
+      {(filteredMilestones.length > 0 || onAddMilestone) && (
+        <View style={rowStyles.timelineSection}>
+          {/* Timeline container with border */}
+          <View style={rowStyles.timelineContainer}>
+            {/* Vertical line through dots */}
+            {((onAddMilestone && filteredMilestones.length > 0) || filteredMilestones.length > 1) && (
+              <View
+                style={[
+                  rowStyles.timelineLine,
+                  {
+                    backgroundColor: goal.definition.color + '40',
+                    height: isExpanded
+                      ? ((onAddMilestone ? 1 : 0) + filteredMilestones.length - 1) * 28
+                      : 28,
+                  }
+                ]}
+              />
+            )}
+
+            {/* + Add row (like a milestone placeholder at the top) */}
+            {onAddMilestone && (
+              <TouchableOpacity
+                style={rowStyles.timelineRow}
+                onPress={handleAddMilestone}
+                accessibilityRole="button"
+                accessibilityLabel="Add milestone"
+              >
+                <View style={[rowStyles.timelineDotEmpty, { borderColor: goal.definition.color }]} />
+                <Text style={[rowStyles.addMilestoneText, { color: goal.definition.color }]}>+ New Milestone</Text>
+                {/* Chevron on right when there are milestones to expand */}
+                {filteredMilestones.length > 1 && !mostRecentMilestone && (
+                  <TouchableOpacity
+                    style={rowStyles.expandChevron}
+                    onPress={onToggleExpand}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Icon name={isExpanded ? 'chevron-up' : 'chevron-down'} size={14} color={colors.text.tertiary} />
+                  </TouchableOpacity>
+                )}
+              </TouchableOpacity>
+            )}
+
+            {/* Most recent milestone (always shown) */}
+            {mostRecentMilestone && (
+              <View style={rowStyles.timelineRow}>
+                <View style={[rowStyles.timelineDot, { backgroundColor: goal.definition.color }]} />
+                <Text style={rowStyles.milestoneDate}>{formatMilestoneDate(mostRecentMilestone.date)}</Text>
+                <Text style={rowStyles.milestoneTitle} numberOfLines={1}>{mostRecentMilestone.title}</Text>
+                {/* Expand chevron on the right */}
+                {filteredMilestones.length > 1 && (
+                  <TouchableOpacity
+                    style={rowStyles.expandChevron}
+                    onPress={onToggleExpand}
+                    accessibilityRole="button"
+                    accessibilityLabel={isExpanded ? 'Collapse milestones' : 'Expand milestones'}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Icon name={isExpanded ? 'chevron-up' : 'chevron-down'} size={14} color={colors.text.tertiary} />
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
+
+            {/* Expanded milestones (remaining ones) */}
+            {isExpanded && filteredMilestones.length > 1 && (
+              <Animated.View entering={FadeIn.duration(150)}>
+                {filteredMilestones.slice(1).map((milestone) => (
+                  <View key={milestone.id} style={rowStyles.timelineRow}>
+                    <View style={[rowStyles.timelineDot, { backgroundColor: goal.definition.color }]} />
+                    <Text style={rowStyles.milestoneDate}>{formatMilestoneDate(milestone.date)}</Text>
+                    <Text style={rowStyles.milestoneTitle} numberOfLines={1}>{milestone.title}</Text>
+                  </View>
+                ))}
+              </Animated.View>
+            )}
+          </View>
+        </View>
+      )}
     </View>
   );
 };
@@ -131,14 +269,8 @@ const rowStyles = StyleSheet.create({
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: spacing[2],
-  },
-  titleSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
     gap: spacing[2],
-    flex: 1,
+    marginBottom: spacing[2],
   },
   goalIcon: {
     width: 28,
@@ -151,33 +283,82 @@ const rowStyles = StyleSheet.create({
     ...textStyles.body,
     color: colors.text.primary,
     fontWeight: '600',
-    flex: 1,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
   },
   badges: {
     flexDirection: 'row',
     alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: spacing[2],
+    gap: spacing[1],
   },
   badge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing[2],
-    paddingVertical: spacing[1],
-    borderRadius: radiusValues.box,
-    gap: 4,
+    paddingHorizontal: spacing[1],
+    paddingVertical: 2,
+    borderRadius: radiusValues.sm,
+    gap: 2,
   },
   badgeCount: {
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: '600',
   },
   emptyText: {
     ...textStyles.caption,
     color: colors.text.tertiary,
+    fontSize: 11,
+  },
+  timelineSection: {
+    marginTop: spacing[3],
+  },
+  timelineContainer: {
+    position: 'relative',
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radiusValues.box,
+    padding: spacing[3],
+    backgroundColor: colors.background + '40',
+  },
+  timelineLine: {
+    position: 'absolute',
+    left: spacing[3] + 3, // padding + center of 8px dot
+    top: spacing[3] + 14, // padding + center of first row (28/2)
+    width: 2,
+    borderRadius: 1,
+  },
+  timelineRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 28,
+    gap: spacing[2],
+  },
+  timelineDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  timelineDotEmpty: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    borderWidth: 2,
+    backgroundColor: 'transparent',
+  },
+  addMilestoneText: {
+    ...textStyles.bodySmall,
+    fontWeight: '600',
+  },
+  expandChevron: {
+    padding: spacing[1],
+    marginLeft: 'auto',
+  },
+  milestoneDate: {
+    ...textStyles.caption,
+    color: colors.text.tertiary,
+    width: 48,
+  },
+  milestoneTitle: {
+    ...textStyles.bodySmall,
+    color: colors.text.secondary,
+    flex: 1,
   },
 });
 
@@ -185,13 +366,17 @@ export const GoalCard: React.FC<GoalCardProps> = ({
   primaryGoalProgress,
   secondaryGoalProgress,
   onPress,
+  onAddMilestone,
 }) => {
   const [selectedPeriod, setSelectedPeriod] = useState<Period>('allTime');
   const [isExpanded, setIsExpanded] = useState(false);
+  // Track which goals have their milestones expanded (keyed by goal ID)
+  const [expandedGoals, setExpandedGoals] = useState<Record<string, boolean>>({});
 
   // Subscribe to logs for live updates
   const contributionData = useLogsStore((state) => state.contributionData);
   const refreshProgress = useGoalsStore((state) => state.refreshProgress);
+  const storeMilestones = useGoalsStore((state) => state.milestones);
 
   useEffect(() => {
     if (contributionData.length > 0) {
@@ -206,6 +391,14 @@ export const GoalCard: React.FC<GoalCardProps> = ({
     setIsExpanded((prev) => !prev);
   }, []);
 
+  const toggleGoalMilestones = useCallback((goalId: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setExpandedGoals((prev) => ({
+      ...prev,
+      [goalId]: !prev[goalId],
+    }));
+  }, []);
+
   if (!primaryGoalProgress && secondaryGoalProgress.length === 0) {
     return null;
   }
@@ -218,7 +411,7 @@ export const GoalCard: React.FC<GoalCardProps> = ({
         <View style={styles.headerRight}>
           <PeriodPill selected={selectedPeriod} onChange={setSelectedPeriod} />
           <TouchableOpacity onPress={onPress} style={styles.editButton}>
-            <Icon name="edit" size={16} color={colors.text.secondary} />
+            <Icon name="target" size={16} color={colors.text.secondary} />
           </TouchableOpacity>
         </View>
       </View>
@@ -228,6 +421,10 @@ export const GoalCard: React.FC<GoalCardProps> = ({
         <GoalRow
           progress={primaryGoalProgress}
           selectedPeriod={selectedPeriod}
+          milestones={storeMilestones[primaryGoalProgress.goal.id] || []}
+          isExpanded={expandedGoals[primaryGoalProgress.goal.id] || false}
+          onToggleExpand={() => toggleGoalMilestones(primaryGoalProgress.goal.id)}
+          onAddMilestone={onAddMilestone ? () => onAddMilestone(primaryGoalProgress.goal.id) : undefined}
         />
       )}
 
@@ -258,6 +455,10 @@ export const GoalCard: React.FC<GoalCardProps> = ({
                   key={progress.goal.id}
                   progress={progress}
                   selectedPeriod={selectedPeriod}
+                  milestones={storeMilestones[progress.goal.id] || []}
+                  isExpanded={expandedGoals[progress.goal.id] || false}
+                  onToggleExpand={() => toggleGoalMilestones(progress.goal.id)}
+                  onAddMilestone={onAddMilestone ? () => onAddMilestone(progress.goal.id) : undefined}
                 />
               ))}
               <TouchableOpacity onPress={toggleExpanded} style={styles.collapseRow}>

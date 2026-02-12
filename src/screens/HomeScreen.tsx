@@ -7,7 +7,7 @@ import { ScreenErrorBoundary } from '../components/ScreenErrorBoundary';
 import { Icon } from '../components/common/Icon';
 import { TodayCard, EmptyStateSection, TasksSection, AppFeedbackCard } from '../components/HomeScreen';
 import { GoalCard } from '../components/goals';
-import { BaseModal, GoalDetailModal, AddGoalsModal } from '../components/modals';
+import { BaseModal, GoalDetailModal, AddGoalsModal, AddMilestoneModal } from '../components/modals';
 import { CustomGoalDefinition } from '../types/goals';
 import { useTasksStore } from '../store/tasksStore';
 import { useLogsStore } from '../store/logsStore';
@@ -303,6 +303,7 @@ export const HomeScreen: React.FC = () => {
                 primaryGoalProgress={goalProgress.find(p => p.goal.isPrimary) ?? null}
                 secondaryGoalProgress={goalProgress.filter(p => !p.goal.isPrimary)}
                 onPress={openGoalDetail}
+                onAddMilestone={goalModalFlow.handleOpenAddMilestone}
               />
             </ErrorBoundary>
           )}
@@ -443,6 +444,7 @@ export const HomeScreen: React.FC = () => {
           onClose={closeModal}
           onCloseComplete={goalModalFlow.handleGoalDetailCloseComplete}
           onOpenAddGoals={goalModalFlow.handleOpenAddGoalsFromGoalDetail}
+          onOpenAddMilestone={goalModalFlow.handleOpenAddMilestoneFromGoalDetail}
         />
 
         {/* Add Goals Modal */}
@@ -464,6 +466,14 @@ export const HomeScreen: React.FC = () => {
             />
           </View>
         )}
+
+        {/* Add Milestone Modal */}
+        <AddMilestoneModal
+          visible={goalModalFlow.showAddMilestoneModal}
+          onClose={goalModalFlow.handleAddMilestoneClose}
+          onCloseComplete={goalModalFlow.handleAddMilestoneCloseComplete}
+          defaultGoalId={goalModalFlow.selectedGoalForMilestone}
+        />
       </SafeAreaView>
     </ErrorBoundary>
   );

@@ -16,9 +16,12 @@ import {
   UpdateCustomGoalInput,
   AnyGoalDefinition,
   isCustomGoal,
+  Milestone,
+  CreateMilestoneInput,
 } from '../types/goals';
 import { IGoalRepository } from '../database/repositories/interfaces/IGoalRepository';
 import { ICustomGoalRepository } from '../database/repositories/interfaces/ICustomGoalRepository';
+import { IMilestoneRepository } from '../database/repositories/interfaces/IMilestoneRepository';
 import { ITaskRepository } from '../database/repositories/interfaces/ITaskRepository';
 import { ILogRepository } from '../database/repositories/interfaces/ILogRepository';
 import { GOAL_MAP, getGoalById as getPredefinedGoalById, GOALS } from '../data/goalLibrary';
@@ -45,6 +48,7 @@ export class GoalService {
   constructor(
     private goalRepository: IGoalRepository,
     private customGoalRepository: ICustomGoalRepository,
+    private milestoneRepository: IMilestoneRepository,
     private taskRepository: ITaskRepository,
     private logRepository: ILogRepository
   ) {
@@ -627,6 +631,75 @@ export class GoalService {
       throw error;
     }
   }
+
+  // ============================================
+  // Milestone Operations
+  // ============================================
+
+  /**
+   * Get all milestones for a specific goal
+   * @param userGoalId - The user_goals.id (not the goalId/definition ID)
+   */
+  async getMilestonesForGoal(userGoalId: string): Promise<Milestone[]> {
+    try {
+      return await this.milestoneRepository.getByGoalId(userGoalId);
+    } catch (error) {
+      logger.error('SERVICES', 'Failed to get milestones for goal', { error, userGoalId });
+      throw error;
+    }
+  }
+
+  /**
+   * Get milestones for multiple goals (batch)
+   * @param userGoalIds - Array of user_goals.id values
+   * @returns Map keyed by userGoalId with arrays of milestones
+   */
+  async getMilestonesForGoals(userGoalIds: string[]): Promise<Map<string, Milestone[]>> {
+    try {
+      const record = await this.milestoneRepository.getByGoalIds(userGoalIds);
+      return new Map(Object.entries(record));
+    } catch (error) {
+      logger.error('SERVICES', 'Failed to get milestones for goals', { error, count: userGoalIds.length });
+      throw error;
+    }
+  }
+
+  /**
+   * Create a new milestone for a goal
+   */
+  async createMilestone(data: CreateMilestoneInput): Promise<Milestone> {
+    try {
+      logger.debug('SERVICES', 'Creating milestone', { userGoalId: data.userGoalId, title: data.title });
+
+      // Verify goal exists
+      const goal = await this.goalRepository.getGoalById(data.userGoalId);
+      if (!goal) {
+        throw new Error(`Goal '${data.userGoalId}' not found`);
+      }
+
+      const milestone = await this.milestoneRepository.create(data);
+      logger.info('SERVICES', 'Milestone created', { id: milestone.id, userGoalId: data.userGoalId });
+
+      return milestone;
+    } catch (error) {
+      logger.error('SERVICES', 'Failed to create milestone', { error, data });
+      throw error;
+    }
+  }
+
+  /**
+   * Delete a milestone (soft delete)
+   */
+  async deleteMilestone(milestoneId: string): Promise<void> {
+    try {
+      logger.debug('SERVICES', 'Deleting milestone', { milestoneId });
+      await this.milestoneRepository.delete(milestoneId);
+      logger.info('SERVICES', 'Milestone deleted', { milestoneId });
+    } catch (error) {
+      logger.error('SERVICES', 'Failed to delete milestone', { error, milestoneId });
+      throw error;
+    }
+  }
 }
 
 /**
@@ -635,8 +708,9 @@ export class GoalService {
 export const createGoalService = (
   goalRepository: IGoalRepository,
   customGoalRepository: ICustomGoalRepository,
+  milestoneRepository: IMilestoneRepository,
   taskRepository: ITaskRepository,
   logRepository: ILogRepository
 ): GoalService => {
-  return new GoalService(goalRepository, customGoalRepository, taskRepository, logRepository);
+  return new GoalService(goalRepository, customGoalRepository, milestoneRepository, taskRepository, logRepository);
 };

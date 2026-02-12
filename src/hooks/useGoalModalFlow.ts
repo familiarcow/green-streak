@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { CustomGoalDefinition } from '../types/goals';
 
-type PendingGoalModalAction = 'addGoals' | 'editGoal' | 'createGoal' | null;
+type PendingGoalModalAction = 'addGoals' | 'editGoal' | 'createGoal' | 'addMilestone' | null;
 
 interface UseGoalModalFlowConfig {
   /** Callback to close the GoalDetailModal (e.g., closeModal() in HomeScreen, setShowGoalDetailModal(false) in SettingsScreen) */
@@ -16,10 +16,18 @@ interface UseGoalModalFlowReturn {
   // Modal visibility states
   showAddGoalsModal: boolean;
   showEditGoalModal: boolean;
+  showAddMilestoneModal: boolean;
   editingGoal: CustomGoalDefinition | undefined;
+  selectedGoalForMilestone: string | undefined;
 
   // Entry point: called when "Add more goals" is tapped in GoalDetailModal
   handleOpenAddGoalsFromGoalDetail: () => void;
+
+  // Entry point: called when "Add milestone" is tapped in GoalDetailModal
+  handleOpenAddMilestoneFromGoalDetail: (goalId?: string) => void;
+
+  // Entry point: called when "Add milestone" is tapped directly (e.g., from GoalCard)
+  handleOpenAddMilestone: (goalId: string) => void;
 
   // GoalDetailModal lifecycle
   handleGoalDetailCloseComplete: () => void;
@@ -33,6 +41,10 @@ interface UseGoalModalFlowReturn {
   // EditGoalModal handlers
   handleEditGoalClose: () => void;
   handleGoalSaved: (goal: CustomGoalDefinition) => void;
+
+  // AddMilestoneModal handlers
+  handleAddMilestoneClose: () => void;
+  handleAddMilestoneCloseComplete: () => void;
 
   // Reset all state (for cleanup on unmount)
   resetState: () => void;
@@ -55,7 +67,9 @@ export const useGoalModalFlow = (config: UseGoalModalFlowConfig): UseGoalModalFl
   // Modal visibility state
   const [showAddGoalsModal, setShowAddGoalsModal] = useState(false);
   const [showEditGoalModal, setShowEditGoalModal] = useState(false);
+  const [showAddMilestoneModal, setShowAddMilestoneModal] = useState(false);
   const [editingGoal, setEditingGoal] = useState<CustomGoalDefinition | undefined>(undefined);
+  const [selectedGoalForMilestone, setSelectedGoalForMilestone] = useState<string | undefined>(undefined);
 
   // Pending action state - tracks which modal should open after current one closes
   const [pendingGoalModalAction, setPendingGoalModalAction] = useState<PendingGoalModalAction>(null);
@@ -64,7 +78,9 @@ export const useGoalModalFlow = (config: UseGoalModalFlowConfig): UseGoalModalFl
   const resetState = useCallback(() => {
     setShowAddGoalsModal(false);
     setShowEditGoalModal(false);
+    setShowAddMilestoneModal(false);
     setEditingGoal(undefined);
+    setSelectedGoalForMilestone(undefined);
     setPendingGoalModalAction(null);
   }, []);
 
@@ -75,6 +91,20 @@ export const useGoalModalFlow = (config: UseGoalModalFlowConfig): UseGoalModalFl
     onCloseGoalDetail();
   }, [onCloseGoalDetail]);
 
+  // Entry point: user taps "Add milestone" in GoalDetailModal
+  const handleOpenAddMilestoneFromGoalDetail = useCallback((goalId?: string) => {
+    // Store intent to open AddMilestoneModal after GoalDetailModal closes
+    setSelectedGoalForMilestone(goalId);
+    setPendingGoalModalAction('addMilestone');
+    onCloseGoalDetail();
+  }, [onCloseGoalDetail]);
+
+  // Entry point: user taps "Add milestone" directly (e.g., from GoalCard when no modal is open)
+  const handleOpenAddMilestone = useCallback((goalId: string) => {
+    setSelectedGoalForMilestone(goalId);
+    setShowAddMilestoneModal(true);
+  }, []);
+
   // Called when GoalDetailModal finishes its close animation
   const handleGoalDetailCloseComplete = useCallback(() => {
     // 100ms delay lets native iOS modal animation fully complete
@@ -84,6 +114,9 @@ export const useGoalModalFlow = (config: UseGoalModalFlowConfig): UseGoalModalFl
 
       if (pendingGoalModalAction === 'addGoals') {
         setShowAddGoalsModal(true);
+        setPendingGoalModalAction(null);
+      } else if (pendingGoalModalAction === 'addMilestone') {
+        setShowAddMilestoneModal(true);
         setPendingGoalModalAction(null);
       }
     }, 100);
@@ -138,11 +171,27 @@ export const useGoalModalFlow = (config: UseGoalModalFlowConfig): UseGoalModalFl
     loadGoals();
   }, [loadGoals]);
 
+  // AddMilestoneModal close handler
+  const handleAddMilestoneClose = useCallback(() => {
+    setShowAddMilestoneModal(false);
+  }, []);
+
+  // Called when AddMilestoneModal finishes its close animation
+  const handleAddMilestoneCloseComplete = useCallback(() => {
+    // Clear selected goal and refresh goals to show new milestones
+    setSelectedGoalForMilestone(undefined);
+    loadGoals();
+  }, [loadGoals]);
+
   return {
     showAddGoalsModal,
     showEditGoalModal,
+    showAddMilestoneModal,
     editingGoal,
+    selectedGoalForMilestone,
     handleOpenAddGoalsFromGoalDetail,
+    handleOpenAddMilestoneFromGoalDetail,
+    handleOpenAddMilestone,
     handleGoalDetailCloseComplete,
     handleAddGoalsClose,
     handleAddGoalsCloseComplete,
@@ -150,6 +199,8 @@ export const useGoalModalFlow = (config: UseGoalModalFlowConfig): UseGoalModalFl
     handleEditCustomGoal,
     handleEditGoalClose,
     handleGoalSaved,
+    handleAddMilestoneClose,
+    handleAddMilestoneCloseComplete,
     resetState,
   };
 };

@@ -5,6 +5,8 @@ import {
   CustomGoalDefinition,
   CreateCustomGoalInput,
   UpdateCustomGoalInput,
+  Milestone,
+  CreateMilestoneInput,
 } from '../types/goals';
 import { getGoalService } from '../services';
 import logger from '../utils/logger';
@@ -15,6 +17,7 @@ interface GoalsState {
   primaryGoal: UserGoalWithDetails | null;
   goalProgress: GoalProgress[];
   customGoals: CustomGoalDefinition[];
+  milestones: Record<string, Milestone[]>; // Keyed by userGoalId
   loading: boolean;
   error: string | null;
   canShowModal: boolean; // Critical for iOS modal sequencing
@@ -41,6 +44,11 @@ interface GoalsState {
   createCustomGoal: (data: CreateCustomGoalInput, options?: { select?: boolean; isPrimary?: boolean }) => Promise<CustomGoalDefinition>;
   updateCustomGoal: (id: string, data: UpdateCustomGoalInput) => Promise<CustomGoalDefinition>;
   deleteCustomGoal: (id: string) => Promise<void>;
+
+  // Milestone Actions
+  createMilestone: (data: CreateMilestoneInput) => Promise<Milestone>;
+  deleteMilestone: (milestoneId: string) => Promise<void>;
+  getMilestonesForGoal: (userGoalId: string) => Milestone[];
 }
 
 export const useGoalsStore = create<GoalsState>((set, get) => ({
@@ -48,6 +56,7 @@ export const useGoalsStore = create<GoalsState>((set, get) => ({
   primaryGoal: null,
   goalProgress: [],
   customGoals: [],
+  milestones: {},
   loading: false,
   error: null,
   canShowModal: true,
@@ -66,11 +75,24 @@ export const useGoalsStore = create<GoalsState>((set, get) => ({
         goalService.getCustomGoals(),
       ]);
 
+      // Load milestones for all goals (batch)
+      const goalIds = goals.map(g => g.id);
+      const milestonesMap = goalIds.length > 0
+        ? await goalService.getMilestonesForGoals(goalIds)
+        : new Map<string, Milestone[]>();
+
+      // Convert Map to Record for storage
+      const milestonesRecord: Record<string, Milestone[]> = {};
+      milestonesMap.forEach((value, key) => {
+        milestonesRecord[key] = value;
+      });
+
       set({
         goals,
         primaryGoal,
         goalProgress,
         customGoals,
+        milestones: milestonesRecord,
         loading: false,
       });
 
@@ -78,6 +100,7 @@ export const useGoalsStore = create<GoalsState>((set, get) => ({
         count: goals.length,
         customCount: customGoals.length,
         hasPrimary: !!primaryGoal,
+        milestonesCount: Object.values(milestonesRecord).flat().length,
       });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -319,6 +342,77 @@ export const useGoalsStore = create<GoalsState>((set, get) => ({
       set({ loading: false, error: errorMessage });
       throw error;
     }
+  },
+
+  // ============================================
+  // Milestone Actions
+  // ============================================
+
+  createMilestone: async (data) => {
+    try {
+      logger.debug('STORE', 'Creating milestone', { userGoalId: data.userGoalId, title: data.title });
+      const goalService = getGoalService();
+
+      const milestone = await goalService.createMilestone(data);
+
+      // Update milestones in state
+      const currentMilestones = get().milestones;
+      const goalMilestones = currentMilestones[data.userGoalId] || [];
+      set({
+        milestones: {
+          ...currentMilestones,
+          [data.userGoalId]: [milestone, ...goalMilestones], // Add to front (newest first)
+        },
+      });
+
+      logger.info('STORE', 'Milestone created', { id: milestone.id, userGoalId: data.userGoalId });
+      return milestone;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('STORE', 'Failed to create milestone', { error: errorMessage, data });
+      throw error;
+    }
+  },
+
+  deleteMilestone: async (milestoneId) => {
+    try {
+      logger.debug('STORE', 'Deleting milestone', { milestoneId });
+      const goalService = getGoalService();
+
+      // Find which goal this milestone belongs to
+      const { milestones } = get();
+      let userGoalId: string | null = null;
+      for (const [goalId, goalMilestones] of Object.entries(milestones)) {
+        if (goalMilestones.some(m => m.id === milestoneId)) {
+          userGoalId = goalId;
+          break;
+        }
+      }
+
+      await goalService.deleteMilestone(milestoneId);
+
+      // Update state
+      if (userGoalId) {
+        const currentMilestones = get().milestones;
+        const goalMilestones = currentMilestones[userGoalId] || [];
+        set({
+          milestones: {
+            ...currentMilestones,
+            [userGoalId]: goalMilestones.filter(m => m.id !== milestoneId),
+          },
+        });
+      }
+
+      logger.info('STORE', 'Milestone deleted', { milestoneId });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('STORE', 'Failed to delete milestone', { error: errorMessage, milestoneId });
+      throw error;
+    }
+  },
+
+  getMilestonesForGoal: (userGoalId) => {
+    return get().milestones[userGoalId] || [];
   },
 }));
 
