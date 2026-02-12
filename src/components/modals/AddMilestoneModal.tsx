@@ -24,7 +24,7 @@ import { Icon } from '../common/Icon';
 import { useGoalsStore } from '../../store/goalsStore';
 import { useAccentColor, useSounds } from '../../hooks';
 import { colors, textStyles, spacing, shadows } from '../../theme';
-import { glassStyles } from '../../theme/glass';
+// glassStyles removed - using white surfaces with shadows per plan
 import { radiusValues } from '../../theme/utils';
 import { MILESTONE_TITLE_MAX_LENGTH, MILESTONE_DESCRIPTION_MAX_LENGTH } from '../../database/migrations/addMilestonesSupport';
 import { getTodayString } from '../../utils/dateHelpers';
@@ -235,7 +235,10 @@ export const AddMilestoneModal: React.FC<AddMilestoneModalProps> = ({
         {/* Goal Selector */}
         {selectedGoal && (
           <TouchableOpacity
-            style={[styles.goalSelector, glassStyles.card]}
+            style={[
+              styles.goalSelector,
+              { borderLeftWidth: 3, borderLeftColor: selectedGoal.definition.color },
+            ]}
             onPress={handleCycleGoal}
             disabled={goals.length <= 1}
             accessibilityRole="button"
@@ -252,21 +255,21 @@ export const AddMilestoneModal: React.FC<AddMilestoneModalProps> = ({
               {selectedGoal.definition.title}
             </Text>
             {goals.length > 1 && (
-              <Icon name="chevron-right" size={16} color={colors.text.tertiary} />
+              <Icon name="chevron-right" size={16} color={selectedGoal.definition.color} />
             )}
           </TouchableOpacity>
         )}
 
         {/* Date Row */}
-        <View style={styles.formRow}>
-          <Text style={styles.label}>Date</Text>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Date</Text>
           <TouchableOpacity
-            style={[styles.dateButton, glassStyles.card]}
+            style={styles.dateButton}
             onPress={() => setShowDatePicker(true)}
             accessibilityRole="button"
             accessibilityLabel={`Date: ${formatDateDisplay(date)}. Tap to change`}
           >
-            <Icon name="calendar" size={16} color={colors.text.secondary} />
+            <Icon name="calendar" size={16} color={selectedGoal?.definition.color ?? accentColor} />
             <Text style={styles.dateText}>{formatDateDisplay(date)}</Text>
           </TouchableOpacity>
         </View>
@@ -302,9 +305,9 @@ export const AddMilestoneModal: React.FC<AddMilestoneModalProps> = ({
         )}
 
         {/* Title Input */}
-        <View style={styles.formRow}>
-          <Text style={styles.label}>What did you achieve?</Text>
-          <View style={[styles.inputContainer, glassStyles.card]}>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>What did you achieve?</Text>
+          <View style={styles.inputContainer}>
             <TextInput
               style={styles.titleInput}
               value={title}
@@ -321,9 +324,9 @@ export const AddMilestoneModal: React.FC<AddMilestoneModalProps> = ({
         </View>
 
         {/* Description Input */}
-        <View style={styles.formRow}>
-          <Text style={styles.label}>Add details (optional)</Text>
-          <View style={[styles.inputContainer, glassStyles.card]}>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Add details (optional)</Text>
+          <View style={styles.inputContainer}>
             <TextInput
               style={[styles.descriptionInput]}
               value={description}
@@ -405,8 +408,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: spacing[3],
-    marginBottom: spacing[4],
+    marginBottom: spacing[6],
     gap: spacing[2],
+    backgroundColor: colors.surface,
+    borderRadius: radiusValues.box,
+    borderWidth: 1,
+    borderColor: colors.border,
+    ...shadows.sm,
   },
 
   goalIcon: {
@@ -424,14 +432,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-  formRow: {
-    marginBottom: spacing[4],
+  section: {
+    marginBottom: spacing[6],
   },
 
-  label: {
-    ...textStyles.bodySmall,
-    color: colors.text.secondary,
-    fontWeight: '500',
+  sectionTitle: {
+    ...textStyles.h3,
+    color: colors.text.primary,
     marginBottom: spacing[2],
   },
 
@@ -440,6 +447,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: spacing[3],
     gap: spacing[2],
+    backgroundColor: colors.surface,
+    borderRadius: radiusValues.box,
+    borderWidth: 1,
+    borderColor: colors.border,
+    ...shadows.sm,
   },
 
   dateText: {
@@ -468,6 +480,11 @@ const styles = StyleSheet.create({
 
   inputContainer: {
     padding: spacing[3],
+    backgroundColor: colors.surface,
+    borderRadius: radiusValues.box,
+    borderWidth: 1,
+    borderColor: colors.border,
+    ...shadows.sm,
   },
 
   titleInput: {
@@ -491,7 +508,10 @@ const styles = StyleSheet.create({
   },
 
   saveButtonContainer: {
-    marginTop: spacing[2],
+    marginTop: spacing[4],
+    paddingTop: spacing[4],
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
   },
 
   saveButton: {
