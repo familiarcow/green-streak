@@ -12,7 +12,7 @@ import Animated, {
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { Task } from '../types';
 import { colors, textStyles, spacing, shadows } from '../theme';
-import { sizes, fontSizes, radiusValues } from '../theme/utils';
+import { fontSizes, radiusValues } from '../theme/utils';
 import { Icon, IconName } from './common/Icon';
 import { useSounds } from '../hooks/useSounds';
 
@@ -151,37 +151,35 @@ const DraggableTaskItem: React.FC<DraggableTaskItemProps> = ({
 
   return (
     <Animated.View style={[styles.itemContainer, animatedStyle]}>
-      <Pressable
-        onPress={handleTaskPress}
-        style={styles.taskTouchable}
-        disabled={!onTaskPress}
-      >
-        <View style={styles.taskPreview}>
-          <View
-            style={[styles.taskColorDot, { backgroundColor: task.color }]}
-          />
-          <View style={styles.taskInfo}>
-            <Text style={styles.taskName}>{task.name}</Text>
-            {task.description && (
-              <Text style={styles.taskDescription} numberOfLines={1}>
-                {task.description}
-              </Text>
-            )}
-          </View>
-          {task.icon && (
-            <Icon
-              name={task.icon as IconName}
-              size={fontSizes.large}
-              color={colors.text.secondary}
-            />
-          )}
-        </View>
-      </Pressable>
       <GestureDetector gesture={panGesture}>
         <Animated.View style={styles.dragHandle}>
           <Icon name="grip-vertical" size={fontSizes.xlarge} color={colors.text.tertiary} />
         </Animated.View>
       </GestureDetector>
+      <View style={[styles.iconContainer, { backgroundColor: task.color }]}>
+        <Icon
+          name={(task.icon as IconName) || 'check'}
+          size={fontSizes.large}
+          color={colors.text.inverse}
+        />
+      </View>
+      <View style={styles.taskInfo}>
+        <Text style={styles.taskName}>{task.name}</Text>
+        {task.description && (
+          <Text style={styles.taskDescription} numberOfLines={1}>
+            {task.description}
+          </Text>
+        )}
+      </View>
+      <Pressable
+        onPress={handleTaskPress}
+        style={styles.editButton}
+        disabled={!onTaskPress}
+        accessibilityRole="button"
+        accessibilityLabel={`Edit ${task.name}`}
+      >
+        <Icon name="pen" size={fontSizes.small} color={colors.text.secondary} />
+      </Pressable>
     </Animated.View>
   );
 };
@@ -265,26 +263,25 @@ const styles = StyleSheet.create({
     marginBottom: spacing[2],
     backgroundColor: colors.surface,
     borderRadius: radiusValues.box,
+    paddingRight: spacing[2],
     ...shadows.sm,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 8,
     elevation: 4,
   },
-  taskTouchable: {
-    flex: 1,
-  },
-  taskPreview: {
-    flexDirection: 'row',
+  dragHandle: {
+    paddingHorizontal: spacing[3],
+    paddingVertical: spacing[4],
+    justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: spacing[3],
-    paddingLeft: spacing[4],
-    paddingRight: spacing[2],
   },
-  taskColorDot: {
-    width: sizes.progressDot * 2,
-    height: sizes.progressDot * 2,
-    borderRadius: radiusValues.sm,
+  iconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: radiusValues.box,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginRight: spacing[3],
   },
   taskInfo: {
@@ -299,7 +296,7 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
     marginTop: spacing[1],
   },
-  dragHandle: {
+  editButton: {
     paddingHorizontal: spacing[3],
     paddingVertical: spacing[4],
     justifyContent: 'center',
