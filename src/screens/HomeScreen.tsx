@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ContributionGraph } from '../components/ContributionGraph';
 import { ErrorBoundary } from '../components/ErrorBoundary';
@@ -72,20 +72,52 @@ export const HomeScreen: React.FC = () => {
   // ScrollView ref for programmatic scrolling
   const scrollViewRef = useRef<ScrollView>(null);
   const graphSectionRef = useRef<View>(null);
+  const currentScrollY = useRef(0);
+  const viewportHeight = useRef(Dimensions.get('window').height);
+
+  // Track scroll position
+  const handleScroll = useCallback((event: any) => {
+    currentScrollY.current = event.nativeEvent.contentOffset.y;
+  }, []);
+
+  // Track viewport height
+  const handleScrollViewLayout = useCallback((event: any) => {
+    viewportHeight.current = event.nativeEvent.layout.height;
+  }, []);
 
   // Callback when calendar view type changes - scroll to keep time period selector visible
+  // Only scrolls DOWN if the calendar bottom would be out of view
   const handleCalendarHeightChange = useCallback((height: number) => {
-    if (scrollViewRef.current && graphSectionRef.current) {
-      graphSectionRef.current.measureLayout(
-        scrollViewRef.current as any,
-        (x, y, width, graphHeight) => {
-          // Scroll so the bottom of the graph (where the time selector is) stays visible
-          const targetScroll = y + height - 200; // Leave some space for visibility
-          scrollViewRef.current?.scrollTo({ y: Math.max(0, targetScroll), animated: true });
-        },
-        () => {} // onFail callback
-      );
-    }
+    if (!scrollViewRef.current || !graphSectionRef.current) return;
+
+    // Small delay to ensure layout has settled after height change
+    setTimeout(() => {
+      if (!graphSectionRef.current) return;
+
+      // Get the graph section's position in the window
+      graphSectionRef.current.measureInWindow((x, y, width, measuredHeight) => {
+        // Use measured viewport or fall back to window dimensions
+        const screenHeight = viewportHeight.current > 0
+          ? viewportHeight.current
+          : Dimensions.get('window').height;
+
+        // Calculate where the calendar bottom is on screen
+        // y is the top of the graph section on screen, height is the new calendar height
+        const calendarBottomOnScreen = y + height;
+
+        // If the calendar bottom is below the screen bottom, we need to scroll
+        if (calendarBottomOnScreen > screenHeight) {
+          // Calculate how much we need to scroll down
+          const scrollAmount = calendarBottomOnScreen - screenHeight + 24; // 24px padding
+
+          // New scroll position
+          const targetScroll = currentScrollY.current + scrollAmount;
+
+          // Only scroll DOWN (this check is inherent since scrollAmount > 0)
+          scrollViewRef.current?.scrollTo({ y: targetScroll, animated: true });
+        }
+      });
+    }, 50);
   }, []);
 
   // Handle deep links from widgets
@@ -231,7 +263,14 @@ export const HomeScreen: React.FC = () => {
   return (
     <ErrorBoundary>
       <SafeAreaView style={styles.container}>
-        <ScrollView ref={scrollViewRef} style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          ref={scrollViewRef}
+          style={styles.scrollView}
+          showsVerticalScrollIndicator={false}
+          onScroll={handleScroll}
+          onLayout={handleScrollViewLayout}
+          scrollEventThrottle={16}
+        >
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.titleContainer}>
