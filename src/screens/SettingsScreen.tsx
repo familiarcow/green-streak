@@ -18,7 +18,6 @@ import { CalendarColorPreview } from '../components/CalendarColorPreview';
 import { CalendarViewSettingsModal } from '../components/modals/CalendarViewSettingsModal';
 import { GoalDetailModal, AddGoalsModal } from '../components/modals';
 import { EditGoalModal } from '../components/modals';
-import { CustomGoalDefinition } from '../types/goals';
 import { useSettingsStore, DEFAULT_CALENDAR_COLOR } from '../store/settingsStore';
 import { generateContributionPalette, DEFAULT_CONTRIBUTION_PALETTE, CALENDAR_COLOR_PRESETS } from '../utils/colorUtils';
 import { useAccentColor, useSounds, useGoalModalFlow } from '../hooks';
@@ -463,86 +462,6 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
                   accessibilityHint={use24HourFormat ? "Double tap to use 12-hour format" : "Double tap to use 24-hour format"}
                 />
               </View>
-            </>
-          )}
-        </View>
-
-        {/* Goals Section */}
-        <View style={styles.section}>
-          <TouchableOpacity
-            style={styles.sectionHeader}
-            onPress={() => toggleSection('goals')}
-            accessibilityRole="button"
-            accessibilityLabel={`Goals section, ${expandedSections.goals ? 'expanded' : 'collapsed'}`}
-          >
-            <Text style={styles.sectionTitle}>Goals</Text>
-            <Icon
-              name={expandedSections.goals ? 'chevron-up' : 'chevron-down'}
-              size={20}
-              color={colors.text.secondary}
-            />
-          </TouchableOpacity>
-
-          {expandedSections.goals && (
-            <>
-              {/* Goals Summary */}
-              <TouchableOpacity
-                style={[styles.settingItem, glassStyles.card]}
-                onPress={() => setShowGoalDetailModal(true)}
-                accessibilityRole="button"
-                accessibilityLabel="Manage goals"
-                accessibilityHint="Double tap to open goal management"
-              >
-                <View style={styles.settingInfo}>
-                  <View style={styles.goalsSummaryHeader}>
-                    <Icon name="target" size={20} color={accentColor} />
-                    <Text style={styles.settingTitle}>
-                      {goals.length === 0
-                        ? 'No goals selected'
-                        : `${goals.length} goal${goals.length !== 1 ? 's' : ''} selected`}
-                    </Text>
-                  </View>
-                  {primaryGoal && (
-                    <Text style={styles.settingDescription}>
-                      Primary: {primaryGoal.definition.emoji} {primaryGoal.definition.title}
-                    </Text>
-                  )}
-                </View>
-                <Icon name="chevron-right" size={16} color={colors.text.secondary} />
-              </TouchableOpacity>
-
-              {/* Goal List */}
-              {goals.length > 0 && (
-                <View style={[styles.goalsListCard, glassStyles.card]}>
-                  {goals.map((goal, index) => (
-                    <View
-                      key={goal.id}
-                      style={[
-                        styles.goalRow,
-                        index < goals.length - 1 && styles.goalRowBorder,
-                      ]}
-                    >
-                      <View style={styles.goalInfo}>
-                        <View style={styles.goalHeader}>
-                          <View style={[styles.goalIcon, { backgroundColor: goal.definition.color + '20' }]}>
-                            <Text style={styles.goalEmoji}>{goal.definition.emoji}</Text>
-                          </View>
-                          <Text style={styles.goalName} numberOfLines={1}>
-                            {goal.definition.title}
-                          </Text>
-                          {goal.isPrimary && (
-                            <Icon name="star" size={12} color={colors.warning} />
-                          )}
-                        </View>
-                        <Text style={styles.goalLinkedCount}>
-                          {goal.linkedHabitIds.length} habit{goal.linkedHabitIds.length !== 1 ? 's' : ''} linked
-                        </Text>
-                      </View>
-                    </View>
-                  ))}
-                </View>
-              )}
-
             </>
           )}
         </View>
@@ -1062,6 +981,53 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
           )}
         </View>
 
+        {/* Goals Section */}
+        <View style={styles.section}>
+          <TouchableOpacity
+            style={styles.sectionHeader}
+            onPress={() => toggleSection('goals')}
+            accessibilityRole="button"
+            accessibilityLabel={`Goals section, ${expandedSections.goals ? 'expanded' : 'collapsed'}`}
+          >
+            <Text style={styles.sectionTitle}>Goals</Text>
+            <Icon
+              name={expandedSections.goals ? 'chevron-up' : 'chevron-down'}
+              size={20}
+              color={colors.text.secondary}
+            />
+          </TouchableOpacity>
+
+          {expandedSections.goals && (
+            <>
+              {/* Goals Summary */}
+              <TouchableOpacity
+                style={[styles.settingItem, glassStyles.card]}
+                onPress={() => setShowGoalDetailModal(true)}
+                accessibilityRole="button"
+                accessibilityLabel="Manage goals"
+                accessibilityHint="Double tap to open goal management"
+              >
+                <View style={styles.settingInfo}>
+                  <View style={styles.goalsSummaryHeader}>
+                    <Icon name="target" size={20} color={accentColor} />
+                    <Text style={styles.settingTitle}>
+                      {goals.length === 0
+                        ? 'No goals selected'
+                        : `${goals.length} goal${goals.length !== 1 ? 's' : ''} selected`}
+                    </Text>
+                  </View>
+                  {primaryGoal && (
+                    <Text style={styles.settingDescription}>
+                      Primary: {primaryGoal.definition.emoji} {primaryGoal.definition.title}
+                    </Text>
+                  )}
+                </View>
+                <Icon name="chevron-right" size={16} color={colors.text.secondary} />
+              </TouchableOpacity>
+            </>
+          )}
+        </View>
+
         {/* Data Section */}
         <View style={styles.section}>
           <TouchableOpacity
@@ -1520,29 +1486,7 @@ const styles = StyleSheet.create({
     color: colors.text.inverse,
     fontWeight: '600',
   },
-  
-  glassCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.15)',
-    // Note: backdropFilter not supported in React Native
-    ...shadows.md,
-  },
 
-  glassCardSubtle: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-    // Note: backdropFilter not supported in React Native
-  },
-
-  glassButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
-    // Note: backdropFilter not supported in React Native
-  },
-  
   fadeIn: {
     opacity: 1,
   },
@@ -1576,61 +1520,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing[2],
   },
-
-  goalsListCard: {
-    padding: 0,
-    overflow: 'hidden',
-  },
-
-  goalRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: spacing[3],
-    paddingHorizontal: spacing[4],
-  },
-
-  goalRowBorder: {
-    borderBottomWidth: 1,
-    borderBottomColor: colors.divider,
-  },
-
-  goalInfo: {
-    flex: 1,
-  },
-
-  goalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing[2],
-  },
-
-  goalIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  goalEmoji: {
-    fontSize: 14,
-  },
-
-  goalName: {
-    ...textStyles.bodySmall,
-    color: colors.text.primary,
-    fontWeight: '500',
-    flex: 1,
-  },
-
-  goalLinkedCount: {
-    ...textStyles.caption,
-    color: colors.text.tertiary,
-    marginTop: 2,
-    marginLeft: 28 + spacing[2], // Align with name (icon width + gap)
-  },
-
 });
 
 export default SettingsScreen;
