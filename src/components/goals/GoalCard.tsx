@@ -149,7 +149,7 @@ const GoalRow: React.FC<{
   const filteredMilestones = filterMilestonesByPeriod(milestones, selectedPeriod);
 
   const mostRecentMilestone = filteredMilestones.length > 0 ? filteredMilestones[0] : null;
-  const hasFewMilestones = filteredMilestones.length <= 1;
+  const hasNoMilestones = filteredMilestones.length === 0;
 
   const handleAddMilestone = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -177,10 +177,22 @@ const GoalRow: React.FC<{
         ) : (
           <Text style={rowStyles.emptyText}>No completions</Text>
         )}
+        {/* Expand chevron when no milestones (inline with header) */}
+        {hasNoMilestones && onAddMilestone && (
+          <TouchableOpacity
+            onPress={onToggleExpand}
+            style={rowStyles.headerExpandButton}
+            accessibilityRole="button"
+            accessibilityLabel={isExpanded ? 'Hide add milestone' : 'Show add milestone'}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Icon name={isExpanded ? 'chevron-up' : 'chevron-down'} size={14} color={colors.text.tertiary} />
+          </TouchableOpacity>
+        )}
       </View>
 
-      {/* Milestones timeline section */}
-      {(filteredMilestones.length > 0 || onAddMilestone) && (
+      {/* Milestones timeline section - shown if milestones exist OR expanded with no milestones */}
+      {(filteredMilestones.length > 0 || (hasNoMilestones && isExpanded && onAddMilestone)) && (
         <View style={rowStyles.timelineSection}>
           {/* Timeline container with border */}
           <View style={rowStyles.timelineContainer}>
@@ -234,7 +246,7 @@ const GoalRow: React.FC<{
               </Animated.View>
             )}
 
-            {/* Expand/collapse chevron at bottom right */}
+            {/* Expand/collapse chevron at bottom right - only when milestones exist */}
             {filteredMilestones.length > 1 && (
               <TouchableOpacity
                 style={rowStyles.expandChevronCorner}
@@ -296,6 +308,10 @@ const rowStyles = StyleSheet.create({
     ...textStyles.caption,
     color: colors.text.tertiary,
     fontSize: 11,
+  },
+  headerExpandButton: {
+    marginLeft: 'auto',
+    padding: spacing[1],
   },
   timelineSection: {
     marginTop: spacing[3],

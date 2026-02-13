@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import Animated, {
   useAnimatedStyle,
@@ -21,6 +21,8 @@ import { radiusValues } from '../theme/utils';
 import { RARITY_COLORS } from '../theme/achievements';
 import { useSounds } from '../hooks/useSounds';
 import { useAccentColor } from '../hooks/useAccentColor';
+import { useSettingsStore } from '../store/settingsStore';
+import { getBackgroundByIndex } from '../config/achievementBackgrounds';
 import logger from '../utils/logger';
 import { GridCell, AchievementUnlockEvent } from '../types/achievements';
 
@@ -35,6 +37,23 @@ interface AchievementGridScreenProps {
 export const AchievementGridScreen: React.FC<AchievementGridScreenProps> = ({ onClose }) => {
   const { playRandomTap } = useSounds();
   const accentColor = useAccentColor();
+
+  // Get the persisted background index (randomly assigned on first access)
+  const achievementBackgroundIndex = useSettingsStore((s) => s.achievementBackgroundIndex);
+  const initializeBackgroundIndex = useSettingsStore((s) => s.getAchievementBackgroundIndex);
+
+  // Initialize background index if not yet set (must be in useEffect, not during render)
+  useEffect(() => {
+    if (achievementBackgroundIndex === null) {
+      initializeBackgroundIndex();
+    }
+  }, [achievementBackgroundIndex, initializeBackgroundIndex]);
+
+  // Use a default index (0) while loading, then the persisted one
+  const backgroundImage = useMemo(() => {
+    const index = achievementBackgroundIndex ?? 0;
+    return getBackgroundByIndex(index).source;
+  }, [achievementBackgroundIndex]);
 
   // Use the dedicated achievement grid hook
   const {
@@ -217,6 +236,7 @@ export const AchievementGridScreen: React.FC<AchievementGridScreenProps> = ({ on
               accentColor={accentColor}
               animatingUnlockId={animatingUnlockId}
               onUnlockAnimationComplete={handleUnlockAnimationComplete}
+              backgroundImage={backgroundImage}
               selectedAchievementId={selectedCell?.achievement?.id}
               gridSize={config.size}
             />

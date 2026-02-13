@@ -3,6 +3,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AppSettings, NotificationSettings, DeepPartial } from '../types';
 import { getNotificationService, getNotificationManager, getSoundService } from '../services';
+import { getRandomBackgroundIndex } from '../config/achievementBackgrounds';
 import logger from '../utils/logger';
 
 /**
@@ -34,6 +35,11 @@ const normalizeTime = (time: string): string => {
 // Default signature green for calendar
 export const DEFAULT_CALENDAR_COLOR = '#22c55e';
 
+// Achievement background state (randomly assigned per user)
+interface AchievementBackgroundState {
+  achievementBackgroundIndex: number | null; // null = not yet assigned
+}
+
 // Rating prompt state (not part of AppSettings, local to this store)
 interface RatingPromptState {
   ratingPromptDismissedAt?: string;
@@ -45,7 +51,7 @@ interface HydrationState {
   _hasHydrated: boolean;
 }
 
-interface SettingsState extends AppSettings, RatingPromptState, HydrationState {
+interface SettingsState extends AppSettings, AchievementBackgroundState, RatingPromptState, HydrationState {
   // Actions
   loadSettings: () => Promise<void>;
   updateGlobalReminder: (enabled: boolean, time?: string) => Promise<void>;
@@ -68,6 +74,9 @@ interface SettingsState extends AppSettings, RatingPromptState, HydrationState {
   dismissRatingPrompt: (permanently: boolean) => void;
   shouldShowRatingPrompt: (activeDaysCount: number) => boolean;
   resetRatingPrompt: () => void;
+
+  // Achievement background actions
+  getAchievementBackgroundIndex: () => number;
 }
 
 const defaultNotificationSettings: NotificationSettings = {
@@ -103,7 +112,7 @@ const defaultNotificationSettings: NotificationSettings = {
   },
 };
 
-const defaultSettings: AppSettings & RatingPromptState = {
+const defaultSettings: AppSettings & AchievementBackgroundState & RatingPromptState = {
   // Legacy fields (deprecated - use notificationSettings.daily instead)
   // Kept for backward compatibility, will be migrated on load
   globalReminderEnabled: false,
@@ -115,6 +124,8 @@ const defaultSettings: AppSettings & RatingPromptState = {
   soundEffectsEnabled: true,
   use24HourFormat: false,
   excludedCalendarTaskIds: [], // Task IDs to exclude from default calendar view (empty = show all)
+  // Achievement background state
+  achievementBackgroundIndex: null, // null = will be randomly assigned on first access
   // Rating prompt state
   ratingPromptDismissedAt: undefined,
   ratingPromptDismissedPermanently: false,
@@ -543,6 +554,22 @@ export const useSettingsStore = create<SettingsState>()(
         });
         logger.info('STATE', 'Rating prompt reset');
       },
+
+      getAchievementBackgroundIndex: () => {
+        const state = get();
+
+        // If already assigned, return it
+        if (state.achievementBackgroundIndex !== null) {
+          return state.achievementBackgroundIndex;
+        }
+
+        // Randomly assign a background index and persist it
+        const randomIndex = getRandomBackgroundIndex();
+        set({ achievementBackgroundIndex: randomIndex });
+        logger.info('STATE', 'Achievement background randomly assigned', { index: randomIndex });
+
+        return randomIndex;
+      },
     }),
     {
       name: 'green-streak-settings',
@@ -557,6 +584,7 @@ export const useSettingsStore = create<SettingsState>()(
         soundEffectsEnabled: state.soundEffectsEnabled,
         use24HourFormat: state.use24HourFormat,
         excludedCalendarTaskIds: state.excludedCalendarTaskIds,
+        achievementBackgroundIndex: state.achievementBackgroundIndex,
         ratingPromptDismissedAt: state.ratingPromptDismissedAt,
         ratingPromptDismissedPermanently: state.ratingPromptDismissedPermanently,
       }),
