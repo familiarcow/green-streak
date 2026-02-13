@@ -217,8 +217,12 @@ export const AchievementGrid: React.FC<AchievementGridProps> = ({
     return Math.floor(availableWidth / gridSize);
   }, [containerWidth, gridSize]);
 
-  // Calculate total grid height
+  // Calculate total grid dimensions (exact size of the cell grid)
   const gridHeight = useMemo(() => {
+    return cellSize * gridSize + GAP * (gridSize - 1);
+  }, [cellSize, gridSize]);
+
+  const gridWidth = useMemo(() => {
     return cellSize * gridSize + GAP * (gridSize - 1);
   }, [cellSize, gridSize]);
 
@@ -249,9 +253,9 @@ export const AchievementGrid: React.FC<AchievementGridProps> = ({
 
   return (
     <View style={styles.container} onLayout={handleLayout}>
-      <Animated.View style={[styles.gridContent, gridAnimatedStyle]}>
+      <Animated.View style={[styles.gridContent, gridAnimatedStyle, { width: gridWidth, height: gridHeight }]}>
         {/* Background layer - revealed through unlocked cells */}
-        <View style={[styles.backgroundContainer, { height: gridHeight }]}>
+        <View style={styles.backgroundContainer}>
           {backgroundImage ? (
             <Image
               source={backgroundImage}
@@ -259,7 +263,7 @@ export const AchievementGrid: React.FC<AchievementGridProps> = ({
               resizeMode="cover"
             />
           ) : (
-            <PlaceholderBackground width={containerWidth} height={gridHeight} />
+            <PlaceholderBackground width={gridWidth} height={gridHeight} />
           )}
         </View>
 
@@ -310,6 +314,9 @@ const styles = StyleSheet.create({
 
   gridContent: {
     position: 'relative',
+    alignSelf: 'center',
+    borderRadius: 12,
+    overflow: 'hidden',
   },
 
   backgroundContainer: {
@@ -317,7 +324,8 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    borderRadius: 8,
+    bottom: 0,
+    borderRadius: 12,
     overflow: 'hidden',
   },
 
@@ -351,7 +359,6 @@ const styles = StyleSheet.create({
 
   row: {
     flexDirection: 'row',
-    justifyContent: 'center',
   },
 });
 
