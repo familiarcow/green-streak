@@ -6,7 +6,7 @@
  * Synchronizes version numbers across all config files:
  * - package.json
  * - app.json
- * - ios/greenstreaktemp/Info.plist
+ * - ios/GreenStreak/Info.plist
  *
  * Usage:
  *   node scripts/version.js patch    # 1.0.0 -> 1.0.1
@@ -25,7 +25,7 @@ const ROOT_DIR = path.resolve(__dirname, '..');
 const FILES = {
   package: path.join(ROOT_DIR, 'package.json'),
   appJson: path.join(ROOT_DIR, 'app.json'),
-  infoPlist: path.join(ROOT_DIR, 'ios', 'greenstreaktemp', 'Info.plist'),
+  infoPlist: path.join(ROOT_DIR, 'ios', 'GreenStreak', 'Info.plist'),
 };
 
 function getCurrentVersion() {
